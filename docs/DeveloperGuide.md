@@ -328,8 +328,14 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 1.  Should work on any _mainstream OS_ as long as it has Java `25` or above installed.
 2.  Should be able to hold up to 1000 persons without noticeable sluggishness in performance for typical usage.
 3.  A user with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
-
-*{More to be added}*
+4. A TA with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
+5. All data should be stored locally in a human-editable JSON file, with no remote server, and the application should work offline.
+6. Student data should not be transmitted outside the user's computer.
+7. A command that fails (invalid input or a failed save) should not change any stored student data.
+8. An unreadable or invalid data file should never be overwritten by the application.
+9. Should be usable at a screen resolution of 1920x1080 and higher at 100% and 125% scale, and remain usable at 1280x720 and higher.
+10. Should be designed for a single user; concurrent access to the same data file is not supported.
+11. Should respond to any command within 2 seconds.
 
 ### Glossary
 
