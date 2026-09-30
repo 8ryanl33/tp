@@ -4,7 +4,7 @@
   pageNav: 3
 ---
 
-# AB-3 Developer Guide
+# TeachAssist Developer Guide
 
 <!-- * Table of Contents -->
 <page-nav-print />
@@ -270,58 +270,201 @@ _{Explain here how the data archiving feature will be implemented}_
 
 **Target user profile**:
 
-* has a need to manage a significant number of contacts
-* prefers desktop apps over other types of applications
-* can type fast
-* prefers typing to mouse interactions
-* is reasonably comfortable using CLI apps
+TeachAssist is for teaching assistants (TAs) who support a fixed group of undergraduate students through weekly tutorials and consultations throughout a semester. They need to retrieve and update student information quickly while handling teaching, assessment, and follow-up tasks.
 
-**Value proposition**: Manage contacts faster than with a typical mouse-driven GUI application.
+**Value proposition**: Help teaching assistants organise student information and learning progress so they can remember individual students' needs and provide consistent, targeted support throughout the semester.
 
+TeachAssist supports the management of student information, learning progress, interactions, and follow-up needs. It does not aim to replace a learning management system (LMS) for distributing teaching materials, conducting assessments, calculating official grades, or communicating directly with students.
 
 ### User stories
+Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`.
 
-Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`
+High-priority stories cover the agreed MVP, including finding students by name. Medium-priority stories capture other requirements considered by the team; they are not commitments for the MVP or final product. No stories are currently assigned low priority. These are product requirements, not a list of implemented features.
 
-| Priority | As a …                                    | I want to …                 | So that I can…                                                        |
-|----------|--------------------------------------------|------------------------------|------------------------------------------------------------------------|
-| `* * *`  | new user                                   | see usage instructions       | refer to instructions when I forget how to use the App                 |
-| `* * *`  | user                                       | add a new person             |                                                                        |
-| `* * *`  | user                                       | delete a person              | remove entries that I no longer need                                   |
-| `* * *`  | user                                       | find a person by name        | locate details of persons without having to go through the entire list |
-| `* *`    | user                                       | hide private contact details | minimize chance of someone else seeing them by accident                |
-| `*`      | user with many persons in the address book | sort persons by name         | locate a person easily                                                 |
+TA refers to a teaching assistant. Story IDs are retained from the project notes, including the gap between US29 and US34.
 
-*{More to be added}*
+#### Student information
+
+| ID | Priority | As a/an … | I want to … | So that … |
+|----|----------|--------|-------------|----------------|
+| US01 | `* * *` | TA | add a student under my care | I can keep information about them throughout the semester |
+| US02 | `* * *` | TA | view a student's information | I can quickly recall who the student is |
+| US03 | `* * *` | TA | update a student's information | my records remain accurate when circumstances change |
+| US04 | `* * *` | TA | remove a student who is no longer under my care | my records remain relevant |
+| US05 | `* * *` | TA handling multiple tutorial groups | associate students with their tutorial groups | I can distinguish students from different classes |
+| US06 | `* * *` | TA | view students belonging to a particular tutorial group | I can prepare for that group's tutorial |
+| US07 | `* *` | TA who remembers only partial information about a student | search for students using information I remember | I can retrieve their records quickly |
+
+#### Student notes and interactions
+
+| ID | Priority | As a/an … | I want to … | So that … |
+|----|----------|--------|-------------|----------------|
+| US08 | `* * *` | TA | record notes about a student | I can remember important information about them later |
+| US09 | `* * *` | TA preparing to meet a student | view my previous notes about the student | I can provide support consistent with our earlier interactions |
+| US10 | `* *` | TA | record a consultation with a student | I can remember what we discussed |
+| US11 | `* *` | TA | view a student's past interactions chronologically | I can understand how their situation has developed over the semester |
+| US12 | `* * *` | TA who made an incorrect note | edit or remove the note | misleading information does not remain in the student's record |
+| US13 | `* *` | busy TA | quickly record a short observation about a student during or immediately after class | I do not forget it before recording it later |
+
+#### Learning progress
+
+| ID | Priority | As a/an … | I want to … | So that … |
+|----|----------|--------|-------------|----------------|
+| US14 | `* *` | TA | record topics that a student is struggling with | I know where the student may need additional support |
+| US15 | `* *` | TA | record topics that a student has improved in | I can track their learning progress over time |
+| US16 | `* *` | TA preparing for a consultation | view a student's learning progress | I can tailor the consultation to their needs |
+| US17 | `* *` | TA preparing a tutorial | see which topics students in my class are commonly struggling with | I can spend more time addressing those areas |
+| US18 | `* *` | TA | update a student's progress for a topic | the student's record reflects their current level of understanding |
+
+#### Follow-up tasks with students
+
+| ID | Priority | As a/an … | I want to … | So that … |
+|----|----------|--------|-------------|----------------|
+| US19 | `* *` | TA | record a follow-up action associated with a student | I do not forget things I need to do for them |
+| US20 | `* *` | TA | view my outstanding follow-ups | I know which students still require my attention |
+| US21 | `* *` | TA | mark a follow-up as completed | I can distinguish finished tasks from those still requiring action |
+| US22 | `* *` | TA handling many students | see which students currently require follow-up | nobody accidentally gets overlooked |
+| US23 | `* *` | TA | associate a follow-up with a deadline | I know which matters should be handled first |
+| US24 | `* *` | TA | view overdue follow-ups | I can address things I have failed to complete on time |
+
+#### Attendance and participation
+
+| ID | Priority | As a/an … | I want to … | So that … |
+|----|----------|--------|-------------|----------------|
+| US25 | `* *` | TA | record a student's tutorial attendance | I can keep track of whether they have been attending classes |
+| US26 | `* *` | TA | record a student's participation in tutorials | I can remember how actively they have been engaging in class |
+| US27 | `* *` | TA | view a student's attendance history | I can notice repeated absences |
+| US28 | `* *` | TA | identify students whom I have had little interaction with | I can make an effort to engage them |
+| US29 | `* *` | TA preparing for a tutorial | see students who have recently missed tutorials | I am aware that they may need additional support |
+
+#### Finding and organising information
+
+| ID | Priority | As a/an … | I want to … | So that … |
+|----|----------|--------|-------------|----------------|
+| US34 | `* * *` | TA in a hurry | quickly find a student by name | I can access their information without interrupting my workflow |
+| US35 | `* *` | TA with many students | filter students based on information relevant to my current task | I only see the students I need to focus on |
+| US36 | `* *` | TA | view students who need my attention | I can prioritize whom to follow up with |
+| US37 | `* *` | TA | organize students using meaningful categories | I can retrieve groups of related students easily |
+| US38 | `* *` | experienced user | perform common operations efficiently | managing student information does not distract me from teaching |
 
 ### Use cases
 
-(For all use cases below, the **System** is the `AddressBook` and the **Actor** is the `user`, unless specified otherwise)
+(For all use cases below, the **System** is the `TeachAssist` and the **Actor** is the `Teaching Assistant`, unless specified otherwise)
 
-**Use case: Delete a person**
-
-**MSS**
-
-1.  User requests to list persons
-2.  AddressBook shows a list of persons
-3.  User requests to delete a specific person in the list
-4.  AddressBook deletes the person
-
-    Use case ends.
+Use case: UC01 - Add a Student
+MSS:
+1. TA enters command to add a student with name, student ID, email, and optional remarks.
+2. TeachAssist validates the student details and checks for duplicate student IDs.
+3. TeachAssist saves the student record to the data file.
+4. TeachAssist displays a confirmation message and updates the student list.
+   Use case ends.
 
 **Extensions**
+* 1a. The command format is invalid or required parameters are missing or empty.
+* 1a1. TeachAssist shows an error message indicating the invalid format or missing parameter.
+* Use case ends.
+* 2a. One or more field values are invalid (e.g., malformed student ID, invalid email format, or invalid name characters).
+* 2a1. TeachAssist shows an error message indicating the invalid field value.
+* Use case ends.
+* 2b. A student with the given student ID already exists in TeachAssist.
+* 2b1. TeachAssist shows an error message indicating that the student ID already exists.
+* Use case ends.
+* 3a. Saving data to the file fails.
+* 3a1. TeachAssist shows an error message indicating that it is unable to save student data.
+* 3a2. TeachAssist does not modify the existing student records.
+* Use case ends.
 
-* 2a. The list is empty.
+---
 
-  Use case ends.
+Use case: UC02 - Find a Student
+MSS:
+1. TA enters a search command specifying a name, student ID, or email query.
+2. TeachAssist searches existing records for matches.
+3. TeachAssist displays the list of matching student records and the count of results.
+   Use case ends.
 
-* 3a. The given index is invalid.
+**Extensions**
+* 1a. The command contains no search parameters, multiple search parameters, or empty query fields.
+* 1a1. TeachAssist shows an error message explaining the correct find format.
+* Use case ends.
+* 1b. The search query contains invalid characters.
+* 1b1. TeachAssist shows an error message indicating invalid characters in the query.
+* Use case ends.
+* 2a. No student records match the search query.
+* 2a1. TeachAssist displays a message indicating no matching students were found.
+* 2a2. TeachAssist clears the displayed student list.
+* Use case ends.
 
-    * 3a1. AddressBook shows an error message.
+---
 
-      Use case resumes at step 2.
+Use case: UC03 - Label Student by Group
+MSS:
+1. TA enters command to assign a group label to a specific student ID.
+2. TeachAssist verifies that the student exists and does not already have the label.
+3. TeachAssist associates the label with the student and saves the updated data file.
+4. TeachAssist displays a success message and updates the student's display card.
+   Use case ends.
 
-*{More to be added}*
+**Extensions**
+* 1a. Required parameters are missing, empty, or improperly formatted.
+* 1a1. TeachAssist shows an error message indicating the missing or invalid parameter.
+* Use case ends.
+* 1b. The label name contains disallowed characters (e.g., '/' or ASCII control characters).
+* 1b1. TeachAssist shows an error message indicating that the label name contains disallowed characters.
+* Use case ends.
+* 2a. No student with the specified student ID exists in the records.
+* 2a1. TeachAssist shows an error message stating the student is not in the records.
+* Use case ends.
+* 2b. The student already has the specified group label.
+* 2b1. TeachAssist shows an error message stating that the student already has the label.
+* Use case ends.
+* 3a. Saving data to the file fails.
+* 3a1. TeachAssist shows an error message indicating that it is unable to save student data.
+* 3a2. TeachAssist does not modify the student record.
+* Use case ends.
+
+---
+
+Use case: UC04 - Filter Students by Group Label
+MSS:
+1. TA enters command to filter students by a specific group label.
+2. TeachAssist scans stored records for matching group labels.
+3. TeachAssist displays only the students belonging to that group label.
+   Use case ends.
+
+**Extensions**
+* 1a. The group label parameter is missing or empty.
+* 1a1. TeachAssist shows an error message indicating the missing or empty parameter.
+* Use case ends.
+* 1b. Multiple label parameters are provided.
+* 1b1. TeachAssist shows an error message indicating that the parameter must be specified only once.
+* Use case ends.
+* 2a. No students have the specified group label.
+* 2a1. TeachAssist displays a message indicating no students were found with that label.
+* 2a2. TeachAssist clears the displayed student list.
+* Use case ends.
+
+---
+
+Use case: UC05 - Delete a Student
+MSS:
+1. TA enters command to delete a student using their student ID.
+2. TeachAssist verifies that the student exists in the records.
+3. TeachAssist removes the student record and saves the changes to the data file.
+4. TeachAssist displays a confirmation message and updates the student list.
+   Use case ends.
+
+**Extensions**
+* 1a. The student ID parameter is missing, empty, or improperly formatted.
+* 1a1. TeachAssist shows an error message specifying the invalid parameter or usage format.
+* Use case ends.
+* 2a. No student with the specified student ID exists in the records.
+* 2a1. TeachAssist shows an error message stating that the student is not in the records.
+* Use case ends.
+* 3a. Saving data to the file fails.
+* 3a1. TeachAssist shows an error message indicating that it is unable to save student data.
+* 3a2. TeachAssist retains the student record without deleting it.
+* Use case ends.
 
 ### Non-Functional Requirements
 
@@ -336,57 +479,3 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * **Mainstream OS**: Windows, Linux, Unix, or macOS
 * **Private contact detail**: A contact detail that is not meant to be shared with others
 
---------------------------------------------------------------------------------------------------------------------
-
-## **Appendix: Instructions for manual testing**
-
-Given below are instructions to test the app manually.
-
-<box type="info" seamless>
-
-**Note:** These instructions only provide a starting point for testers to work on;
-testers are expected to do more *exploratory* testing.
-</box>
-
-### Launch and shutdown
-
-1. Initial launch
-
-   1. Download the JAR file and copy it into an empty folder.
-
-   1. Double-click the JAR file.<br>
-      Expected: The GUI opens with a set of sample contacts. The window size may not be optimal.
-
-1. Saving window preferences
-
-   1. Resize the window to an optimal size. Move the window to a different location. Close the window.
-
-   1. Relaunch the app by double-clicking the JAR file.<br>
-       Expected: The most recent window size and location are retained.
-
-1. _{ more test cases … }_
-
-### Deleting a person
-
-1. Deleting a person while all persons are being shown
-
-   1. Prerequisites: List all persons using the `list` command, with multiple persons in the list.
-
-   1. Test case: `delete 1`<br>
-      Expected: The first contact is deleted from the list. The status message shows the deleted contact's details.
-
-   1. Test case: `delete 0`<br>
-      Expected: No person is deleted. The status message shows error details.
-
-   1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
-      Expected: Similar to previous.
-
-1. _{ more test cases … }_
-
-### Saving data
-
-1. Dealing with missing/corrupted data files
-
-   1. _{Explain how to simulate missing or corrupted data files and state the expected behavior.}_
-
-1. _{ more test cases … }_
