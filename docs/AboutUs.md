@@ -11,51 +11,50 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 ## Project team
 
-### John Doe
+### Samuel Lau 
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/sammeowwww.png" width="200px">
 
-[[homepage](http://www.comp.nus.edu.sg/~damithch)]
-[[github](https://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
+[[github](https://github.com/sammeowwww)]
+[[portfolio](team/sammeowwww.md)]
 
 * Role: Project Advisor
 
-### Jane Doe
+### Ananya Kharbanda
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/ananyakharbanda.png" width="200px">
 
-[[github](http://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
+[[github](http://github.com/ananyakharbanda)]
+[[portfolio](team/ananyakharbanda.md)]
 
-* Role: Team Lead
-* Responsibilities: UI
+* Role: Developer 
+* Responsibilities: Dev Ops + Threading
 
-### Johnny Doe
+### Bryan Lee Jun You
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/8ryanl33.jpg" width="200px">
 
-[[github](http://github.com/johndoe)] [[portfolio](team/johndoe.md)]
+[[github](http://github.com/8ryanl33)] [[portfolio](team/8ryanl33.md)]
 
 * Role: Developer
 * Responsibilities: Data
 
-### Jean Doe
+### Gou Guan Lin
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/amberrrruby.png" width="200px">
 
-[[github](http://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
-
-* Role: Developer
-* Responsibilities: Dev Ops + Threading
-
-### James Doe
-
-<img src="images/johndoe.png" width="200px">
-
-[[github](http://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
+[[github](http://github.com/amberrrruby)]
+[[portfolio](team/amberrrruby.md)]
 
 * Role: Developer
-* Responsibilities: UI
+* Responsibilities: *(to be added)*
+
+### Tristan Tay
+
+<img src="images/darealtristan.png" width="200px">
+
+[[github](http://github.com/DaRealTristan)]
+[[portfolio](team/darealtristan.md)]
+
+* Role: Code Quality
+* Responsibilities: Storage
