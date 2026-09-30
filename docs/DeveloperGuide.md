@@ -4,7 +4,7 @@
   pageNav: 3
 ---
 
-# AB-3 Developer Guide
+# TeachAssist Developer Guide
 
 <!-- * Table of Contents -->
 <page-nav-print />
@@ -270,29 +270,82 @@ _{Explain here how the data archiving feature will be implemented}_
 
 **Target user profile**:
 
-* has a need to manage a significant number of contacts
-* prefers desktop apps over other types of applications
-* can type fast
-* prefers typing to mouse interactions
-* is reasonably comfortable using CLI apps
+TeachAssist is for teaching assistants (TAs) who support a fixed group of undergraduate students through weekly tutorials and consultations throughout a semester. They need to retrieve and update student information quickly while handling teaching, assessment, and follow-up tasks.
 
-**Value proposition**: Manage contacts faster than with a typical mouse-driven GUI application.
+**Value proposition**: Help teaching assistants organise student information and learning progress so they can remember individual students' needs and provide consistent, targeted support throughout the semester.
 
+TeachAssist supports the management of student information, learning progress, interactions, and follow-up needs. It does not aim to replace a learning management system (LMS) for distributing teaching materials, conducting assessments, calculating official grades, or communicating directly with students.
 
 ### User stories
+Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`.
 
-Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`
+High-priority stories cover the agreed MVP, including finding students by name. Medium-priority stories capture other requirements considered by the team; they are not commitments for the MVP or final product. No stories are currently assigned low priority. These are product requirements, not a list of implemented features.
 
-| Priority | As a …                                    | I want to …                 | So that I can…                                                        |
-|----------|--------------------------------------------|------------------------------|------------------------------------------------------------------------|
-| `* * *`  | new user                                   | see usage instructions       | refer to instructions when I forget how to use the App                 |
-| `* * *`  | user                                       | add a new person             |                                                                        |
-| `* * *`  | user                                       | delete a person              | remove entries that I no longer need                                   |
-| `* * *`  | user                                       | find a person by name        | locate details of persons without having to go through the entire list |
-| `* *`    | user                                       | hide private contact details | minimize chance of someone else seeing them by accident                |
-| `*`      | user with many persons in the address book | sort persons by name         | locate a person easily                                                 |
+TA refers to a teaching assistant. Story IDs are retained from the project notes, including the gap between US29 and US34.
 
-*{More to be added}*
+#### Student information
+
+| ID | Priority | As a/an … | I want to … | So that … |
+|----|----------|--------|-------------|----------------|
+| US01 | `* * *` | TA | add a student under my care | I can keep information about them throughout the semester |
+| US02 | `* * *` | TA | view a student's information | I can quickly recall who the student is |
+| US03 | `* * *` | TA | update a student's information | my records remain accurate when circumstances change |
+| US04 | `* * *` | TA | remove a student who is no longer under my care | my records remain relevant |
+| US05 | `* * *` | TA handling multiple tutorial groups | associate students with their tutorial groups | I can distinguish students from different classes |
+| US06 | `* * *` | TA | view students belonging to a particular tutorial group | I can prepare for that group's tutorial |
+| US07 | `* *` | TA who remembers only partial information about a student | search for students using information I remember | I can retrieve their records quickly |
+
+#### Student notes and interactions
+
+| ID | Priority | As a/an … | I want to … | So that … |
+|----|----------|--------|-------------|----------------|
+| US08 | `* * *` | TA | record notes about a student | I can remember important information about them later |
+| US09 | `* * *` | TA preparing to meet a student | view my previous notes about the student | I can provide support consistent with our earlier interactions |
+| US10 | `* *` | TA | record a consultation with a student | I can remember what we discussed |
+| US11 | `* *` | TA | view a student's past interactions chronologically | I can understand how their situation has developed over the semester |
+| US12 | `* * *` | TA who made an incorrect note | edit or remove the note | misleading information does not remain in the student's record |
+| US13 | `* *` | busy TA | quickly record a short observation about a student during or immediately after class | I do not forget it before recording it later |
+
+#### Learning progress
+
+| ID | Priority | As a/an … | I want to … | So that … |
+|----|----------|--------|-------------|----------------|
+| US14 | `* *` | TA | record topics that a student is struggling with | I know where the student may need additional support |
+| US15 | `* *` | TA | record topics that a student has improved in | I can track their learning progress over time |
+| US16 | `* *` | TA preparing for a consultation | view a student's learning progress | I can tailor the consultation to their needs |
+| US17 | `* *` | TA preparing a tutorial | see which topics students in my class are commonly struggling with | I can spend more time addressing those areas |
+| US18 | `* *` | TA | update a student's progress for a topic | the student's record reflects their current level of understanding |
+
+#### Follow-up tasks with students
+
+| ID | Priority | As a/an … | I want to … | So that … |
+|----|----------|--------|-------------|----------------|
+| US19 | `* *` | TA | record a follow-up action associated with a student | I do not forget things I need to do for them |
+| US20 | `* *` | TA | view my outstanding follow-ups | I know which students still require my attention |
+| US21 | `* *` | TA | mark a follow-up as completed | I can distinguish finished tasks from those still requiring action |
+| US22 | `* *` | TA handling many students | see which students currently require follow-up | nobody accidentally gets overlooked |
+| US23 | `* *` | TA | associate a follow-up with a deadline | I know which matters should be handled first |
+| US24 | `* *` | TA | view overdue follow-ups | I can address things I have failed to complete on time |
+
+#### Attendance and participation
+
+| ID | Priority | As a/an … | I want to … | So that … |
+|----|----------|--------|-------------|----------------|
+| US25 | `* *` | TA | record a student's tutorial attendance | I can keep track of whether they have been attending classes |
+| US26 | `* *` | TA | record a student's participation in tutorials | I can remember how actively they have been engaging in class |
+| US27 | `* *` | TA | view a student's attendance history | I can notice repeated absences |
+| US28 | `* *` | TA | identify students whom I have had little interaction with | I can make an effort to engage them |
+| US29 | `* *` | TA preparing for a tutorial | see students who have recently missed tutorials | I am aware that they may need additional support |
+
+#### Finding and organising information
+
+| ID | Priority | As a/an … | I want to … | So that … |
+|----|----------|--------|-------------|----------------|
+| US34 | `* * *` | TA in a hurry | quickly find a student by name | I can access their information without interrupting my workflow |
+| US35 | `* *` | TA with many students | filter students based on information relevant to my current task | I only see the students I need to focus on |
+| US36 | `* *` | TA | view students who need my attention | I can prioritize whom to follow up with |
+| US37 | `* *` | TA | organize students using meaningful categories | I can retrieve groups of related students easily |
+| US38 | `* *` | experienced user | perform common operations efficiently | managing student information does not distract me from teaching |
 
 ### Use cases
 
@@ -426,57 +479,3 @@ MSS:
 * **Mainstream OS**: Windows, Linux, Unix, or macOS
 * **Private contact detail**: A contact detail that is not meant to be shared with others
 
---------------------------------------------------------------------------------------------------------------------
-
-## **Appendix: Instructions for manual testing**
-
-Given below are instructions to test the app manually.
-
-<box type="info" seamless>
-
-**Note:** These instructions only provide a starting point for testers to work on;
-testers are expected to do more *exploratory* testing.
-</box>
-
-### Launch and shutdown
-
-1. Initial launch
-
-   1. Download the JAR file and copy it into an empty folder.
-
-   1. Double-click the JAR file.<br>
-      Expected: The GUI opens with a set of sample contacts. The window size may not be optimal.
-
-1. Saving window preferences
-
-   1. Resize the window to an optimal size. Move the window to a different location. Close the window.
-
-   1. Relaunch the app by double-clicking the JAR file.<br>
-       Expected: The most recent window size and location are retained.
-
-1. _{ more test cases … }_
-
-### Deleting a person
-
-1. Deleting a person while all persons are being shown
-
-   1. Prerequisites: List all persons using the `list` command, with multiple persons in the list.
-
-   1. Test case: `delete 1`<br>
-      Expected: The first contact is deleted from the list. The status message shows the deleted contact's details.
-
-   1. Test case: `delete 0`<br>
-      Expected: No person is deleted. The status message shows error details.
-
-   1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
-      Expected: Similar to previous.
-
-1. _{ more test cases … }_
-
-### Saving data
-
-1. Dealing with missing/corrupted data files
-
-   1. _{Explain how to simulate missing or corrupted data files and state the expected behavior.}_
-
-1. _{ more test cases … }_

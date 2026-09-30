@@ -1,14 +1,84 @@
-[![CI Status](https://github.com/se-edu/addressbook-level3/workflows/Java%20CI/badge.svg)](https://github.com/se-edu/addressbook-level3/actions)
+# TeachAssist
 
-![Ui](docs/images/Ui.png)
+[![CI Status](https://github.com/AY2627S1-CS2103T-F12-1/tp/workflows/Java%20CI/badge.svg)](https://github.com/AY2627S1-CS2103T-F12-1/tp/actions)
 
-* This is **a sample project for Software Engineering (SE) students**.<br>
-  Example usages:
-  * as a starting point of a course project (as opposed to writing everything from scratch)
-  * as a case study
-* The project simulates an ongoing software project for a desktop application (called _AddressBook_) used for managing contact details.
-  * It is **written in an object-oriented programming (OOP) style** and provides a **reasonably well-written** codebase of about 6 KLoC. It is **larger** than what students typically write in beginner-level software-engineering modules, without being overwhelming.
-  * It comes with a **reasonable level of user and developer documentation**.
-* It is named `AddressBook Level 3` (`AB3` for short) because it was initially created as a part of a series of `AddressBook` projects (`Level 1`, `Level 2`, `Level 3` ...).
-* For the detailed documentation of this project, see the **[Address Book Product Website](https://se-education.org/addressbook-level3)**.
-* This project is a **part of the se-education.org** initiative. If you would like to contribute code to this project, see [se-education.org](https://se-education.org/#contributing-to-se-edu) for more info.
+![TeachAssist UI](docs/images/Ui.png)
+
+## About TeachAssist
+
+TeachAssist is a desktop application that helps Teaching Assistants manage information about the students under their care.
+
+Teaching Assistants often need to recall students' names, tutorial groups, learning difficulties, previous interactions, and matters requiring follow-up. TeachAssist keeps this information in one place so that TAs can retrieve and update it quickly while preparing for tutorials or consultations.
+
+TeachAssist is designed for users who prefer a fast, keyboard-driven command-line interface while still benefiting from a graphical overview of their student records.
+
+## Target users
+
+TeachAssist is intended for Teaching Assistants who:
+
+* support one or more fixed groups of students throughout a semester
+* conduct tutorials or consultations regularly
+* need to retrieve student information quickly
+* want to keep track of learning difficulties and follow-up matters
+
+## Main features
+
+TeachAssist allows users to:
+
+* add and remove student records
+* view all students and their information
+* find students by name, student ID, or email
+* record additional information as free-text remarks
+* assign tutorial-group labels to students
+* filter students according to their tutorial groups
+* save student records automatically between sessions
+
+Remarks can be used to record information such as learning difficulties, consultation details, assessment progress, or intended follow-up actions.
+
+## Example commands
+
+Add a student:
+
+```text
+add n/Samuel Tan i/A0123456B e/samuel@example.com r/Struggles with recursion
+```
+
+Find a student:
+
+```text
+find n/Samuel
+```
+
+Assign a tutorial-group label:
+
+```text
+label l/Tutorial T01 i/A0123456B
+```
+
+Display students from a tutorial group:
+
+```text
+filter l/Tutorial T01
+```
+
+Display the complete student list:
+
+```text
+list
+```
+
+## Project scope
+
+TeachAssist focuses on organising student records for a TA's personal teaching workflow.
+
+It is not intended to replace a Learning Management System for distributing course materials, conducting assessments, calculating official grades, or communicating directly with students.
+
+## Documentation
+
+* [User Guide](docs/UserGuide.md)
+* [Developer Guide](docs/DeveloperGuide.md)
+* [About Us](docs/AboutUs.md)
+
+## Acknowledgements
+
+TeachAssist is based on the [AddressBook Level 3](https://se-education.org/addressbook-level3/) project created by the [SE-EDU initiative](https://se-education.org).
