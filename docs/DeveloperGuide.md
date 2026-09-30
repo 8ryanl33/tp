@@ -277,7 +277,6 @@ TeachAssist is for teaching assistants (TAs) who support a fixed group of underg
 TeachAssist supports the management of student information, learning progress, interactions, and follow-up needs. It does not aim to replace a learning management system (LMS) for distributing teaching materials, conducting assessments, calculating official grades, or communicating directly with students.
 
 ### User stories
-
 Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`.
 
 High-priority stories cover the agreed MVP, including finding students by name. Medium-priority stories capture other requirements considered by the team; they are not commitments for the MVP or final product. No stories are currently assigned low priority. These are product requirements, not a list of implemented features.
@@ -347,6 +346,133 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 | US36 | `* *` | TA | view students who need my attention | I can prioritize whom to follow up with |
 | US37 | `* *` | TA | organize students using meaningful categories | I can retrieve groups of related students easily |
 | US38 | `* *` | experienced user | perform common operations efficiently | managing student information does not distract me from teaching |
+
+### Use cases
+
+(For all use cases below, the **System** is the `TeachAssist` and the **Actor** is the `Teaching Assistant`, unless specified otherwise)
+
+Use case: UC01 - Add a Student
+MSS:
+1. TA enters command to add a student with name, student ID, email, and optional remarks.
+2. TeachAssist validates the student details and checks for duplicate student IDs.
+3. TeachAssist saves the student record to the data file.
+4. TeachAssist displays a confirmation message and updates the student list.
+   Use case ends.
+
+**Extensions**
+* 1a. The command format is invalid or required parameters are missing or empty.
+* 1a1. TeachAssist shows an error message indicating the invalid format or missing parameter.
+* Use case ends.
+* 2a. One or more field values are invalid (e.g., malformed student ID, invalid email format, or invalid name characters).
+* 2a1. TeachAssist shows an error message indicating the invalid field value.
+* Use case ends.
+* 2b. A student with the given student ID already exists in TeachAssist.
+* 2b1. TeachAssist shows an error message indicating that the student ID already exists.
+* Use case ends.
+* 3a. Saving data to the file fails.
+* 3a1. TeachAssist shows an error message indicating that it is unable to save student data.
+* 3a2. TeachAssist does not modify the existing student records.
+* Use case ends.
+
+---
+
+Use case: UC02 - Find a Student
+MSS:
+1. TA enters a search command specifying a name, student ID, or email query.
+2. TeachAssist searches existing records for matches.
+3. TeachAssist displays the list of matching student records and the count of results.
+   Use case ends.
+
+**Extensions**
+* 1a. The command contains no search parameters, multiple search parameters, or empty query fields.
+* 1a1. TeachAssist shows an error message explaining the correct find format.
+* Use case ends.
+* 1b. The search query contains invalid characters.
+* 1b1. TeachAssist shows an error message indicating invalid characters in the query.
+* Use case ends.
+* 2a. No student records match the search query.
+* 2a1. TeachAssist displays a message indicating no matching students were found.
+* 2a2. TeachAssist clears the displayed student list.
+* Use case ends.
+
+---
+
+Use case: UC03 - Label Student by Group
+MSS:
+1. TA enters command to assign a group label to a specific student ID.
+2. TeachAssist verifies that the student exists and does not already have the label.
+3. TeachAssist associates the label with the student and saves the updated data file.
+4. TeachAssist displays a success message and updates the student's display card.
+   Use case ends.
+
+**Extensions**
+* 1a. Required parameters are missing, empty, or improperly formatted.
+* 1a1. TeachAssist shows an error message indicating the missing or invalid parameter.
+* Use case ends.
+* 1b. The label name contains disallowed characters (e.g., '/' or ASCII control characters).
+* 1b1. TeachAssist shows an error message indicating that the label name contains disallowed characters.
+* Use case ends.
+* 2a. No student with the specified student ID exists in the records.
+* 2a1. TeachAssist shows an error message stating the student is not in the records.
+* Use case ends.
+* 2b. The student already has the specified group label.
+* 2b1. TeachAssist shows an error message stating that the student already has the label.
+* Use case ends.
+* 3a. Saving data to the file fails.
+* 3a1. TeachAssist shows an error message indicating that it is unable to save student data.
+* 3a2. TeachAssist does not modify the student record.
+* Use case ends.
+
+---
+
+Use case: UC04 - Filter Students by Group Label
+MSS:
+1. TA enters command to filter students by a specific group label.
+2. TeachAssist scans stored records for matching group labels.
+3. TeachAssist displays only the students belonging to that group label.
+   Use case ends.
+
+**Extensions**
+* 1a. The group label parameter is missing or empty.
+* 1a1. TeachAssist shows an error message indicating the missing or empty parameter.
+* Use case ends.
+* 1b. Multiple label parameters are provided.
+* 1b1. TeachAssist shows an error message indicating that the parameter must be specified only once.
+* Use case ends.
+* 2a. No students have the specified group label.
+* 2a1. TeachAssist displays a message indicating no students were found with that label.
+* 2a2. TeachAssist clears the displayed student list.
+* Use case ends.
+
+---
+
+Use case: UC05 - Delete a Student
+MSS:
+1. TA enters command to delete a student using their student ID.
+2. TeachAssist verifies that the student exists in the records.
+3. TeachAssist removes the student record and saves the changes to the data file.
+4. TeachAssist displays a confirmation message and updates the student list.
+   Use case ends.
+
+**Extensions**
+* 1a. The student ID parameter is missing, empty, or improperly formatted.
+* 1a1. TeachAssist shows an error message specifying the invalid parameter or usage format.
+* Use case ends.
+* 2a. No student with the specified student ID exists in the records.
+* 2a1. TeachAssist shows an error message stating that the student is not in the records.
+* Use case ends.
+* 3a. Saving data to the file fails.
+* 3a1. TeachAssist shows an error message indicating that it is unable to save student data.
+* 3a2. TeachAssist retains the student record without deleting it.
+* Use case ends.
+
+### Non-Functional Requirements
+
+1.  Should work on any _mainstream OS_ as long as it has Java `25` or above installed.
+2.  Should be able to hold up to 1000 persons without noticeable sluggishness in performance for typical usage.
+3.  A user with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
+
+*{More to be added}*
 
 ### Glossary
 
