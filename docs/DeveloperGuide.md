@@ -348,7 +348,6 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 | US37 | `* *` | TA | organize students using meaningful categories | I can retrieve groups of related students easily |
 | US38 | `* *` | experienced user | perform common operations efficiently | managing student information does not distract me from teaching |
 
-
 ### Glossary
 
 * **Mainstream OS**: Windows, Linux, Unix, or macOS
