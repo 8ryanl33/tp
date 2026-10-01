@@ -32,7 +32,7 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 ### Bryan Lee Jun You
 
-<img src="images/8ryanl33.jpg" width="200px">
+<img src="images/8ryanl33.png" width="200px">
 
 [[github](http://github.com/8ryanl33)] [[portfolio](team/8ryanl33.md)]
 
