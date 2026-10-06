@@ -24,25 +24,38 @@ public class Person {
 
     // Data fields
     private final Address address;
+    private final Remark remark;
     private final Set<Tag> tags = new HashSet<>();
 
     /**
-     * Every field must be present and not null.
+     * Constructs a person with the default student ID and an empty remark.
+     * Every supplied field must be present and not null.
      */
     public Person(Name name, Phone phone, Email email, Address address, Set<Tag> tags) {
         this(name, new StudentId("A0000000A"), phone, email, address, tags);
     }
 
     /**
-     * Every field must be present and not null.
+     * Constructs a person with an empty remark.
+     * Every supplied field must be present and not null.
      */
     public Person(Name name, StudentId studentId, Phone phone, Email email, Address address, Set<Tag> tags) {
-        requireAllNonNull(name, studentId, phone, email, address, tags);
+        this(name, studentId, phone, email, address, tags, new Remark(""));
+    }
+
+    /**
+     * Constructs a person with the supplied details and remark.
+     * Every field must be present and not null.
+     */
+    public Person(Name name, StudentId studentId, Phone phone, Email email, Address address,
+            Set<Tag> tags, Remark remark) {
+        requireAllNonNull(name, studentId, phone, email, address, tags, remark);
         this.name = name;
         this.studentId = studentId;
         this.phone = phone;
         this.email = email;
         this.address = address;
+        this.remark = remark;
         this.tags.addAll(tags);
     }
 
@@ -64,6 +77,10 @@ public class Person {
 
     public Address getAddress() {
         return address;
+    }
+
+    public Remark getRemark() {
+        return remark;
     }
 
     /**
@@ -107,13 +124,14 @@ public class Person {
                 && phone.equals(otherPerson.phone)
                 && email.equals(otherPerson.email)
                 && address.equals(otherPerson.address)
+                && remark.equals(otherPerson.remark)
                 && tags.equals(otherPerson.tags);
     }
 
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, studentId, phone, email, address, tags);
+        return Objects.hash(name, studentId, phone, email, address, tags, remark);
     }
 
     @Override
@@ -125,6 +143,7 @@ public class Person {
                 .add("email", email)
                 .add("address", address)
                 .add("tags", tags)
+                .add("remark", remark)
                 .toString();
     }
 
