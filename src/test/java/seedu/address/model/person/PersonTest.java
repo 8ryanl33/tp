@@ -19,6 +19,8 @@ import seedu.address.testutil.PersonBuilder;
 
 public class PersonTest {
 
+    private static final String VALID_STUDENT_ID_OTHER_BOB = "C0123456D";
+
     @Test
     public void asObservableList_modifyList_throwsUnsupportedOperationException() {
         Person person = new PersonBuilder().build();
@@ -43,12 +45,13 @@ public class PersonTest {
         assertFalse(ALICE.isSamePerson(editedAlice));
 
         // student ID differs in case, all other attributes same -> returns true
-        Person editedBob = new PersonBuilder(BOB).withStudentId(BOB.getStudentId().toString().toLowerCase()).build();
-        assertTrue(BOB.isSamePerson(editedBob));
+        // Used to be `editedBob`, edited to express intent better
+        Person anotherPersonBob = new PersonBuilder(BOB).withStudentId(BOB.getStudentId().toString().toLowerCase()).build();
+        assertTrue(BOB.isSamePerson(anotherPersonBob));
 
         // same name, different student ID -> returns false
-        editedBob = new PersonBuilder(BOB).withStudentId(VALID_STUDENT_ID_BOB).build();
-        assertFalse(BOB.isSamePerson(editedBob));
+        anotherPersonBob = new PersonBuilder(BOB).withStudentId(VALID_STUDENT_ID_OTHER_BOB).build();
+        assertFalse(BOB.isSamePerson(anotherPersonBob));
     }
 
     @Test
