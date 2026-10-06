@@ -100,11 +100,43 @@ public class PersonTest {
     }
 
     @Test
+    public void constructor_withoutRemark_defaultsToEmptyRemark() {
+        assertEquals(new Remark(""), ALICE.getRemark());
+        Person legacyPerson = new Person(ALICE.getName(), ALICE.getPhone(), ALICE.getEmail(),
+                ALICE.getAddress(), ALICE.getTags());
+        assertEquals(new StudentId("A0000000A"), legacyPerson.getStudentId());
+        assertEquals(new Remark(""), legacyPerson.getRemark());
+    }
+
+    @Test
+    public void constructor_nullRemark_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> withRemark(ALICE, null));
+    }
+
+    @Test
+    public void equals_differentRemark_returnsFalseButSamePerson() {
+        Person remarkedAlice = withRemark(ALICE, new Remark("Needs help with recursion"));
+        assertEquals(new Remark("Needs help with recursion"), remarkedAlice.getRemark());
+        assertFalse(ALICE.equals(remarkedAlice));
+        assertTrue(ALICE.isSamePerson(remarkedAlice));
+
+        Person remarkedAliceCopy = withRemark(ALICE, new Remark("Needs help with recursion"));
+        assertEquals(remarkedAlice, remarkedAliceCopy);
+        assertEquals(remarkedAlice.hashCode(), remarkedAliceCopy.hashCode());
+        assertTrue(remarkedAlice.toString().contains("remark=Needs help with recursion"));
+    }
+
+    private Person withRemark(Person person, Remark remark) {
+        return new Person(person.getName(), person.getStudentId(), person.getPhone(), person.getEmail(),
+                person.getAddress(), person.getTags(), remark);
+    }
+
+    @Test
     public void toStringMethod() {
         String expected = Person.class.getCanonicalName() + "{name=" + ALICE.getName()
                 + ", studentId=" + ALICE.getStudentId() + ", phone=" + ALICE.getPhone()
                 + ", email=" + ALICE.getEmail() + ", address=" + ALICE.getAddress()
-                + ", tags=" + ALICE.getTags() + "}";
+                + ", tags=" + ALICE.getTags() + ", remark=" + ALICE.getRemark() + "}";
         assertEquals(expected, ALICE.toString());
     }
 }
