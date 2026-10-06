@@ -2,14 +2,10 @@
   "persons": [ {
     "name": "Valid Person",
     "studentId": "A1234567B",
-    "phone": "9482424",
-    "email": "hans@example.com",
-    "address": "4th street"
+    "email": "hans@example.com"
   }, {
-    "name": "Person With Invalid Phone Field",
+    "name": "Person With Invalid Email Field",
     "studentId": "B1234567C",
-    "phone": "948asdf2424",
-    "email": "hans@example.com",
-    "address": "4th street"
+    "email": "invalid-email"
   } ]
 }
