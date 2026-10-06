@@ -32,6 +32,7 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_REMARK;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_STUDENT_ID;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
@@ -53,6 +54,41 @@ import seedu.address.testutil.PersonBuilder;
 
 public class AddCommandParserTest {
     private AddCommandParser parser = new AddCommandParser();
+
+    @Test
+    public void parse_remarkPresent_success() {
+        String remark = "Needs help with recursion: follow up next week!";
+        Person expectedPerson = new PersonBuilder(BOB).withRemark(remark).build();
+        String requiredFields = NAME_DESC_BOB + STUDENT_ID_DESC_BOB + PHONE_DESC_BOB
+                + EMAIL_DESC_BOB + ADDRESS_DESC_BOB;
+
+        assertParseSuccess(parser, requiredFields + " r/" + remark + TAG_DESC_FRIEND + TAG_DESC_HUSBAND,
+                new AddCommand(expectedPerson));
+        assertParseSuccess(parser, " r/" + remark + requiredFields + TAG_DESC_FRIEND + TAG_DESC_HUSBAND,
+                new AddCommand(expectedPerson));
+    }
+
+    @Test
+    public void parse_remarkEmptyOrMissing_success() {
+        Person expectedPerson = new PersonBuilder(BOB).withTags().withRemark("").build();
+        String requiredFields = NAME_DESC_BOB + STUDENT_ID_DESC_BOB + PHONE_DESC_BOB
+                + EMAIL_DESC_BOB + ADDRESS_DESC_BOB;
+
+        assertParseSuccess(parser, requiredFields, new AddCommand(expectedPerson));
+        assertParseSuccess(parser, requiredFields + " r/", new AddCommand(expectedPerson));
+        assertParseSuccess(parser, requiredFields + " r/   ", new AddCommand(expectedPerson));
+    }
+
+    @Test
+    public void parse_repeatedRemark_failure() {
+        String requiredFields = NAME_DESC_BOB + STUDENT_ID_DESC_BOB + PHONE_DESC_BOB
+                + EMAIL_DESC_BOB + ADDRESS_DESC_BOB;
+
+        assertParseFailure(parser, requiredFields + " r/First r/Second",
+                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_REMARK));
+        assertParseFailure(parser, requiredFields + " r/ r/Second",
+                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_REMARK));
+    }
 
     @Test
     public void parse_allFieldsPresent_success() {
