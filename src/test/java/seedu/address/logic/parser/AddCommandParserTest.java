@@ -48,12 +48,24 @@ import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.Remark;
 import seedu.address.model.person.StudentId;
 import seedu.address.model.tag.Tag;
 import seedu.address.testutil.PersonBuilder;
 
 public class AddCommandParserTest {
     private AddCommandParser parser = new AddCommandParser();
+
+    @Test
+    public void parse_remarkLengthBoundary_validatesLimit() {
+        String requiredFields = NAME_DESC_BOB + STUDENT_ID_DESC_BOB + PHONE_DESC_BOB
+                + EMAIL_DESC_BOB + ADDRESS_DESC_BOB;
+        String atLimit = "x".repeat(Remark.MAX_LENGTH);
+        Person expectedPerson = new PersonBuilder(BOB).withTags().withRemark(atLimit).build();
+
+        assertParseSuccess(parser, requiredFields + " r/" + atLimit, new AddCommand(expectedPerson));
+        assertParseFailure(parser, requiredFields + " r/" + atLimit + "x", Remark.MESSAGE_CONSTRAINTS);
+    }
 
     @Test
     public void parse_remarkPresent_success() {

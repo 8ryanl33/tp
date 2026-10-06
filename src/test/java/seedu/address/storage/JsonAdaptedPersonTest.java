@@ -19,6 +19,7 @@ import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.Remark;
 import seedu.address.model.person.StudentId;
 import seedu.address.testutil.PersonBuilder;
 
@@ -38,6 +39,21 @@ public class JsonAdaptedPersonTest {
     private static final List<JsonAdaptedTag> VALID_TAGS = BENSON.getTags().stream()
             .map(JsonAdaptedTag::new)
             .collect(Collectors.toList());
+
+    @Test
+    public void toModelType_oversizedRemark_throwsIllegalValueException() {
+        JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID, VALID_PHONE,
+                VALID_EMAIL, VALID_ADDRESS, VALID_TAGS, "x".repeat(Remark.MAX_LENGTH + 1));
+        assertThrows(IllegalValueException.class, Remark.MESSAGE_CONSTRAINTS, person::toModelType);
+    }
+
+    @Test
+    public void jsonAdaptedPerson_maximumLengthRemark_roundTripPreservesText() throws Exception {
+        Person original = new PersonBuilder(BENSON).withRemark("x".repeat(Remark.MAX_LENGTH)).build();
+        String json = JsonUtil.toJsonString(new JsonAdaptedPerson(original));
+        JsonAdaptedPerson restored = JsonUtil.fromJsonString(json, JsonAdaptedPerson.class);
+        assertEquals(original, restored.toModelType());
+    }
 
     @Test
     public void jsonAdaptedPerson_remark_roundTripPreservesText() throws Exception {

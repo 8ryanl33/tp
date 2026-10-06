@@ -9,6 +9,24 @@ import org.junit.jupiter.api.Test;
 
 public class RemarkTest {
     @Test
+    public void constructor_lengthBoundary_acceptsLimitAndRejectsOverflow() {
+        String atLimit = "x".repeat(Remark.MAX_LENGTH);
+        assertEquals(atLimit, new Remark(atLimit).value);
+        assertThrows(IllegalArgumentException.class, Remark.MESSAGE_CONSTRAINTS, () ->
+                new Remark(atLimit + "x"));
+    }
+
+    @Test
+    public void isValidRemark_unicode_countsCodePoints() {
+        String atLimit = "\uD83D\uDE00".repeat(Remark.MAX_LENGTH);
+        assertTrue(Remark.isValidRemark(atLimit));
+        assertEquals(atLimit, new Remark(atLimit).value);
+        assertFalse(Remark.isValidRemark(atLimit + "x"));
+        assertTrue(Remark.isValidRemark(""));
+        assertThrows(NullPointerException.class, () -> Remark.isValidRemark(null));
+    }
+
+    @Test
     public void constructor_null_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> new Remark(null));
     }

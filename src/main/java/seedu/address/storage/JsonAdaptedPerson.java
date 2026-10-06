@@ -122,6 +122,9 @@ class JsonAdaptedPerson {
         final Address modelAddress = new Address(address);
 
         final Set<Tag> modelTags = new HashSet<>(personTags);
+        if (!Remark.isValidRemark(remark)) {
+            throw new IllegalValueException(Remark.MESSAGE_CONSTRAINTS);
+        }
         final Remark modelRemark = new Remark(remark);
         return new Person(modelName, modelStudentId, modelPhone, modelEmail, modelAddress, modelTags, modelRemark);
     }

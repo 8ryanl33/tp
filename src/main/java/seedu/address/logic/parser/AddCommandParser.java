@@ -52,11 +52,18 @@ public class AddCommandParser implements Parser<AddCommand> {
         Email email = ParserUtil.parseEmail(argMultimap.getValue(PREFIX_EMAIL).get());
         Address address = ParserUtil.parseAddress(argMultimap.getValue(PREFIX_ADDRESS).get());
         Set<Tag> tagList = ParserUtil.parseTags(argMultimap.getAllValues(PREFIX_TAG));
-        Remark remark = new Remark(argMultimap.getValue(PREFIX_REMARK).orElse(""));
+        Remark remark = parseRemark(argMultimap.getValue(PREFIX_REMARK).orElse(""));
 
         Person person = new Person(name, studentId, phone, email, address, tagList, remark);
 
         return new AddCommand(person);
+    }
+
+    private static Remark parseRemark(String value) throws ParseException {
+        if (!Remark.isValidRemark(value)) {
+            throw new ParseException(Remark.MESSAGE_CONSTRAINTS);
+        }
+        return new Remark(value);
     }
 
     /**
