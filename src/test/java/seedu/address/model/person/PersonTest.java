@@ -46,7 +46,9 @@ public class PersonTest {
 
         // student ID differs in case, all other attributes same -> returns true
         // Used to be `editedBob`, edited to express intent better
-        Person anotherPersonBob = new PersonBuilder(BOB).withStudentId(BOB.getStudentId().toString().toLowerCase()).build();
+        Person anotherPersonBob = new PersonBuilder(BOB)
+                .withStudentId(BOB.getStudentId().toString().toLowerCase())
+                .build();
         assertTrue(BOB.isSamePerson(anotherPersonBob));
 
         // same name, different student ID -> returns false
