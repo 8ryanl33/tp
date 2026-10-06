@@ -91,10 +91,11 @@ public class PersonTest {
 
     @Test
     public void constructor_withoutRemark_defaultsToEmptyRemark() {
-        assertEquals(new Remark(""), ALICE.getRemark());
-        Person legacyPerson = new Person(ALICE.getName(), ALICE.getEmail(), ALICE.getTags());
-        assertEquals(new StudentId("A0000000A"), legacyPerson.getStudentId());
-        assertEquals(new Remark(""), legacyPerson.getRemark());
+        Person person = new Person(ALICE.getName(), ALICE.getStudentId(),
+                ALICE.getEmail(), ALICE.getTags());
+
+        assertEquals(ALICE.getStudentId(), person.getStudentId());
+        assertEquals(new Remark(""), person.getRemark());
     }
 
     @Test

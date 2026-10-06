@@ -26,14 +26,6 @@ public class Person {
     private final Set<Tag> tags = new HashSet<>();
 
     /**
-     * Constructs a person with the default student ID and an empty remark.
-     * Every supplied field must be present and not null.
-     */
-    public Person(Name name, Email email, Set<Tag> tags) {
-        this(name, new StudentId("A0000000A"), email, tags);
-    }
-
-    /**
      * Constructs a person with an empty remark.
      * Every supplied field must be present and not null.
      */
