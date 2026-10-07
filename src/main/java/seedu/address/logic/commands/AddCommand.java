@@ -55,6 +55,11 @@ public class AddCommand extends Command {
         toAdd = person;
     }
 
+    @Override
+    public boolean isModifyingData() {
+        return true;
+    }
+
     /**
      * {@inheritDoc}
      * Rejects a duplicate Student ID and reports the added student's ID, name, optional remark, and total count.

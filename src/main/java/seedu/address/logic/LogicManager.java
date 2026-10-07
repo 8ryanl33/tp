@@ -1,7 +1,6 @@
 package seedu.address.logic;
 
 import java.io.IOException;
-import java.nio.file.AccessDeniedException;
 import java.util.logging.Logger;
 
 import javafx.collections.ObservableList;
@@ -13,6 +12,7 @@ import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.AddressBookParser;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.Model;
+import seedu.address.model.ModelManager;
 import seedu.address.model.person.Person;
 import seedu.address.storage.Storage;
 
@@ -20,10 +20,7 @@ import seedu.address.storage.Storage;
  * The main LogicManager of the app.
  */
 public class LogicManager implements Logic {
-    public static final String FILE_OPS_ERROR_FORMAT = "Could not save data due to the following error: %s";
-
-    public static final String FILE_OPS_PERMISSION_ERROR_FORMAT =
-            "Could not save data to file %s due to insufficient permissions to write to the file or the folder.";
+    public static final String MESSAGE_SAVE_FAILURE = "Unable to save student data.";
 
     private final Logger logger = LogsCenter.getLogger(LogicManager.class);
 
@@ -32,7 +29,10 @@ public class LogicManager implements Logic {
     private final AddressBookParser addressBookParser;
 
     /**
-     * Constructs a {@code LogicManager} with the given {@code Model} and {@code Storage}.
+     * Constructs a {@code LogicManager} that saves changes before publishing them.
+     *
+     * @param model The live model.
+     * @param storage The storage used for saving changes.
      */
     public LogicManager(Model model, Storage storage) {
         this.model = model;
@@ -40,23 +40,39 @@ public class LogicManager implements Logic {
         addressBookParser = new AddressBookParser();
     }
 
+    /**
+     * {@inheritDoc}
+     * Executes modifying commands against a temporary model and publishes their changes only after saving succeeds.
+     * Commands that do not modify student data execute without saving.
+     */
     @Override
     public CommandResult execute(String commandText) throws CommandException, ParseException {
         logger.info("----------------[USER COMMAND][" + commandText + "]");
 
-        CommandResult commandResult;
         Command command = addressBookParser.parseCommand(commandText);
-        commandResult = command.execute(model);
-
-        try {
-            storage.saveAddressBook(model.getAddressBook());
-        } catch (AccessDeniedException e) {
-            throw new CommandException(String.format(FILE_OPS_PERMISSION_ERROR_FORMAT, e.getMessage()), e);
-        } catch (IOException ioe) {
-            throw new CommandException(String.format(FILE_OPS_ERROR_FORMAT, ioe.getMessage()), ioe);
+        if (!command.isModifyingData()) {
+            return command.execute(model);
         }
+        return executeAndSave(command);
+    }
 
-        return commandResult;
+    private CommandResult executeAndSave(Command command) throws CommandException {
+        Model pendingModel = new ModelManager(model.getAddressBook(), model.getUserPrefs());
+        pendingModel.updateFilteredPersonList(model.getFilteredPersonListPredicate()::test);
+        CommandResult result = command.execute(pendingModel);
+        saveStudentData(pendingModel);
+        model.setAddressBook(pendingModel.getAddressBook());
+        model.updateFilteredPersonList(pendingModel.getFilteredPersonListPredicate()::test);
+        return result;
+    }
+
+    private void saveStudentData(Model pendingModel) throws CommandException {
+        try {
+            storage.saveAddressBook(pendingModel.getAddressBook());
+        } catch (IOException ioe) {
+            logger.warning("Unable to save student data: " + ioe.getMessage());
+            throw new CommandException(MESSAGE_SAVE_FAILURE, ioe);
+        }
     }
 
     @Override
