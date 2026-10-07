@@ -20,9 +20,6 @@ import static seedu.address.logic.commands.CommandTestUtil.VALID_NAME_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_STUDENT_ID_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_FRIEND;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_HUSBAND;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_REMARK;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_STUDENT_ID;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
@@ -31,7 +28,6 @@ import static seedu.address.testutil.TypicalPersons.BOB;
 
 import org.junit.jupiter.api.Test;
 
-import seedu.address.logic.Messages;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
@@ -45,6 +41,65 @@ public class AddCommandParserTest {
     private static final String REQUIRED_FIELDS_BOB = NAME_DESC_BOB + STUDENT_ID_DESC_BOB + EMAIL_DESC_BOB;
 
     private AddCommandParser parser = new AddCommandParser();
+
+    @Test
+    public void parse_missingRequiredParameters_reportsMissingPrefix() {
+        assertParseFailure(parser, STUDENT_ID_DESC_BOB + EMAIL_DESC_BOB, "Missing required parameter: n/.");
+        assertParseFailure(parser, NAME_DESC_BOB + EMAIL_DESC_BOB, "Missing required parameter: i/.");
+        assertParseFailure(parser, NAME_DESC_BOB + STUDENT_ID_DESC_BOB, "Missing required parameter: e/.");
+        assertParseFailure(parser, "", "Missing required parameter: n/.");
+        assertParseFailure(parser, " r/Optional", "Missing required parameter: n/.");
+    }
+
+    @Test
+    public void parse_emptyRequiredParameters_reportsEmptyPrefix() {
+        assertParseFailure(parser, " n/ \t" + STUDENT_ID_DESC_BOB + EMAIL_DESC_BOB,
+                "Parameter n/ cannot be empty.");
+        assertParseFailure(parser, NAME_DESC_BOB + " i/ \t" + EMAIL_DESC_BOB,
+                "Parameter i/ cannot be empty.");
+        assertParseFailure(parser, NAME_DESC_BOB + STUDENT_ID_DESC_BOB + " e/ \t",
+                "Parameter e/ cannot be empty.");
+    }
+
+    @Test
+    public void parse_unknownPrefixes_reportsUnknownPrefix() {
+        assertParseFailure(parser, "p/123" + REQUIRED_FIELDS_BOB, "Unknown parameter: p/.");
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " x/hello", "Unknown parameter: x/.");
+        assertParseFailure(parser, " n/Bob x/hello" + STUDENT_ID_DESC_BOB + EMAIL_DESC_BOB,
+                "Unknown parameter: x/.");
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " r/Quiz x/hello", "Unknown parameter: x/.");
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + "\tunknown/value", "Unknown parameter: unknown/.");
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " N/John", "Unknown parameter: N/.");
+    }
+
+    @Test
+    public void parse_tabsAndReorderedParameters_success() {
+        Person expected = new PersonBuilder(BOB).withTags().withRemark("Quiz 1: 8/10.").build();
+        String input = "r/Quiz 1: 8/10.\te/" + VALID_EMAIL_BOB + "\ti/" + VALID_STUDENT_ID_BOB
+                + "\tn/" + VALID_NAME_BOB;
+        assertParseSuccess(parser, input, new AddCommand(expected));
+    }
+
+    @Test
+    public void parse_remarkLiteralSlashesAndSpacing_success() {
+        String remark = "Quiz: 8/10.  See https://example.com/a/b; use /r literally.";
+        Person expected = new PersonBuilder(BOB).withTags().withRemark(remark).build();
+        assertParseSuccess(parser, REQUIRED_FIELDS_BOB + " r/" + remark, new AddCommand(expected));
+    }
+
+    @Test
+    public void parse_embeddedLineBreaks_failure() {
+        String expected = String.format(MESSAGE_INVALID_COMMAND_FORMAT, AddCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " r/First\nSecond", expected);
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " r/First\rSecond", expected);
+    }
+
+    @Test
+    public void parse_multipleErrors_reportsStructureBeforeValues() {
+        assertParseFailure(parser, " n/ n/John", "Parameter n/ must be specified only once.");
+        assertParseFailure(parser, " n/ e/", "Missing required parameter: i/.");
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " n/Again x/value", "Unknown parameter: x/.");
+    }
 
     @Test
     public void parse_normalisedNameAndEmail_success() {
@@ -92,9 +147,9 @@ public class AddCommandParserTest {
     @Test
     public void parse_repeatedRemark_failure() {
         assertParseFailure(parser, REQUIRED_FIELDS_BOB + " r/First r/Second",
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_REMARK));
+                "Parameter r/ must be specified only once.");
         assertParseFailure(parser, REQUIRED_FIELDS_BOB + " r/ r/Second",
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_REMARK));
+                "Parameter r/ must be specified only once.");
     }
 
     @Test
@@ -114,29 +169,29 @@ public class AddCommandParserTest {
     @Test
     public void parse_repeatedNonTagValue_failure() {
         assertParseFailure(parser, NAME_DESC_AMY + REQUIRED_FIELDS_BOB,
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_NAME));
+                "Parameter n/ must be specified only once.");
         assertParseFailure(parser, STUDENT_ID_DESC_AMY + REQUIRED_FIELDS_BOB,
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_STUDENT_ID));
+                "Parameter i/ must be specified only once.");
         assertParseFailure(parser, EMAIL_DESC_AMY + REQUIRED_FIELDS_BOB,
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_EMAIL));
+                "Parameter e/ must be specified only once.");
         assertParseFailure(parser, REQUIRED_FIELDS_BOB + REQUIRED_FIELDS_BOB,
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_NAME, PREFIX_STUDENT_ID, PREFIX_EMAIL));
+                "Parameter n/ must be specified only once.");
     }
 
     @Test
     public void parse_repeatedInvalidValue_failure() {
         assertParseFailure(parser, INVALID_NAME_DESC + REQUIRED_FIELDS_BOB,
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_NAME));
+                "Parameter n/ must be specified only once.");
         assertParseFailure(parser, REQUIRED_FIELDS_BOB + INVALID_NAME_DESC,
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_NAME));
+                "Parameter n/ must be specified only once.");
         assertParseFailure(parser, INVALID_STUDENT_ID_DESC + REQUIRED_FIELDS_BOB,
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_STUDENT_ID));
+                "Parameter i/ must be specified only once.");
         assertParseFailure(parser, REQUIRED_FIELDS_BOB + INVALID_STUDENT_ID_DESC,
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_STUDENT_ID));
+                "Parameter i/ must be specified only once.");
         assertParseFailure(parser, INVALID_EMAIL_DESC + REQUIRED_FIELDS_BOB,
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_EMAIL));
+                "Parameter e/ must be specified only once.");
         assertParseFailure(parser, REQUIRED_FIELDS_BOB + INVALID_EMAIL_DESC,
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_EMAIL));
+                "Parameter e/ must be specified only once.");
     }
 
     @Test
@@ -150,8 +205,10 @@ public class AddCommandParserTest {
     public void parse_compulsoryFieldMissing_failure() {
         String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, AddCommand.MESSAGE_USAGE);
         assertParseFailure(parser, VALID_NAME_BOB + STUDENT_ID_DESC_BOB + EMAIL_DESC_BOB, expectedMessage);
-        assertParseFailure(parser, NAME_DESC_BOB + VALID_STUDENT_ID_BOB + EMAIL_DESC_BOB, expectedMessage);
-        assertParseFailure(parser, NAME_DESC_BOB + STUDENT_ID_DESC_BOB + VALID_EMAIL_BOB, expectedMessage);
+        assertParseFailure(parser, NAME_DESC_BOB + VALID_STUDENT_ID_BOB + EMAIL_DESC_BOB,
+                "Missing required parameter: i/.");
+        assertParseFailure(parser, NAME_DESC_BOB + STUDENT_ID_DESC_BOB + VALID_EMAIL_BOB,
+                "Missing required parameter: e/.");
         assertParseFailure(parser, VALID_NAME_BOB + VALID_STUDENT_ID_BOB + VALID_EMAIL_BOB, expectedMessage);
     }
 
