@@ -15,6 +15,27 @@ public class ArgumentTokenizerTest {
     private final Prefix hatQ = new Prefix("^Q");
 
     @Test
+    public void tokenize_prefixAtStartAndAfterTabs_extractsValues() {
+        ArgumentMultimap arguments = ArgumentTokenizer.tokenize("p/first\t-t second\tp/third", pSlash, dashT);
+        assertPreambleEmpty(arguments);
+        assertArgumentPresent(arguments, pSlash, "first", "third");
+        assertArgumentPresent(arguments, dashT, "second");
+    }
+
+    @Test
+    public void tokenize_joinedPrefixFollowedByValidPrefix_extractsOnlyValidPrefix() {
+        ArgumentMultimap arguments = ArgumentTokenizer.tokenize("joinedp/value\tp/actual", pSlash);
+        assertPreamblePresent(arguments, "joinedp/value");
+        assertArgumentPresent(arguments, pSlash, "actual");
+    }
+
+    @Test
+    public void tokenize_unknownPrefixInValue_preservesExistingBehaviour() {
+        ArgumentMultimap arguments = ArgumentTokenizer.tokenize("p/value x/unknown", pSlash);
+        assertArgumentPresent(arguments, pSlash, "value x/unknown");
+    }
+
+    @Test
     public void tokenize_emptyArgsString_noValues() {
         String argsString = "  ";
         ArgumentMultimap argMultimap = ArgumentTokenizer.tokenize(argsString, pSlash);

@@ -42,6 +42,14 @@ public class EditCommandParserTest {
     private EditCommandParser parser = new EditCommandParser();
 
     @Test
+    public void parse_tabSeparatedFields_success() {
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withName(VALID_NAME_AMY)
+                .withEmail(VALID_EMAIL_AMY).build();
+        assertParseSuccess(parser, "1\tn/" + VALID_NAME_AMY + "\te/" + VALID_EMAIL_AMY,
+                new EditCommand(INDEX_FIRST_PERSON, descriptor));
+    }
+
+    @Test
     public void parse_missingParts_failure() {
         assertParseFailure(parser, VALID_NAME_AMY, MESSAGE_INVALID_FORMAT);
         assertParseFailure(parser, "1", EditCommand.MESSAGE_NOT_EDITED);

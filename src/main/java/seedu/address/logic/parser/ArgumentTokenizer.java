@@ -18,6 +18,7 @@ public class ArgumentTokenizer {
     /**
      * Tokenizes an arguments string and returns an {@code ArgumentMultimap} object that maps prefixes to their
      * respective argument values. Only the given prefixes will be recognized in the arguments string.
+     * A prefix must occur at the beginning of the string or immediately after a whitespace character.
      *
      * @param argsString Arguments string of the form: {@code preamble <prefix>value <prefix>value ...}
      * @param prefixes   Prefixes to tokenize the arguments string with
@@ -51,7 +52,7 @@ public class ArgumentTokenizer {
         while (prefixPosition != -1) {
             PrefixPosition extendedPrefix = new PrefixPosition(prefix, prefixPosition);
             positions.add(extendedPrefix);
-            prefixPosition = findPrefixPosition(argsString, prefix.getPrefix(), prefixPosition);
+            prefixPosition = findPrefixPosition(argsString, prefix.getPrefix(), prefixPosition + 1);
         }
 
         return positions;
@@ -60,7 +61,7 @@ public class ArgumentTokenizer {
     /**
      * Returns the index of the first occurrence of {@code prefix} in
      * {@code argsString} starting from index {@code fromIndex}. An occurrence
-     * is valid if there is a whitespace before {@code prefix}. Returns -1 if no
+     * is valid at the beginning of the string or if there is whitespace before {@code prefix}. Returns -1 if no
      * such occurrence can be found.
      *
      * E.g if {@code argsString} = "e/hip/900", {@code prefix} = "p/" and
@@ -70,9 +71,14 @@ public class ArgumentTokenizer {
      * {@code fromIndex} = 0, this method returns 5.
      */
     private static int findPrefixPosition(String argsString, String prefix, int fromIndex) {
-        int prefixIndex = argsString.indexOf(" " + prefix, fromIndex);
-        return prefixIndex == -1 ? -1
-                : prefixIndex + 1; // +1 as offset for whitespace
+        int prefixIndex = argsString.indexOf(prefix, fromIndex);
+        while (prefixIndex != -1) {
+            if (prefixIndex == 0 || Character.isWhitespace(argsString.charAt(prefixIndex - 1))) {
+                return prefixIndex;
+            }
+            prefixIndex = argsString.indexOf(prefix, prefixIndex + 1);
+        }
+        return -1;
     }
 
     /**
