@@ -93,9 +93,11 @@ public class EditCommand extends Command {
         StudentId updatedStudentId = personToEdit.getStudentId();
         Email updatedEmail = editPersonDescriptor.getEmail().orElse(personToEdit.getEmail());
         Set<Tag> updatedTags = editPersonDescriptor.getTags().orElse(personToEdit.getTags());
+        Label updatedLabels = personToEdit.getLabels();
+        Remark updatedRemark = personToEdit.getRemark();
 
         return new Person(updatedName, updatedStudentId, updatedEmail,
-                updatedTags, personToEdit.getRemark());
+                updatedTags, updatedLabels, updatedRemark);
     }
 
     @Override
