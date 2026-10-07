@@ -12,6 +12,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.label.Label;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.StudentId;
@@ -22,12 +23,14 @@ public class ParserUtilTest {
     private static final String INVALID_STUDENT_ID = "A012345-B";
     private static final String INVALID_EMAIL = "example.com";
     private static final String INVALID_TAG = "#friend";
+    private static final String INVALID_LABEL = "Tutorial/1";
 
     private static final String VALID_NAME = "Rachel Walker";
     private static final String VALID_STUDENT_ID = "A0123456B";
     private static final String VALID_EMAIL = "rachel@example.com";
     private static final String VALID_TAG_1 = "friend";
     private static final String VALID_TAG_2 = "neighbour";
+    private static final String VALID_LABEL = "Discrete Math Tutorial";
 
     private static final String WHITESPACE = " \t\r\n";
 
@@ -141,6 +144,29 @@ public class ParserUtilTest {
         String tagWithWhitespace = WHITESPACE + VALID_TAG_1 + WHITESPACE;
         Tag expectedTag = new Tag(VALID_TAG_1);
         assertEquals(expectedTag, ParserUtil.parseTag(tagWithWhitespace));
+    }
+
+    @Test
+    public void parseLabel_null_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> ParserUtil.parseLabel(null));
+    }
+
+    @Test
+    public void parseLabel_invalidValue_throwsParseException() {
+        assertThrows(ParseException.class, () -> ParserUtil.parseLabel(INVALID_LABEL));
+    }
+
+    @Test
+    public void parseLabel_validValueWithoutWhitespace_returnsLabel() throws Exception {
+        Label expectedLabel = new Label(VALID_LABEL);
+        assertEquals(expectedLabel, ParserUtil.parseLabel(VALID_LABEL));
+    }
+
+    @Test
+    public void parseLabel_validValueWithWhitespace_returnsTrimmedLabel() throws Exception {
+        String labelWithWhitespace = WHITESPACE + VALID_LABEL + WHITESPACE;
+        Label expectedLabel = new Label(VALID_LABEL);
+        assertEquals(expectedLabel, ParserUtil.parseLabel(labelWithWhitespace));
     }
 
     @Test
