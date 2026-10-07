@@ -1,6 +1,5 @@
 package seedu.address.logic.parser;
 
-import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.commands.CommandTestUtil.EMAIL_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.EMAIL_DESC_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.INVALID_EMAIL_DESC;
@@ -89,7 +88,7 @@ public class AddCommandParserTest {
 
     @Test
     public void parse_embeddedLineBreaks_failure() {
-        String expected = String.format(MESSAGE_INVALID_COMMAND_FORMAT, AddCommand.MESSAGE_USAGE);
+        String expected = AddCommand.MESSAGE_INVALID_FORMAT;
         assertParseFailure(parser, REQUIRED_FIELDS_BOB + " r/First\nSecond", expected);
         assertParseFailure(parser, REQUIRED_FIELDS_BOB + " r/First\rSecond", expected);
     }
@@ -203,7 +202,7 @@ public class AddCommandParserTest {
 
     @Test
     public void parse_compulsoryFieldMissing_failure() {
-        String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, AddCommand.MESSAGE_USAGE);
+        String expectedMessage = AddCommand.MESSAGE_INVALID_FORMAT;
         assertParseFailure(parser, VALID_NAME_BOB + STUDENT_ID_DESC_BOB + EMAIL_DESC_BOB, expectedMessage);
         assertParseFailure(parser, NAME_DESC_BOB + VALID_STUDENT_ID_BOB + EMAIL_DESC_BOB,
                 "Missing required parameter: i/.");
@@ -222,6 +221,6 @@ public class AddCommandParserTest {
         assertParseFailure(parser, INVALID_NAME_DESC + STUDENT_ID_DESC_BOB + INVALID_EMAIL_DESC,
                 Name.MESSAGE_CONSTRAINTS);
         assertParseFailure(parser, PREAMBLE_NON_EMPTY + REQUIRED_FIELDS_BOB,
-                String.format(MESSAGE_INVALID_COMMAND_FORMAT, AddCommand.MESSAGE_USAGE));
+                AddCommand.MESSAGE_INVALID_FORMAT);
     }
 }

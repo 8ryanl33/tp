@@ -1,6 +1,5 @@
 package seedu.address.logic.parser;
 
-import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_REMARK;
@@ -67,11 +66,11 @@ public class AddCommandParser implements Parser<AddCommand> {
 
     private static void validateStructure(String args, ArgumentMultimap arguments) throws ParseException {
         if (args.contains("\n") || args.contains("\r")) {
-            throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, AddCommand.MESSAGE_USAGE));
+            throw new ParseException(AddCommand.MESSAGE_INVALID_FORMAT);
         }
         rejectUnknownPrefixes(args);
         if (!arguments.getPreamble().isEmpty()) {
-            throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, AddCommand.MESSAGE_USAGE));
+            throw new ParseException(AddCommand.MESSAGE_INVALID_FORMAT);
         }
         rejectRepeatedPrefixes(arguments);
         requireMandatoryValues(arguments);
