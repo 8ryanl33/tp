@@ -3,6 +3,7 @@ package seedu.address.testutil;
 import java.util.HashSet;
 import java.util.Set;
 
+import seedu.address.model.label.Label;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Person;
@@ -26,6 +27,7 @@ public class PersonBuilder {
     private Email email;
     private Remark remark;
     private Set<Tag> tags;
+    private Set<Label> labels;
 
     /**
      * Creates a {@code PersonBuilder} with the default details.
@@ -36,6 +38,7 @@ public class PersonBuilder {
         email = new Email(DEFAULT_EMAIL);
         remark = new Remark(DEFAULT_REMARK);
         tags = new HashSet<>();
+        labels = new HashSet<>();
     }
 
     /**
@@ -47,6 +50,7 @@ public class PersonBuilder {
         email = personToCopy.getEmail();
         remark = personToCopy.getRemark();
         tags = new HashSet<>(personToCopy.getTags());
+        labels = new HashSet<>(personToCopy.getLabels());
     }
 
     /**
@@ -74,6 +78,17 @@ public class PersonBuilder {
     }
 
     /**
+     * Parses the {@code labels} into a {@code Set<Label>} and sets it to the {@code Person} that we are building.
+     */
+    public PersonBuilder withLabels(String ... labels) {
+        this.labels = new HashSet<>();
+        for (String labelName : labels) {
+            this.labels.add(new Label(labelName));
+        }
+        return this;
+    }
+
+    /**
      * Sets the {@code Email} of the {@code Person} that we are building.
      */
     public PersonBuilder withEmail(String email) {
@@ -93,7 +108,7 @@ public class PersonBuilder {
      * Builds a {@code Person} with the configured details.
      */
     public Person build() {
-        return new Person(name, studentId, email, tags, remark);
+        return new Person(name, studentId, email, tags, labels, remark);
     }
 
 }
