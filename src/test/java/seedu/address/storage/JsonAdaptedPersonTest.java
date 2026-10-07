@@ -27,6 +27,7 @@ public class JsonAdaptedPersonTest {
     private static final String INVALID_STUDENT_ID = "A012345-B";
     private static final String INVALID_EMAIL = "example.com";
     private static final String INVALID_TAG = "#friend";
+    private static final String INVALID_LABEL = "Tutorial/1";
 
     private static final String VALID_NAME = BENSON.getName().toString();
     private static final String VALID_STUDENT_ID = BENSON.getStudentId().toString();
@@ -34,6 +35,8 @@ public class JsonAdaptedPersonTest {
     private static final List<JsonAdaptedTag> VALID_TAGS = BENSON.getTags().stream()
             .map(JsonAdaptedTag::new)
             .collect(Collectors.toList());
+    private static final List<JsonAdaptedLabel> VALID_LABELS = List.of(
+            new JsonAdaptedLabel("Discrete Math Tutorial"));
 
     @Test
     public void toModelType_oversizedRemark_throwsIllegalValueException() {
@@ -52,13 +55,23 @@ public class JsonAdaptedPersonTest {
 
     @Test
     public void jsonAdaptedPerson_remark_roundTripPreservesText() throws Exception {
-        for (String remark : new String[] {"", "Needs help with recursion", "Follow up: 你好!\nNext week"}) {
+        for (String remark : new String[] {"", "Needs help with recursion", "Follow up: 你好！\nNext week"}) {
             Person original = new PersonBuilder(BENSON).withRemark(remark).build();
             String json = JsonUtil.toJsonString(new JsonAdaptedPerson(original));
             JsonAdaptedPerson restored = JsonUtil.fromJsonString(json, JsonAdaptedPerson.class);
             assertTrue(json.contains("\"remark\""));
             assertEquals(original, restored.toModelType());
         }
+    }
+
+    @Test
+    public void jsonAdaptedPerson_labels_roundTripPreservesLabels() throws Exception {
+        Person original = new PersonBuilder(BENSON).withLabels("Discrete Math Tutorial").build();
+        String json = JsonUtil.toJsonString(new JsonAdaptedPerson(original));
+        JsonAdaptedPerson restored = JsonUtil.fromJsonString(json, JsonAdaptedPerson.class);
+
+        assertTrue(json.contains("\"labels\""));
+        assertEquals(original, restored.toModelType());
     }
 
     @Test
@@ -69,6 +82,16 @@ public class JsonAdaptedPersonTest {
         assertEquals(expected, JsonUtil.fromJsonString(legacyJson, JsonAdaptedPerson.class).toModelType());
         String nullRemarkJson = legacyJson.substring(0, legacyJson.length() - 1) + ",\"remark\":null}";
         assertEquals(expected, JsonUtil.fromJsonString(nullRemarkJson, JsonAdaptedPerson.class).toModelType());
+    }
+
+    @Test
+    public void jsonAdaptedPerson_missingOrNullLabels_defaultsToEmpty() throws Exception {
+        String legacyJson = "{\"name\":\"" + VALID_NAME + "\",\"studentId\":\"" + VALID_STUDENT_ID
+                + "\",\"email\":\"" + VALID_EMAIL + "\",\"tags\":[],\"remark\":\"\"}";
+        Person expected = new PersonBuilder(BENSON).withTags().withRemark("").build();
+        assertEquals(expected, JsonUtil.fromJsonString(legacyJson, JsonAdaptedPerson.class).toModelType());
+        String nullLabelsJson = legacyJson.substring(0, legacyJson.length() - 1) + ",\"labels\":null}";
+        assertEquals(expected, JsonUtil.fromJsonString(nullLabelsJson, JsonAdaptedPerson.class).toModelType());
     }
 
     @Test
@@ -154,6 +177,16 @@ public class JsonAdaptedPersonTest {
         JsonAdaptedPerson person =
                 new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID, VALID_EMAIL,
                         invalidTags, "");
+        assertThrows(IllegalValueException.class, person::toModelType);
+    }
+
+    @Test
+    public void toModelType_invalidLabels_throwsIllegalValueException() {
+        List<JsonAdaptedLabel> invalidLabels = new ArrayList<>(VALID_LABELS);
+        invalidLabels.add(new JsonAdaptedLabel(INVALID_LABEL));
+        JsonAdaptedPerson person =
+                new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID, VALID_EMAIL,
+                        VALID_TAGS, invalidLabels, "");
         assertThrows(IllegalValueException.class, person::toModelType);
     }
 

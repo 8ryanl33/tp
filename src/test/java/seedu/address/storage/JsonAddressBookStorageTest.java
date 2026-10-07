@@ -43,6 +43,21 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAndSaveAddressBook_withLabel_preservesLabel() throws Exception {
+        Path filePath = testFolder.resolve("LabelsAddressBook.json");
+        Person person = new PersonBuilder(ALICE).withLabels("Discrete Math Tutorial").build();
+        AddressBook original = new AddressBook();
+        original.addPerson(person);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+
+        storage.saveAddressBook(original);
+        ReadOnlyAddressBook restored = new JsonAddressBookStorage(filePath).readAddressBook().get();
+
+        assertEquals(original, new AddressBook(restored));
+        assertEquals(person.getLabels(), restored.getPersonList().get(0).getLabels());
+    }
+
+    @Test
     public void readAddressBook_nullFilePath_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> readAddressBook(null));
     }
