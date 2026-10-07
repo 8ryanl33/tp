@@ -19,7 +19,6 @@ import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.ReadOnlyUserPrefs;
 import seedu.address.model.UserPrefs;
-import seedu.address.model.util.SampleDataUtil;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.Storage;
@@ -42,6 +41,7 @@ public class MainApp extends Application {
     protected Logic logic;
     protected Storage storage;
     protected Model model;
+    private boolean isStudentDataAvailable = true;
 
     @Override
     public void init() throws Exception {
@@ -55,17 +55,20 @@ public class MainApp extends Application {
 
         model = initModelManager(storage, userPrefs);
 
-        logic = new LogicManager(model, storage);
+        logic = initLogic(model, storage);
 
         ui = new UiManager(logic, storage.getAddressBookFilePath());
     }
 
     /**
      * Returns a {@code ModelManager} with the data from {@code storage}'s address book and {@code userPrefs}. <br>
-     * The data from the sample address book will be used instead if {@code storage}'s address book is not found,
-     * or an empty address book will be used instead if errors occur when reading {@code storage}'s address book.
+     * Starts empty if the data file is absent or unreadable. A loading failure also blocks modifying commands.
+     *
+     * @param storage The storage from which to load student data.
+     * @param userPrefs The initial user preferences.
+     * @return The initial student model.
      */
-    private Model initModelManager(Storage storage, ReadOnlyUserPrefs userPrefs) {
+    protected Model initModelManager(Storage storage, ReadOnlyUserPrefs userPrefs) {
         logger.info("Using data file : " + storage.getAddressBookFilePath());
 
         Optional<ReadOnlyAddressBook> addressBookOptional;
@@ -73,17 +76,28 @@ public class MainApp extends Application {
         try {
             addressBookOptional = storage.readAddressBook();
             if (addressBookOptional.isEmpty()) {
-                logger.info("Creating a new data file " + storage.getAddressBookFilePath()
-                        + " populated with a sample AddressBook.");
+                logger.info("No existing student data found. Starting with an empty student list.");
             }
-            initialData = addressBookOptional.orElseGet(SampleDataUtil::getSampleAddressBook);
+            initialData = addressBookOptional.orElseGet(AddressBook::new);
         } catch (DataLoadingException e) {
             logger.warning("Data file at " + storage.getAddressBookFilePath() + " could not be loaded."
                     + " Will be starting with an empty AddressBook.");
             initialData = new AddressBook();
+            isStudentDataAvailable = false;
         }
 
         return new ModelManager(initialData, userPrefs);
+    }
+
+    /**
+     * Creates the logic component using the result of startup student-data loading.
+     *
+     * @param model The initial student model.
+     * @param storage The student-data storage.
+     * @return Logic that blocks modifications if startup loading failed.
+     */
+    protected Logic initLogic(Model model, Storage storage) {
+        return new LogicManager(model, storage, isStudentDataAvailable);
     }
 
     /**

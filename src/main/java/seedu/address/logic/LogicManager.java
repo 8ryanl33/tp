@@ -21,29 +21,44 @@ import seedu.address.storage.Storage;
  */
 public class LogicManager implements Logic {
     public static final String MESSAGE_SAVE_FAILURE = "Unable to save student data.";
+    public static final String MESSAGE_DATA_UNAVAILABLE =
+            "Student data is unavailable because loading failed. Fix the data file and restart.";
 
     private final Logger logger = LogsCenter.getLogger(LogicManager.class);
 
     private final Model model;
     private final Storage storage;
     private final AddressBookParser addressBookParser;
+    private final boolean isStudentDataAvailable;
 
     /**
-     * Constructs a {@code LogicManager} that saves changes before publishing them.
+     * Constructs a {@code LogicManager} whose student data is available for modification.
      *
      * @param model The live model.
      * @param storage The storage used for saving changes.
      */
     public LogicManager(Model model, Storage storage) {
+        this(model, storage, true);
+    }
+
+    /**
+     * Constructs a {@code LogicManager}, blocking modifications if startup loading failed.
+     *
+     * @param model The live model.
+     * @param storage The storage used for saving changes.
+     * @param isStudentDataAvailable Whether startup loading succeeded or no data file existed.
+     */
+    public LogicManager(Model model, Storage storage, boolean isStudentDataAvailable) {
         this.model = model;
         this.storage = storage;
+        this.isStudentDataAvailable = isStudentDataAvailable;
         addressBookParser = new AddressBookParser();
     }
 
     /**
      * {@inheritDoc}
      * Executes modifying commands against a temporary model and publishes their changes only after saving succeeds.
-     * Commands that do not modify student data execute without saving.
+     * Commands that do not modify student data execute without saving. Startup loading failures block modifications.
      */
     @Override
     public CommandResult execute(String commandText) throws CommandException, ParseException {
@@ -52,6 +67,9 @@ public class LogicManager implements Logic {
         Command command = addressBookParser.parseCommand(commandText);
         if (!command.isModifyingData()) {
             return command.execute(model);
+        }
+        if (!isStudentDataAvailable) {
+            throw new CommandException(MESSAGE_DATA_UNAVAILABLE);
         }
         return executeAndSave(command);
     }

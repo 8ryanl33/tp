@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import seedu.address.commons.exceptions.DataLoadingException;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.ListCommand;
@@ -78,6 +79,19 @@ public class LogicManagerTest {
         logic.execute("find Samuel");
         logic.execute("help");
         logic.execute("exit");
+    }
+
+    @Test
+    public void execute_loadingFailed_blocksModificationsAndPreservesCorruptFile() throws Exception {
+        Files.writeString(storage.getAddressBookFilePath(), "invalid student data");
+        assertThrows(DataLoadingException.class, storage::readAddressBook);
+        logic = new LogicManager(model, storage, false);
+        for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "clear", "delete 1",
+                "edit 1 n/Samuel")) {
+            assertCommandException(command, LogicManager.MESSAGE_DATA_UNAVAILABLE);
+        }
+        logic.execute("list");
+        assertEquals("invalid student data", Files.readString(storage.getAddressBookFilePath()));
     }
 
     @Test
