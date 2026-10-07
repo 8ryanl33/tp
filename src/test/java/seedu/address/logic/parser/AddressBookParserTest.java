@@ -20,10 +20,13 @@ import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
 import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
+import seedu.address.logic.commands.LabelCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.label.Label;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
+import seedu.address.model.person.StudentId;
 import seedu.address.testutil.EditPersonDescriptorBuilder;
 import seedu.address.testutil.PersonBuilder;
 import seedu.address.testutil.PersonUtil;
@@ -85,6 +88,19 @@ public class AddressBookParserTest {
     public void parseCommand_list() throws Exception {
         assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD) instanceof ListCommand);
         assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD + " 3") instanceof ListCommand);
+    }
+
+    @Test
+    public void parseCommand_label() throws Exception {
+        LabelCommand command = (LabelCommand) parser.parseCommand(
+                LabelCommand.COMMAND_WORD + " l/Discrete Math Tutorial i/A0101010A");
+        assertEquals(new LabelCommand(new Label("Discrete Math Tutorial"), new StudentId("A0101010A")), command);
+    }
+
+    @Test
+    public void parseCommand_labelInvalidArgs_throwsParseException() {
+        assertThrows(ParseException.class, LabelCommandParser.MESSAGE_MISSING_STUDENT_ID, ()
+            -> parser.parseCommand(LabelCommand.COMMAND_WORD + " l/Discrete Math Tutorial"));
     }
 
     @Test
