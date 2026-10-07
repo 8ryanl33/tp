@@ -41,10 +41,10 @@ public class ParserUtil {
 
     /**
      * Parses a {@code String name} into a {@code Name}.
-     * Leading and trailing whitespaces will be trimmed.
+     * Leading and trailing whitespace is trimmed; repeated internal spaces are collapsed by {@code Name}.
      *
      * @param name The non-null name text.
-     * @return The validated name with surrounding whitespace removed.
+     * @return The validated, normalised name with capitalisation preserved.
      * @throws NullPointerException if {@code name} is null.
      * @throws ParseException if the given {@code name} is invalid.
      */
@@ -79,9 +79,10 @@ public class ParserUtil {
     /**
      * Parses a {@code String email} into an {@code Email}.
      * Leading and trailing whitespaces will be trimmed.
+     * The domain is converted to lowercase by {@code Email}; local-part capitalisation is preserved.
      *
      * @param email The non-null email text.
-     * @return The validated email with surrounding whitespace removed.
+     * @return The validated email with surrounding whitespace removed and its domain in lowercase.
      * @throws NullPointerException if {@code email} is null.
      * @throws ParseException if the given {@code email} is invalid.
      */

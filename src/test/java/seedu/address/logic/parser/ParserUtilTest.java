@@ -77,6 +77,20 @@ public class ParserUtilTest {
     }
 
     @Test
+    public void parseName_unicodeAndRepeatedSpaces_returnsNormalisedName() throws Exception {
+        assertEquals("José O’Neill", ParserUtil.parseName("  José   O’Neill  ").fullName);
+        String name = "A".repeat(Name.MAX_LENGTH - 2) + "   B";
+        assertEquals("A".repeat(Name.MAX_LENGTH - 2) + " B", ParserUtil.parseName(name).fullName);
+    }
+
+    @Test
+    public void parseName_digitsOrOversizedName_throwsParseException() {
+        assertThrows(ParseException.class, Name.MESSAGE_CONSTRAINTS, () -> ParserUtil.parseName("John 2"));
+        assertThrows(ParseException.class, Name.MESSAGE_CONSTRAINTS, ()
+            -> ParserUtil.parseName("A".repeat(Name.MAX_LENGTH + 1)));
+    }
+
+    @Test
     public void parseStudentId_null_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> ParserUtil.parseStudentId((String) null));
     }
@@ -120,6 +134,18 @@ public class ParserUtilTest {
         String emailWithWhitespace = WHITESPACE + VALID_EMAIL + WHITESPACE;
         Email expectedEmail = new Email(VALID_EMAIL);
         assertEquals(expectedEmail, ParserUtil.parseEmail(emailWithWhitespace));
+    }
+
+    @Test
+    public void parseEmail_uppercaseDomain_returnsNormalisedEmail() throws Exception {
+        assertEquals("Rachel+Quiz@example.com", ParserUtil.parseEmail("  Rachel+Quiz@EXAMPLE.COM  ").value);
+    }
+
+    @Test
+    public void parseEmail_invalidDomainOrOversizedLocalPart_throwsParseException() {
+        assertThrows(ParseException.class, Email.MESSAGE_CONSTRAINTS, () -> ParserUtil.parseEmail("a@localhost"));
+        assertThrows(ParseException.class, Email.MESSAGE_CONSTRAINTS, ()
+            -> ParserUtil.parseEmail("a".repeat(65) + "@example.com"));
     }
 
     @Test

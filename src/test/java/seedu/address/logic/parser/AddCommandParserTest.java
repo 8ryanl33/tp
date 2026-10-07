@@ -47,6 +47,21 @@ public class AddCommandParserTest {
     private AddCommandParser parser = new AddCommandParser();
 
     @Test
+    public void parse_normalisedNameAndEmail_success() {
+        Person expectedPerson = new PersonBuilder(BOB).withName("Anne-Marie O’Neill")
+                .withEmail("Quiz+Sam@example.com").withTags().build();
+        assertParseSuccess(parser, " n/  Anne-Marie   O’Neill  " + STUDENT_ID_DESC_BOB
+                + " e/  Quiz+Sam@EXAMPLE.COM  ", new AddCommand(expectedPerson));
+    }
+
+    @Test
+    public void parse_invalidNameAndEmailUnderNewRules_failure() {
+        assertParseFailure(parser, " n/John 2" + STUDENT_ID_DESC_BOB + EMAIL_DESC_BOB, Name.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, NAME_DESC_BOB + STUDENT_ID_DESC_BOB + " e/bob@localhost",
+                Email.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
     public void parse_remarkLengthBoundary_validatesLimit() {
         Person expectedPerson = new PersonBuilder(BOB).withTags()
                 .withRemark("x".repeat(Remark.MAX_LENGTH)).build();

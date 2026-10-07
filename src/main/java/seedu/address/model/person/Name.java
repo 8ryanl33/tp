@@ -4,40 +4,51 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.AppUtil.checkArgument;
 
 /**
- * Represents a Person's name in the address book.
+ * Represents a student's name, with surrounding whitespace removed and repeated spaces collapsed.
  * Guarantees: immutable; is valid as declared in {@link #isValidName(String)}
  */
 public class Name {
 
     public static final String MESSAGE_CONSTRAINTS =
-            "Names should only contain alphanumeric characters and spaces, and should not be blank";
+            "Name must contain 1-100 characters, include a letter, and use only letters, spaces, "
+                    + "apostrophes, hyphens, or periods.";
 
-    /*
-     * The first character of the name must not be a whitespace,
-     * otherwise " " (a blank string) becomes a valid input.
-     */
-    public static final String VALIDATION_REGEX = "[\\p{Alnum}][\\p{Alnum} ]*";
+    public static final int MAX_LENGTH = 100;
+    public static final String VALIDATION_REGEX = "[\\p{L}\\p{M} '’.-]+";
 
     public final String fullName;
 
     /**
-     * Constructs a {@code Name}.
+     * Constructs a normalised {@code Name}, preserving capitalisation.
      *
-     * @param name A valid name.
+     * @param name A name that is valid after normalisation.
+     * @throws NullPointerException if {@code name} is null.
+     * @throws IllegalArgumentException if the normalised name is invalid.
      */
     public Name(String name) {
         requireNonNull(name);
         checkArgument(isValidName(name), MESSAGE_CONSTRAINTS);
-        fullName = name;
+        fullName = normalise(name);
     }
 
     /**
-     * Returns true if a given string is a valid name.
+     * Returns whether a name has 1-100 Unicode code points, an allowed character set, and at least one letter.
+     * Length is checked after removing surrounding whitespace and collapsing repeated spaces.
+     *
+     * @param test The non-null name to validate.
+     * @return Whether the normalised name is valid.
+     * @throws NullPointerException if {@code test} is null.
      */
     public static boolean isValidName(String test) {
-        return test.matches(VALIDATION_REGEX);
+        String normalisedName = normalise(test);
+        return normalisedName.codePointCount(0, normalisedName.length()) <= MAX_LENGTH
+                && normalisedName.matches(VALIDATION_REGEX)
+                && normalisedName.codePoints().anyMatch(Character::isLetter);
     }
 
+    private static String normalise(String name) {
+        return name.trim().replaceAll(" +", " ");
+    }
 
     @Override
     public String toString() {
