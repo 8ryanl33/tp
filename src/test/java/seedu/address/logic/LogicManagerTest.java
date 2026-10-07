@@ -22,6 +22,7 @@ import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
@@ -67,6 +68,40 @@ public class LogicManagerTest {
     public void execute_validCommand_success() throws Exception {
         String listCommand = ListCommand.COMMAND_WORD;
         assertCommandSuccess(listCommand, ListCommand.MESSAGE_SUCCESS, model);
+    }
+
+    @Test
+    public void execute_labelCommand_success() throws Exception {
+        Person samuel = new PersonBuilder().withName("Samuel Tan")
+                .withStudentId("A0101010A")
+                .withEmail("samuel@example.com")
+                .build();
+        model.addPerson(samuel);
+        Person labelledSamuel = new PersonBuilder(samuel).withLabels("Discrete Math Tutorial").build();
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(samuel, labelledSamuel);
+
+        assertCommandSuccess("label l/Discrete Math Tutorial i/A0101010A",
+                "Added label \"Discrete Math Tutorial\" to Samuel Tan (A0101010A).", expectedModel);
+    }
+
+    @Test
+    public void execute_labelCommandDuplicateLabel_throwsCommandException() {
+        Person samuel = new PersonBuilder().withName("Samuel Tan")
+                .withStudentId("A0101010A")
+                .withEmail("samuel@example.com")
+                .withLabels("Discrete Math Tutorial")
+                .build();
+        model.addPerson(samuel);
+
+        assertCommandException("label l/discrete math tutorial i/A0101010A",
+                "Student A0101010A already has label \"Discrete Math Tutorial\".");
+    }
+
+    @Test
+    public void execute_labelCommandNonExistentStudent_throwsCommandException() {
+        assertCommandException("label l/Discrete Math Tutorial i/A0101010A",
+                "Student with ID A0101010A is not in the records. Consider using add to include the student.");
     }
 
     @Test
