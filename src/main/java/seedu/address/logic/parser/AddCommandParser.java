@@ -44,18 +44,11 @@ public class AddCommandParser implements Parser<AddCommand> {
         StudentId studentId = ParserUtil.parseStudentId(argMultimap.getValue(PREFIX_STUDENT_ID).get());
         Email email = ParserUtil.parseEmail(argMultimap.getValue(PREFIX_EMAIL).get());
         Set<Tag> tagList = ParserUtil.parseTags(argMultimap.getAllValues(PREFIX_TAG));
-        Remark remark = parseRemark(argMultimap.getValue(PREFIX_REMARK).orElse(""));
+        Remark remark = ParserUtil.parseRemark(argMultimap.getValue(PREFIX_REMARK).orElse(""));
 
         Person person = new Person(name, studentId, email, tagList, remark);
 
         return new AddCommand(person);
-    }
-
-    private static Remark parseRemark(String value) throws ParseException {
-        if (!Remark.isValidRemark(value)) {
-            throw new ParseException(Remark.MESSAGE_CONSTRAINTS);
-        }
-        return new Remark(value);
     }
 
     /**
