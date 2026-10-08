@@ -33,7 +33,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 
    * `add n/John Doe i/A0123456B e/johnd@example.com r/Needs help with recursion` : Adds a student named `John Doe`.
 
-   * `delete 3` : Deletes the 3rd contact shown in the current list.
+   * `delete i/A0123456B` : Deletes the student whose Student ID is `A0123456B`.
 
    * `clear` : Deletes all contacts.
 
@@ -210,19 +210,45 @@ Examples:
 * `find n/alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
-### Deleting a person: `delete`
+### Deleting a student: `delete`
 
-Deletes the specified person from the address book.
+Deletes the student with the specified Student ID, including their name, email, remark, and tags.
 
-Format: `delete INDEX`
+Format: `delete i/STUDENT_ID`
 
-* Deletes the person at the specified `INDEX`.
-* The index refers to the index number shown in the displayed person list. It is **not** the person's student ID!
-* The index **must be a positive integer** 1, 2, 3, ...
+* Exactly one non-empty `i/` parameter is required. No other parameter prefixes are accepted.
+* Student IDs follow the same nine-character ASCII alphanumeric rules as `add`.
+* Matching is case-insensitive: `delete i/a0123456b` and `delete i/A0123456B` identify the same student.
+* The student is located in the complete record list, even when hidden by a `find` filter.
+* The current filter is preserved after deletion. If the student was hidden, the visible list can stay unchanged.
+* Leading/trailing whitespace is ignored, and a tab can separate `delete` from `i/`. Prefixes remain lowercase.
+* The command must occupy one line. Numeric index commands such as `delete 1` are no longer accepted.
+* Deletion becomes visible only after saving succeeds. A save failure retains the entire record and previous data file.
 
 Examples:
-* `list` followed by `delete 2` deletes the 2nd person in the address book.
-* `find Betsy` followed by `delete 1` deletes the 1st person in the results of the `find` command.
+
+* `delete i/A0123456B` deletes the student with that ID.
+* After `find Betsy`, `delete i/A0123456B` still deletes that ID, whether or not the student appears in the results.
+
+Successful output, when the student is Alex Yeoh:
+
+```text
+Deleted student A0123456B: Alex Yeoh.
+```
+
+| Problem | Message |
+|---------|---------|
+| Missing Student ID | `Missing required parameter: i/.` |
+| Empty Student ID | `Parameter i/ cannot be empty.` |
+| Repeated Student ID | `Parameter i/ must be specified only once.` |
+| Unknown parameter | `Unknown parameter: x/.` (the message names the supplied prefix) |
+| Invalid Student ID | `Student ID must contain exactly 9 letters or digits, with no spaces.` |
+| Student does not exist | `Student with ID A0123456B is not in the records.` |
+| Invalid command structure | `Invalid command format. Usage: delete i/STUDENT_ID` |
+| Saving fails | `Unable to save student data.` |
+
+Malformed commands and unknown IDs leave records, the current filter, and the saved file unchanged.
+If loading failed at startup, deletion is blocked until the data file is fixed and TeachAssist is restarted.
 
 ### Clearing all entries: `clear`
 
@@ -286,7 +312,7 @@ Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [t/TAG]...` <br> e.g., `add n/James Ho i/A0123456B e/jamesho@example.com r/Needs help with recursion t/friend`
 **Clear**  | `clear`
-**Delete** | `delete INDEX`<br> e.g., `delete 3`
+**Delete** | `delete i/STUDENT_ID`<br> e.g., `delete i/A0123456B`
 **Edit**   | `edit INDEX [n/NAME] [e/EMAIL] [t/TAG]...`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
 **Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
 **Label**  | `label l/LABEL_NAME i/STUDENT_ID`<br> e.g., `label l/Discrete Math Tutorial i/A0101010A`
