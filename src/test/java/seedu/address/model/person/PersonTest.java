@@ -18,11 +18,13 @@ import seedu.address.testutil.PersonBuilder;
 public class PersonTest {
 
     private static final String VALID_STUDENT_ID_OTHER_BOB = "C0123456D";
+    private static final String VALID_LABEL_TUTORIAL = "Discrete Math Tutorial";
 
     @Test
     public void asObservableList_modifyList_throwsUnsupportedOperationException() {
         Person person = new PersonBuilder().build();
         assertThrows(UnsupportedOperationException.class, () -> person.getTags().remove(0));
+        assertThrows(UnsupportedOperationException.class, () -> person.getLabels().remove(0));
     }
 
     @Test
@@ -87,6 +89,10 @@ public class PersonTest {
         // different tags -> returns false
         editedAlice = new PersonBuilder(ALICE).withTags(VALID_TAG_HUSBAND).build();
         assertFalse(ALICE.equals(editedAlice));
+
+        // different labels -> returns false
+        editedAlice = new PersonBuilder(ALICE).withLabels(VALID_LABEL_TUTORIAL).build();
+        assertFalse(ALICE.equals(editedAlice));
     }
 
     @Test
@@ -124,7 +130,8 @@ public class PersonTest {
     public void toStringMethod() {
         String expected = Person.class.getCanonicalName() + "{name=" + ALICE.getName()
                 + ", studentId=" + ALICE.getStudentId() + ", email=" + ALICE.getEmail()
-                + ", tags=" + ALICE.getTags() + ", remark=" + ALICE.getRemark() + "}";
+                + ", tags=" + ALICE.getTags() + ", labels=" + ALICE.getLabels()
+                + ", remark=" + ALICE.getRemark() + "}";
         assertEquals(expected, ALICE.toString());
     }
 }

@@ -171,6 +171,30 @@ Examples:
 * `edit 1 e/johndoe@example.com` Changes the first person's email address to `johndoe@example.com`.
 *  `edit 2 n/Betsy Crower t/` Edits the name of the 2nd person to be `Betsy Crower` and clears all existing tags.
 
+### Labelling a student by group: `label`
+
+Adds a group label to an existing student.
+
+Format: `label l/LABEL_NAME i/STUDENT_ID`
+
+* `LABEL_NAME` must not be empty after trimming leading and trailing whitespace.
+* `LABEL_NAME` can contain 1 to 60 characters.
+* `LABEL_NAME` must contain at least one letter or digit.
+* `LABEL_NAME` can contain letters, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods.
+* `LABEL_NAME` cannot contain `/` or ASCII control characters.
+* Internal spacing and capitalization are preserved for display.
+* `STUDENT_ID` must identify an existing student.
+* A student cannot have the same label more than once. Duplicate checks are case-insensitive.
+
+Examples:
+* `label l/Discrete Math Tutorial i/A0101010A`
+* `label i/A0101010A l/Tutorial (Monday)`
+
+Note: Currently, labels and tags are indistinguishable in the UI. Dedicated styling will be implemented soon.
+
+Expected successful output:
+`Added label "Discrete Math Tutorial" to Samuel Tan (A0101010A).`
+
 ### Locating persons by name, student ID, or email: `find`
 
 Finds persons whose name, student ID, or email matches any of the given keywords.
@@ -233,6 +257,7 @@ Commands such as `list` remain available and do not overwrite the invalid file. 
 Furthermore, certain edits can cause the AddressBook to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 
 Each person record must include a valid `studentId`. Older data files that do not include `studentId` for every person may fail to load until the missing values are added manually.
+Group labels are saved under each person record as `labels`. Older data files without `labels` still load; those persons simply start with no labels.
 </box>
 
 ### Archiving data files `[coming in v2.0]`
@@ -264,5 +289,6 @@ Action     | Format, Examples
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit**   | `edit INDEX [n/NAME] [e/EMAIL] [t/TAG]...`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
 **Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
+**Label**  | `label l/LABEL_NAME i/STUDENT_ID`<br> e.g., `label l/Discrete Math Tutorial i/A0101010A`
 **List**   | `list`
 **Help**   | `help`

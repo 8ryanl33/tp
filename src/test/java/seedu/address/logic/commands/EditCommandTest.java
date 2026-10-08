@@ -34,6 +34,8 @@ import seedu.address.testutil.PersonBuilder;
  */
 public class EditCommandTest {
 
+    private static final String VALID_LABEL_TUTORIAL = "Discrete Math Tutorial";
+
     private Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
 
     @Test
@@ -52,6 +54,24 @@ public class EditCommandTest {
 
         assertCommandSuccess(editCommand, model, expectedMessage, expectedModel);
         assertEquals(personWithRemark.getRemark(), model.getFilteredPersonList().get(0).getRemark());
+    }
+
+    @Test
+    public void execute_otherFieldsEdited_preservesLabels() {
+        Person originalPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person personWithLabel = new PersonBuilder(originalPerson)
+                .withLabels(VALID_LABEL_TUTORIAL).build();
+        model.setPerson(originalPerson, personWithLabel);
+        Person editedPerson = new PersonBuilder(personWithLabel).withEmail(VALID_EMAIL_BOB).build();
+        EditCommand editCommand = new EditCommand(INDEX_FIRST_PERSON,
+                new EditPersonDescriptorBuilder().withEmail(VALID_EMAIL_BOB).build());
+
+        String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson));
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(personWithLabel, editedPerson);
+
+        assertCommandSuccess(editCommand, model, expectedMessage, expectedModel);
+        assertEquals(personWithLabel.getLabels(), model.getFilteredPersonList().get(0).getLabels());
     }
 
     @Test
