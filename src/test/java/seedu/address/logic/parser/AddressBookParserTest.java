@@ -33,6 +33,23 @@ public class AddressBookParserTest {
     private final AddressBookParser parser = new AddressBookParser();
 
     @Test
+    public void parseCommand_addWithTabs_success() throws Exception {
+        Person person = new PersonBuilder().withRemark("Quiz: 8/10.").build();
+        String command = "add\tn/" + person.getName() + "\ti/" + person.getStudentId()
+                + "\te/" + person.getEmail() + "\tr/" + person.getRemark();
+        Person expected = new PersonBuilder(person).withTags().build();
+        assertEquals(new AddCommand(expected), parser.parseCommand(command));
+    }
+
+    @Test
+    public void parseCommand_addInvalidParameters_throwsSpecificErrors() {
+        assertThrows(ParseException.class, "Missing required parameter: i/.", ()
+            -> parser.parseCommand("add n/Samuel e/samuel@example.com"));
+        assertThrows(ParseException.class, "Unknown parameter: p/.", ()
+            -> parser.parseCommand("add n/Samuel i/A0123456B e/samuel@example.com p/123"));
+    }
+
+    @Test
     public void parseCommand_add() throws Exception {
         Person person = new PersonBuilder().build();
         AddCommand command = (AddCommand) parser.parseCommand(PersonUtil.getAddCommand(person));
@@ -71,7 +88,7 @@ public class AddressBookParserTest {
     public void parseCommand_find() throws Exception {
         List<String> keywords = List.of("foo", "bar", "baz");
         FindCommand command = (FindCommand) parser.parseCommand(
-                FindCommand.COMMAND_WORD + " " + keywords.stream().collect(Collectors.joining(" ")));
+                FindCommand.COMMAND_WORD + " n/" + keywords.stream().collect(Collectors.joining(" ")));
         assertEquals(new FindCommand(new NameContainsKeywordsPredicate(keywords)), command);
     }
 

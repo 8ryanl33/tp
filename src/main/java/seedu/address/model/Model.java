@@ -64,6 +64,13 @@ public interface Model {
     ObservableList<Person> getFilteredPersonList();
 
     /**
+     * Returns the predicate defining the displayed student list.
+     *
+     * @return The active filter, or the show-all predicate when no filter is set.
+     */
+    Predicate<? super Person> getFilteredPersonListPredicate();
+
+    /**
      * Updates the filter of the filtered person list to filter by the given {@code predicate}.
      * @throws NullPointerException if {@code predicate} is null.
      */

@@ -23,7 +23,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 1. Copy the file to the folder you want to use as the _home folder_ for your AddressBook.
 
 1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
-   A GUI similar to the one below should appear in a few seconds. Note how the app contains some sample data.<br>
+   A GUI similar to the one below should appear in a few seconds. With no saved data file, the student list starts empty.<br>
    ![Ui](images/Ui.png)
 
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
@@ -31,7 +31,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 
    * `list` : Lists all contacts.
 
-   * `add n/John Doe i/A0123456B p/98765432 e/johnd@example.com a/John street, block 123, #01-01` : Adds a contact named `John Doe` to the Address Book.
+   * `add n/John Doe i/A0123456B e/johnd@example.com r/Needs help with recursion` : Adds a student named `John Doe`.
 
    * `delete 3` : Deletes the 3rd contact shown in the current list.
 
@@ -59,7 +59,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
   For example, `[t/TAG]... ` may be omitted, or written as `t/friend` or `t/friend t/family`.
 
 * Parameters can be in any order.<br>
-  For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
+  For example, `add e/john@example.com i/A0123456B n/John Doe` is also acceptable.
 
 * Extraneous parameters for commands that take no parameters, such as `help`, `list`, `exit`, and `clear`, are ignored.<br>
   For example, `help 123` is interpreted as `help`.
@@ -76,24 +76,74 @@ Shows a message explaining how to access the help page.
 Format: `help`
 
 
-### Adding a person: `add`
+### Adding a student: `add`
 
-Adds a person to the address book.
+Adds a student to TeachAssist with identifying information and optional free-text remarks.
+Use remarks for observations such as test results, weak topics, and consultation timings.
 
-Format: `add n/NAME i/STUDENT_ID p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]... `
+Format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [t/TAG]...`
 
-* `STUDENT_ID` must contain exactly 9 ASCII letters or digits, with no spaces or punctuation.
-* Student IDs are stored and compared in uppercase. For example, `a0123456b` and `A0123456B` identify the same student.
-* Student IDs determine duplicate student records. Two persons with the same student ID cannot both be added.
+#### Parameter rules
 
-<box type="tip" seamless>
+* `n/`, `i/`, and `e/` are compulsory and cannot be empty. Each can appear only once.
+* Parameters can appear in any order, including `r/`. Prefixes are lowercase and case-sensitive.
+* Enter one command line. Leading and trailing whitespace around the command and each value is ignored.
+* A supported prefix at the start of a whitespace-separated token starts a parameter. Spaces or tabs can separate parameters.
+* Unknown alphabetic prefix tokens, such as `x/` or `p/`, are rejected, including inside remarks.
+* A prefix joined to other text does not start a parameter. For example, `https://example.com/n/Alex` remains remark text.
 
-**Tip:** A person can have any number of tags, including zero.
-</box>
+| Field | Accepted values and storage |
+|-------|-----------------------------|
+| Name | 1–100 Unicode code points after normalisation, with at least one letter. Allows Unicode letters, combining marks, spaces, apostrophes (`'` and `’`), hyphens, and periods. Digits and other symbols are rejected. Repeated internal spaces become one space; capitalisation is preserved. |
+| Student ID | Exactly nine ASCII letters or digits, without internal spaces or punctuation. Stored in uppercase; `a0123456b` and `A0123456B` identify the same student. |
+| Email | At most 254 characters with exactly one `@`. The local part has 1–64 ASCII letters, digits, periods, underscores, plus signs, or hyphens. It cannot start/end with a period or contain consecutive periods. The domain has at least two dot-separated labels of 1–63 ASCII letters, digits, or hyphens, without boundary hyphens. The final label has 2–63 letters. Only the domain is lowercased. Spaces are rejected, and mailbox existence is not checked. |
+| Remark | Optional, at most 4,000 Unicode code points after trimming. Internal spacing and capitalisation are preserved. Omitting `r/` or supplying an empty `r/` stores an empty remark. At most one `r/` is allowed. Dates, grades, and the meaning of the text are not validated. Long remarks wrap on the student card. |
+| Tags | Optional and repeatable. Existing tag rules apply: non-empty alphanumeric values, with identical tags stored once. |
+
+Unlike numeric text such as `8/10`, a recognised prefix after `r/` starts another parameter.
+For example, `r/Quiz: 8/10 t/friends` stores `Quiz: 8/10` as the remark and `friends` as a tag.
 
 Examples:
-* `add n/John Doe i/A0123456B p/98765432 e/johnd@example.com a/John street, block 123, #01-01`
-* `add n/Betsy Crowe i/B0123456C t/friend e/betsycrowe@example.com a/Newgate Prison p/1234567 t/criminal`
+
+* `add n/Samuel i/A0456832Y e/samuel123@example.com r/Consultation time: 3rd Oct 12pm at Science`
+* `add n/Jamie Lim i/A0234567C e/jamie@example.com r/Struggles with recursion. Quiz 1: 8/10.`
+* `add r/Needs help with recursion e/Alex@EXAMPLE.COM i/a0123456b n/Alex Tan`
+
+#### Successful add
+
+After saving succeeds, the student appears in the complete student list. The result shows the normalised Student ID,
+name, optional remark, and total number of students. For example, when this creates the eighth student:
+
+```text
+Added student A0123456B: Alex Tan. Remark: Needs help with recursion
+8 students listed.
+```
+
+When the remark is empty, the `Remark:` part is omitted. Empty remarks are also hidden on student cards.
+Names do not determine duplicates: different students can share a name.
+If the normalised Student ID already exists, the entire command is rejected; existing details and remarks are not merged.
+
+#### Errors
+
+| Problem | Message |
+|---------|---------|
+| Missing compulsory parameter | `Missing required parameter: i/.` (the message names the missing prefix) |
+| Empty compulsory parameter | `Parameter n/ cannot be empty.` |
+| Repeated parameter | `Parameter n/ must be specified only once.` |
+| Unknown parameter | `Unknown parameter: p/.` |
+| Duplicate Student ID | `Student ID A0123456B already exists.` |
+| Invalid name | `Name must contain 1-100 characters, include a letter, and use only letters, spaces, apostrophes, hyphens, or periods.` |
+| Invalid Student ID | `Student ID must contain exactly 9 letters or digits, with no spaces.` |
+| Invalid email | `Email must have the form name@example.com and meet the supported email format.` |
+| Oversized remark | `Remark must not exceed 4000 characters.` |
+| Invalid command structure | `Invalid command format. Usage: add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [t/TAG]...` |
+| Saving fails | `Unable to save student data.` |
+
+Invalid structure, such as text before the first parameter or an embedded line break, displays the add usage.
+If several errors exist, the parser checks line breaks, unknown prefixes, preamble text, repeated parameters,
+missing parameters, then empty compulsory values before validating field values.
+Within repeated/missing/empty checks, `n/`, `i/`, and `e/` are checked in that order; repeated `r/` is checked after them.
+Failed commands do not change existing student records or the saved file.
 
 ### Listing all persons: `list`
 
@@ -105,34 +155,33 @@ Format: `list`
 
 Edits an existing person in the address book.
 
-Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [t/TAG]... `
+Format: `edit INDEX [n/NAME] [e/EMAIL] [t/TAG]...`
 
 * Edits the person at the specified `INDEX`. The index refers to the index number shown in the displayed person list. The index **must be a positive integer** 1, 2, 3, ...
 * At least one of the optional fields must be provided.
 * Existing values will be updated to the input values.
 * Student ID cannot be edited with this command.
+* Remarks are preserved when editing other fields. Name and email values follow the rules listed under `add`.
 * When editing tags, all of the person's existing tags are removed; adding tags is not cumulative.
 * To remove all of a person's tags, enter `t/` without a tag after it.
 
 Examples:
-*  `edit 1 p/91234567 e/johndoe@example.com` Edits the phone number and email address of the 1st person to be `91234567` and `johndoe@example.com` respectively.
+* `edit 1 e/johndoe@example.com` Changes the first person's email address to `johndoe@example.com`.
 *  `edit 2 n/Betsy Crower t/` Edits the name of the 2nd person to be `Betsy Crower` and clears all existing tags.
 
-### Locating persons by name: `find`
+### Locating persons by name, student ID, or email: `find`
 
-Finds persons whose names contain any of the given keywords.
+Finds persons whose name, student ID, or email matches any of the given keywords.
 
-Format: `find KEYWORD [MORE_KEYWORDS]`
+Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`
 
 * The search is case-insensitive; for example, `hans` matches `Hans`.
-* Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
-* The search considers only names.
-* Only full words match; for example, `Han` does not match `Hans`.
-* Persons matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
+* The search accepts exactly one prefix: `n/`, `i/`, or `e/`.
+* Partial words match; for example, `Han` matches `Hans`.
 
 Examples:
-* `find John` returns `john` and `John Doe`
-* `find alex david` returns `Alex Yeoh`, `David Li`<br>
+* `find n/John` returns `john` and `John Doe`
+* `find n/alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
 ### Deleting a person: `delete`
@@ -163,7 +212,11 @@ Format: `exit`
 
 ### Saving the data
 
-AddressBook automatically saves data after every command. You do not need to save manually.
+TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, and `clear`).
+You do not need to save manually. Commands such as `find`, `list`, `help`, and `exit` do not write student data.
+If saving fails, the proposed change is not applied, and existing records, the displayed filter, and the previous
+saved file remain unchanged. The application displays `Unable to save student data.`
+Storage must support atomic file replacement; unsupported storage produces the same save error.
 
 ### Editing the data file
 
@@ -172,7 +225,9 @@ AddressBook data is saved automatically as a JSON file `[JAR file location]/data
 <box type="warning" seamless>
 
 **Caution:**
-If your changes make the data file invalid, AddressBook starts with an empty address book at the next run. The invalid file remains on disk until you run a command (AddressBook saves after every command). Still, we recommend backing up the file before editing it.<br>
+If your changes make the data file invalid, TeachAssist starts with an empty student list and preserves the invalid file.
+Commands that modify records are blocked with `Student data is unavailable because loading failed. Fix the data file and restart.`
+Commands such as `list` remain available and do not overwrite the invalid file. Back up the file before editing it.<br>
 Furthermore, certain edits can cause the AddressBook to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 
 Each person record must include a valid `studentId`. Older data files that do not include `studentId` for every person may fail to load until the missing values are added manually.
@@ -202,10 +257,10 @@ _Details coming soon ..._
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME i/STUDENT_ID p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]... ` <br> e.g., `add n/James Ho i/A0123456B p/22224444 e/jamesho@example.com a/123, Clementi Rd, 1234665 t/friend t/colleague`
+**Add**    | `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [t/TAG]...` <br> e.g., `add n/James Ho i/A0123456B e/jamesho@example.com r/Needs help with recursion t/friend`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
-**Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]... `<br> e.g.,`edit 2 n/James Lee e/jameslee@example.com`
-**Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
+**Edit**   | `edit INDEX [n/NAME] [e/EMAIL] [t/TAG]...`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
+**Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
 **List**   | `list`
 **Help**   | `help`
