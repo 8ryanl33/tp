@@ -7,9 +7,8 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_STUDENT_ID;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -30,8 +29,6 @@ public class AddCommandParser implements Parser<AddCommand> {
             List.of(PREFIX_NAME, PREFIX_STUDENT_ID, PREFIX_EMAIL, PREFIX_REMARK);
     private static final Set<Prefix> SUPPORTED_PREFIXES =
             Set.of(PREFIX_NAME, PREFIX_STUDENT_ID, PREFIX_EMAIL, PREFIX_TAG, PREFIX_REMARK);
-    // Alphabetic prefix tokens are reserved; numeric text such as 8/10 remains an ordinary value.
-    private static final Pattern PARAMETER_PREFIX = Pattern.compile("(?:^|\\p{javaWhitespace})([A-Za-z]+/)");
     private static final String MESSAGE_UNKNOWN_PARAMETER = "Unknown parameter: %s.";
     private static final String MESSAGE_REPEATED_PARAMETER = "Parameter %s must be specified only once.";
     private static final String MESSAGE_MISSING_PARAMETER = "Missing required parameter: %s.";
@@ -77,12 +74,9 @@ public class AddCommandParser implements Parser<AddCommand> {
     }
 
     private static void rejectUnknownPrefixes(String args) throws ParseException {
-        Matcher matcher = PARAMETER_PREFIX.matcher(args);
-        while (matcher.find()) {
-            Prefix prefix = new Prefix(matcher.group(1));
-            if (!SUPPORTED_PREFIXES.contains(prefix)) {
-                throw new ParseException(String.format(MESSAGE_UNKNOWN_PARAMETER, prefix));
-            }
+        Optional<Prefix> unknownPrefix = ArgumentTokenizer.findUnknownPrefix(args, SUPPORTED_PREFIXES);
+        if (unknownPrefix.isPresent()) {
+            throw new ParseException(String.format(MESSAGE_UNKNOWN_PARAMETER, unknownPrefix.get()));
         }
     }
 

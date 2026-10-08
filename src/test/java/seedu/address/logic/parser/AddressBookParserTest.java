@@ -69,8 +69,15 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_delete() throws Exception {
         DeleteCommand command = (DeleteCommand) parser.parseCommand(
-                DeleteCommand.COMMAND_WORD + " " + INDEX_FIRST_PERSON.getOneBased());
-        assertEquals(new DeleteCommand(INDEX_FIRST_PERSON), command);
+                "delete\ti/a0123456b");
+        assertEquals(new DeleteCommand(new StudentId("A0123456B")), command);
+    }
+
+    @Test
+    public void parseCommand_deleteInvalidParameters_reportsSpecificErrors() {
+        assertThrows(ParseException.class, "Missing required parameter: i/.", () -> parser.parseCommand("delete"));
+        assertThrows(ParseException.class, DeleteCommand.MESSAGE_INVALID_FORMAT, () -> parser.parseCommand("delete 1"));
+        assertThrows(ParseException.class, StudentId.MESSAGE_CONSTRAINTS, () -> parser.parseCommand("delete i/123"));
     }
 
     @Test
