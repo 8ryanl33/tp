@@ -3,14 +3,15 @@ package seedu.address.storage;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import java.util.logging.Logger;
 
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.DataLoadingException;
 import seedu.address.commons.exceptions.IllegalValueException;
-import seedu.address.commons.util.FileUtil;
 import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.ReadOnlyAddressBook;
 
@@ -75,15 +76,45 @@ public class JsonAddressBookStorage {
 
     /**
      * Similar to {@link #saveAddressBook(ReadOnlyAddressBook)}.
+     * Writes to a temporary file in the same directory, then atomically replaces the destination.
+     * If writing or replacement fails, the previous data file remains unchanged.
      *
+     * @param addressBook The non-null student records to save.
      * @param filePath location of the data. Cannot be null.
+     * @throws IOException if writing fails or the filesystem does not support atomic replacement.
      */
     public void saveAddressBook(ReadOnlyAddressBook addressBook, Path filePath) throws IOException {
         requireNonNull(addressBook);
         requireNonNull(filePath);
 
-        FileUtil.createIfMissing(filePath);
-        JsonUtil.saveJsonFile(new JsonSerializableAddressBook(addressBook), filePath);
+        Path targetFile = filePath.toAbsolutePath().normalize();
+        Files.createDirectories(targetFile.getParent());
+        Path temporaryFile = Files.createTempFile(targetFile.getParent(), "teachassist-", ".tmp");
+        try {
+            JsonUtil.saveJsonFile(new JsonSerializableAddressBook(addressBook), temporaryFile);
+            replaceDataFile(temporaryFile, targetFile);
+        } finally {
+            removeTemporaryFile(temporaryFile);
+        }
+    }
+
+    /**
+     * Atomically replaces the saved data with a completely written temporary file.
+     *
+     * @param temporaryFile The completed temporary file in the destination directory.
+     * @param targetFile The destination file.
+     * @throws IOException if atomic replacement fails, leaving the previous destination unchanged.
+     */
+    protected void replaceDataFile(Path temporaryFile, Path targetFile) throws IOException {
+        Files.move(temporaryFile, targetFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    private void removeTemporaryFile(Path temporaryFile) {
+        try {
+            Files.deleteIfExists(temporaryFile);
+        } catch (IOException e) {
+            logger.warning("Unable to remove temporary data file " + temporaryFile + ": " + e.getMessage());
+        }
     }
 
 }

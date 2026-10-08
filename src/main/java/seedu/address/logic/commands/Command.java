@@ -9,6 +9,16 @@ import seedu.address.model.Model;
 public abstract class Command {
 
     /**
+     * Returns whether this command can modify stored student data.
+     * Modifying commands require available data and a successful save before their changes are published.
+     *
+     * @return True for commands that add, edit, remove, or clear student records.
+     */
+    public boolean isModifyingData() {
+        return false;
+    }
+
+    /**
      * Executes the command and returns the result message.
      *
      * @param model {@code Model} which the command should operate on.

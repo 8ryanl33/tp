@@ -11,11 +11,12 @@ import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
+import seedu.address.model.person.Remark;
 import seedu.address.model.person.StudentId;
 import seedu.address.model.tag.Tag;
 
 /**
- * Contains utility methods used for parsing strings in the various *Parser classes.
+ * Contains utility methods for converting command parameter values into model objects.
  */
 public class ParserUtil {
 
@@ -24,6 +25,10 @@ public class ParserUtil {
     /**
      * Parses {@code oneBasedIndex} into an {@code Index} and returns it. Leading and trailing whitespaces will be
      * trimmed.
+     *
+     * @param oneBasedIndex The non-null text representing a one-based index.
+     * @return The parsed index.
+     * @throws NullPointerException if {@code oneBasedIndex} is null.
      * @throws ParseException if the specified index is invalid (not a non-zero unsigned integer).
      */
     public static Index parseIndex(String oneBasedIndex) throws ParseException {
@@ -36,8 +41,11 @@ public class ParserUtil {
 
     /**
      * Parses a {@code String name} into a {@code Name}.
-     * Leading and trailing whitespaces will be trimmed.
+     * Leading and trailing whitespace is trimmed; repeated internal spaces are collapsed by {@code Name}.
      *
+     * @param name The non-null name text.
+     * @return The validated, normalised name with capitalisation preserved.
+     * @throws NullPointerException if {@code name} is null.
      * @throws ParseException if the given {@code name} is invalid.
      */
     public static Name parseName(String name) throws ParseException {
@@ -52,7 +60,11 @@ public class ParserUtil {
     /**
      * Parses a {@code String studentId} into a {@code StudentId}.
      * Leading and trailing whitespaces will be trimmed.
+     * Student ID letters are converted to uppercase by {@code StudentId}.
      *
+     * @param studentId The non-null student ID text.
+     * @return The validated, uppercase student ID with surrounding whitespace removed.
+     * @throws NullPointerException if {@code studentId} is null.
      * @throws ParseException if the given {@code studentId} is invalid.
      */
     public static StudentId parseStudentId(String studentId) throws ParseException {
@@ -67,7 +79,11 @@ public class ParserUtil {
     /**
      * Parses a {@code String email} into an {@code Email}.
      * Leading and trailing whitespaces will be trimmed.
+     * The domain is converted to lowercase by {@code Email}; local-part capitalisation is preserved.
      *
+     * @param email The non-null email text.
+     * @return The validated email with surrounding whitespace removed and its domain in lowercase.
+     * @throws NullPointerException if {@code email} is null.
      * @throws ParseException if the given {@code email} is invalid.
      */
     public static Email parseEmail(String email) throws ParseException {
@@ -83,6 +99,9 @@ public class ParserUtil {
      * Parses a {@code String tag} into a {@code Tag}.
      * Leading and trailing whitespaces will be trimmed.
      *
+     * @param tag The non-null tag text.
+     * @return The validated tag with surrounding whitespace removed.
+     * @throws NullPointerException if {@code tag} is null.
      * @throws ParseException if the given {@code tag} is invalid.
      */
     public static Tag parseTag(String tag) throws ParseException {
@@ -96,6 +115,12 @@ public class ParserUtil {
 
     /**
      * Parses {@code Collection<String> tags} into a {@code Set<Tag>}.
+     * Each value is trimmed and validated using {@link #parseTag(String)}. Duplicate tags are stored once.
+     *
+     * @param tags The non-null collection of non-null tag values.
+     * @return The parsed tags, or an empty set if the collection is empty.
+     * @throws NullPointerException if {@code tags} or any tag value is null.
+     * @throws ParseException if any tag value is invalid.
      */
     public static Set<Tag> parseTags(Collection<String> tags) throws ParseException {
         requireNonNull(tags);
@@ -104,5 +129,24 @@ public class ParserUtil {
             tagSet.add(parseTag(tagName));
         }
         return tagSet;
+    }
+
+    /**
+     * Parses a {@code String remark} into a {@code Remark}.
+     * Removes leading and trailing whitespace using {@link String#trim()}, preserving internal spacing and case.
+     * Empty and whitespace-only input produces an empty remark. The length limit applies after trimming.
+     *
+     * @param remark The non-null remark text.
+     * @return The parsed remark with surrounding whitespace removed.
+     * @throws NullPointerException if {@code remark} is null.
+     * @throws ParseException if the trimmed remark exceeds {@link Remark#MAX_LENGTH} Unicode code points.
+     */
+    public static Remark parseRemark(String remark) throws ParseException {
+        requireNonNull(remark);
+        String trimmedRemark = remark.trim();
+        if (!Remark.isValidRemark(trimmedRemark)) {
+            throw new ParseException(Remark.MESSAGE_CONSTRAINTS);
+        }
+        return new Remark(trimmedRemark);
     }
 }
