@@ -6,6 +6,7 @@ import static seedu.address.commons.util.AppUtil.checkArgument;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * Helper functions for handling strings.
@@ -56,7 +57,7 @@ public class StringUtil {
         String preppedWord = word.trim();
         checkArgument(!preppedWord.isEmpty(), "Word parameter cannot be empty");
 
-        return sentence.toLowerCase().contains(preppedWord.toLowerCase());
+        return sentence.toLowerCase(Locale.ROOT).contains(preppedWord.toLowerCase(Locale.ROOT));
     }
 
     /**
