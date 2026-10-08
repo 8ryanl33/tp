@@ -50,7 +50,7 @@ The bulk of the app's work is done by the following four components:
 
 **How the architecture components interact with each other**
 
-The *Sequence Diagram* below shows how the components interact with each other for the scenario where the user issues the command `delete 1`.
+The *Sequence Diagram* below shows the components interacting for `delete i/A0123456B`.
 
 <puml src="diagrams/ArchitectureSequenceDiagram.puml" width="574" />
 
@@ -90,9 +90,9 @@ Here's a (partial) class diagram of the `Logic` component:
 
 <puml src="diagrams/LogicClassDiagram.puml" width="550"/>
 
-The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("delete 1")` API call as an example.
+The sequence diagram below illustrates `execute("delete i/A0123456B")`, including saving before publishing changes.
 
-<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `delete 1` Command" />
+<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Delete by Student ID and save before updating the live model" />
 
 <box type="info" seamless>
 
@@ -228,7 +228,7 @@ LogicManager → temporary ModelManager → JsonAddressBookStorage → live Mode
 1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, and `clear`
    return true. Future modifying commands must override this method too.
 2. `LogicManager` copies the live records and current filter into a temporary `ModelManager`, then executes the command
-   against that copy. Copying the filter preserves the meaning of displayed indices for existing edit/delete commands.
+   against that copy. Copying the filter preserves displayed indices for `edit` and the active view for `delete`.
 3. `JsonAddressBookStorage` writes the proposed records to a temporary file in the destination directory.
    `Files.move` with `ATOMIC_MOVE` and `REPLACE_EXISTING` replaces the old file only after writing completes.
    There is no fallback overwrite when atomic replacement is unsupported. Temporary files are removed after failure.
@@ -259,6 +259,32 @@ feedback with/without remarks, JSON round trips, filtered index handling, startu
 Replacement-failure tests simulate an error after the temporary file is written and check that the original file,
 records, and active filter remain unchanged. They also check temporary-file cleanup and failed first saves.
 
+### Deleting student information
+
+Command format: `delete i/STUDENT_ID`. The display index is not used to identify students for deletion.
+
+`DeleteCommandParser` accepts exactly one non-empty `i/`. It rejects line breaks, unknown prefixes, preamble text,
+repeated IDs, missing IDs, and empty IDs before calling `ParserUtil#parseStudentId`.
+`ArgumentTokenizer#findUnknownPrefix` shares the same case-sensitive alphabetic-prefix detection with `add`.
+An invalid Student ID retains the field constraint message instead of being replaced with a usage error.
+
+`DeleteCommand` stores the validated `StudentId` and searches `model.getAddressBook().getPersonList()` for an exact
+normalised ID match. It retrieves the existing `Person` and passes that object to `model.deletePerson`.
+This removes the entire record, including remarks and tags, without separately deleting its fields.
+The complete record list is searched so a student hidden by a filter can still be deleted.
+
+For example, after `find Benson`, `delete i/a1234567b` removes Alice's `A1234567B` record while the displayed Benson
+results remain unchanged. If Alice is already absent, the command reports
+`Student with ID A1234567B is not in the records.` and changes no data.
+Successful feedback is `Deleted student A1234567B: Alice Pauline.`
+
+Deletion preserves the current filter and returns true from `Command#isModifyingData`.
+`LogicManager` therefore performs it on the temporary model, saves the proposed records, and only then publishes
+the change. If saving fails, the live record, filter, and previous saved file remain unchanged.
+If startup loading failed, deletion is blocked by the existing loading guard.
+
+Tests cover normalised IDs, visible/hidden students, an empty displayed list, nonexistent IDs, malformed parameters,
+whole-record removal from persisted JSON, filter preservation, and save failures.
 
 ### \[Proposed\] Undo/redo feature
 
@@ -278,7 +304,9 @@ Step 1. The user launches the application for the first time. The `VersionedAddr
 
 <puml src="diagrams/UndoRedoState0.puml" alt="UndoRedoState0" />
 
-Step 2. The user executes `delete 5` command to delete the 5th person in the address book. The `delete` command calls `Model#commitAddressBook()`, causing the modified state of the address book after the `delete 5` command executes to be saved in the `addressBookStateList`, and the `currentStatePointer` is shifted to the newly inserted address book state.
+Step 2. The user executes `delete i/A0123456B` to delete that student's record. In this proposed undo/redo design,
+the `delete` command calls `Model#commitAddressBook()` after deletion, saving the modified state in the
+`addressBookStateList` and advancing `currentStatePointer` to the new state.
 
 <puml src="diagrams/UndoRedoState1.puml" alt="UndoRedoState1" />
 
@@ -565,12 +593,18 @@ MSS:
 * 1a. The student ID parameter is missing, empty, or improperly formatted.
 * 1a1. TeachAssist shows an error message specifying the invalid parameter or usage format.
 * Use case ends.
+* 1b. The command contains a repeated Student ID or an unknown parameter.
+* 1b1. TeachAssist shows the error message naming the offending prefix without changing student records.
+* Use case ends.
+* 1c. The data file failed to load at startup.
+* 1c1. TeachAssist blocks deletion and asks the TA to fix the data file and restart.
+* Use case ends.
 * 2a. No student with the specified student ID exists in the records.
 * 2a1. TeachAssist shows an error message stating that the student is not in the records.
 * Use case ends.
 * 3a. Saving data to the file fails.
 * 3a1. TeachAssist shows an error message indicating that it is unable to save student data.
-* 3a2. TeachAssist retains the student record without deleting it.
+* 3a2. TeachAssist retains the entire student record, current filter, and previous saved file.
 * Use case ends.
 
 ### Non-Functional Requirements
