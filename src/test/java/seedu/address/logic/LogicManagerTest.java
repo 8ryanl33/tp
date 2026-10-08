@@ -68,6 +68,14 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_label_successPersistsLabel() throws Exception {
+        model.addPerson(ALICE);
+        logic.execute("label l/Tutorial 1 i/" + ALICE.getStudentId());
+
+        assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+    }
+
+    @Test
     public void execute_readOnlyCommands_doNotSave() throws Exception {
         JsonAddressBookStorage failingStorage = new JsonAddressBookStorage(temporaryFolder.resolve("unused.json")) {
             @Override
@@ -89,7 +97,7 @@ public class LogicManagerTest {
         assertThrows(DataLoadingException.class, storage::readAddressBook);
         logic = new LogicManager(model, storage, false);
         for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "clear", "delete 1",
-                "edit 1 n/Samuel")) {
+                "edit 1 n/Samuel", "label l/Tutorial 1 i/A0123456B")) {
             assertCommandException(command, LogicManager.MESSAGE_DATA_UNAVAILABLE);
         }
         logic.execute("list");
@@ -114,7 +122,7 @@ public class LogicManagerTest {
         logic = new LogicManager(model, new StorageManager(failingStorage,
                 new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
         for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "delete 1", "clear",
-                "edit 1 n/Updated Name")) {
+                "edit 1 n/Updated Name", "label l/Tutorial 1 i/" + BENSON.getStudentId())) {
             assertThrows(CommandException.class, LogicManager.MESSAGE_SAVE_FAILURE, () -> logic.execute(command));
             assertEquals(previousRecords, model.getAddressBook());
             assertEquals(List.of(BENSON), model.getFilteredPersonList());
