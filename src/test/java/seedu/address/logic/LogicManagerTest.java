@@ -115,7 +115,7 @@ public class LogicManagerTest {
         logic = new LogicManager(model, new StorageManager(failingStorage,
                 new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
         logic.execute("list");
-        logic.execute("find Samuel");
+        logic.execute("find n/ Samuel");
         logic.execute("help");
         logic.execute("exit");
     }
