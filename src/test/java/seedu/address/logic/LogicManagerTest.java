@@ -76,7 +76,7 @@ public class LogicManagerTest {
         logic = new LogicManager(model, new StorageManager(failingStorage,
                 new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
         logic.execute("list");
-        logic.execute("find Samuel");
+        logic.execute("find n/ Samuel");
         logic.execute("help");
         logic.execute("exit");
     }
@@ -124,7 +124,7 @@ public class LogicManagerTest {
     public void execute_deleteAfterFind_usesFilteredIndexAndPersists() throws Exception {
         model.addPerson(ALICE);
         model.addPerson(BENSON);
-        logic.execute("find Benson");
+        logic.execute("find n/ Benson");
         logic.execute("delete 1");
         assertEquals(List.of(ALICE), model.getAddressBook().getPersonList());
         assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
