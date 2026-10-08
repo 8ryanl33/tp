@@ -13,9 +13,9 @@ public class ListCommandParser implements Parser<ListCommand> {
     /**
      * Parses the given arguments in the context of the {@code ListCommand}.
      *
-     * @param args arguments supplied after the command word
-     * @return a command that lists every student
-     * @throws ParseException if any arguments are supplied
+     * @param args arguments supplied after the command word.
+     * @return a command that lists every student.
+     * @throws ParseException if any arguments are supplied.
      */
     public ListCommand parse(String args) throws ParseException {
         if (!args.isBlank()) {
