@@ -126,14 +126,15 @@ The `Model` component,
 
 * stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object).
 * uses `studentId` as the domain identifier for `Person` duplicate checks. The JavaFX `id` label in `PersonListCard.fxml` is only the displayed list index, not the student's identifier.
+* stores group labels as `Label` objects inside each `Person`, separate from `Tag` objects. This keeps group-label validation and storage independent from tag validation and storage.
 * stores the `Person` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Person>` that the UI can observe and bind to, so the UI updates when the list changes.
-* stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
+* stores a `UserPrefs` object that represents the user's preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
 
 <box type="info" seamless>
 
-**Note:** The alternative, arguably more object-oriented, design below keeps a unique list of tags in `AddressBook`, and each `Person` references tags from that list. This lets `AddressBook` maintain one `Tag` object per unique tag instead of each `Person` holding its own `Tag` objects.<br>
+**Note:** The alternative, arguably more object-oriented, design below keeps unique lists of tags and labels in `AddressBook`, and each `Person` references values from those lists. This lets `AddressBook` maintain one value object per unique tag or label instead of each `Person` holding its own objects.<br>
 
 <puml src="diagrams/BetterModelClassDiagram.puml" width="450" />
 </box>
@@ -148,6 +149,7 @@ The `Model` component,
 The `Storage` component,
 * can save both address book data and user preference data in JSON format, and read them back into corresponding objects.
 * expects each stored `Person` JSON object to contain a valid `studentId`. There is currently no migration or default-value strategy for old data files missing this field.
+* stores group labels through `JsonAdaptedLabel`. Missing or null `labels` fields are treated as empty label sets for compatibility with older data files.
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
 
@@ -160,6 +162,31 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 ## **Implementation**
 
 This section describes some noteworthy details on how certain features are implemented.
+
+### Label command
+
+The `label` command lets a TA assign a group label to an existing student.
+
+Format: `label l/LABEL_NAME i/STUDENT_ID`
+
+The implementation uses the following classes:
+
+* `Label` is a model value object for group labels. It is separate from `Tag`, even though labels are rendered using the existing tag-style UI component.
+* `ParserUtil#parseLabel` trims command input and converts valid label text into a `Label`.
+* `LabelCommandParser` checks command structure, required `l/` and `i/` parameters, empty values, duplicate parameters, label validity, and student ID validity.
+* `LabelCommand` locates the target student by `StudentId`, rejects case-insensitive duplicate labels on the same student, creates an updated `Person`, and calls `Model#setPerson`.
+* `JsonAdaptedLabel` and `JsonAdaptedPerson` persist labels under each person's `labels` JSON field.
+
+The sequence diagram below shows how a successful `label l/Tutorial 1 i/A0101010A` command is parsed, executed, and saved.
+
+<puml src="diagrams/LabelSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `label` Command" />
+
+Design notes:
+
+* Labels and tags intentionally remain separate model/storage concepts so that future changes to tag behavior do not silently change group labels, and vice versa.
+* Duplicate detection is case-insensitive, but the originally stored label capitalization is preserved for display and duplicate error messages.
+* `EditCommand` preserves a person's existing labels when rebuilding a `Person` with edited fields.
+* `PersonCard` renders labels in the same `FlowPane` used for tags so labels inherit the existing AB3 tag-style UI.
 
 ### Adding student information
 
@@ -232,6 +259,7 @@ feedback with/without remarks, JSON round trips, filtered index handling, startu
 Replacement-failure tests simulate an error after the temporary file is written and check that the original file,
 records, and active filter remain unchanged. They also check temporary-file cleanup and failed first saves.
 
+
 ### \[Proposed\] Undo/redo feature
 
 #### Proposed Implementation
@@ -254,7 +282,7 @@ Step 2. The user executes `delete 5` command to delete the 5th person in the add
 
 <puml src="diagrams/UndoRedoState1.puml" alt="UndoRedoState1" />
 
-Step 3. The user executes `add n/David …​` to add a new person. The `add` command also calls `Model#commitAddressBook()`, causing another modified address book state to be saved into the `addressBookStateList`.
+Step 3. The user executes `add n/David ...` to add a new person. The `add` command also calls `Model#commitAddressBook()`, causing another modified address book state to be saved into the `addressBookStateList`.
 
 <puml src="diagrams/UndoRedoState2.puml" alt="UndoRedoState2" />
 
@@ -287,7 +315,7 @@ Similarly, how an undo operation goes through the `Model` component is shown bel
 
 <puml src="diagrams/UndoSequenceDiagram-Model.puml" alt="UndoSequenceDiagram-Model" />
 
-The `redo` command does the opposite — it calls `Model#redoAddressBook()`, which shifts the `currentStatePointer` once to the right, pointing to the previously undone state, and restores the address book to that state.
+The `redo` command does the opposite - it calls `Model#redoAddressBook()`, which shifts the `currentStatePointer` once to the right, pointing to the previously undone state, and restores the address book to that state.
 
 <box type="info" seamless>
 
@@ -298,7 +326,7 @@ Step 5. The user then decides to execute the command `list`. Commands that do no
 
 <puml src="diagrams/UndoRedoState4.puml" alt="UndoRedoState4" />
 
-Step 6. The user executes `clear`, which calls `Model#commitAddressBook()`. Since the `currentStatePointer` is not pointing at the end of the `addressBookStateList`, all address book states after the `currentStatePointer` will be purged. Reason: It no longer makes sense to redo the `add n/David …` command. This is the behavior that most modern desktop applications follow.
+Step 6. The user executes `clear`, which calls `Model#commitAddressBook()`. Since the `currentStatePointer` is not pointing at the end of the `addressBookStateList`, all address book states after the `currentStatePointer` will be purged. Reason: It no longer makes sense to redo the `add n/David ...` command. This is the behavior that most modern desktop applications follow.
 
 <puml src="diagrams/UndoRedoState5.puml" alt="UndoRedoState5" />
 
@@ -358,7 +386,7 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 
 #### Student information
 
-| ID | Priority | As a/an … | I want to … | So that … |
+| ID | Priority | As a/an ... | I want to ... | So that ... |
 |----|----------|--------|-------------|----------------|
 | US01 | `* * *` | TA | add a student under my care | I can keep information about them throughout the semester |
 | US02 | `* * *` | TA | view a student's information | I can quickly recall who the student is |
@@ -370,7 +398,7 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 
 #### Student notes and interactions
 
-| ID | Priority | As a/an … | I want to … | So that … |
+| ID | Priority | As a/an ... | I want to ... | So that ... |
 |----|----------|--------|-------------|----------------|
 | US08 | `* * *` | TA | record notes about a student | I can remember important information about them later |
 | US09 | `* * *` | TA preparing to meet a student | view my previous notes about the student | I can provide support consistent with our earlier interactions |
@@ -381,7 +409,7 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 
 #### Learning progress
 
-| ID | Priority | As a/an … | I want to … | So that … |
+| ID | Priority | As a/an ... | I want to ... | So that ... |
 |----|----------|--------|-------------|----------------|
 | US14 | `* *` | TA | record topics that a student is struggling with | I know where the student may need additional support |
 | US15 | `* *` | TA | record topics that a student has improved in | I can track their learning progress over time |
@@ -391,7 +419,7 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 
 #### Follow-up tasks with students
 
-| ID | Priority | As a/an … | I want to … | So that … |
+| ID | Priority | As a/an ... | I want to ... | So that ... |
 |----|----------|--------|-------------|----------------|
 | US19 | `* *` | TA | record a follow-up action associated with a student | I do not forget things I need to do for them |
 | US20 | `* *` | TA | view my outstanding follow-ups | I know which students still require my attention |
@@ -402,7 +430,7 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 
 #### Attendance and participation
 
-| ID | Priority | As a/an … | I want to … | So that … |
+| ID | Priority | As a/an ... | I want to ... | So that ... |
 |----|----------|--------|-------------|----------------|
 | US25 | `* *` | TA | record a student's tutorial attendance | I can keep track of whether they have been attending classes |
 | US26 | `* *` | TA | record a student's participation in tutorials | I can remember how actively they have been engaging in class |
@@ -412,7 +440,7 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 
 #### Finding and organising information
 
-| ID | Priority | As a/an … | I want to … | So that … |
+| ID | Priority | As a/an ... | I want to ... | So that ... |
 |----|----------|--------|-------------|----------------|
 | US34 | `* * *` | TA in a hurry | quickly find a student by name | I can access their information without interrupting my workflow |
 | US35 | `* *` | TA with many students | filter students based on information relevant to my current task | I only see the students I need to focus on |

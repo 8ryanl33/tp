@@ -9,6 +9,7 @@ import java.util.Set;
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.label.Label;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Remark;
@@ -111,6 +112,21 @@ public class ParserUtil {
             throw new ParseException(Tag.MESSAGE_CONSTRAINTS);
         }
         return new Tag(trimmedTag);
+    }
+
+    /**
+     * Parses a {@code String label} into a {@code Label}.
+     * Leading and trailing whitespaces will be trimmed.
+     *
+     * @throws ParseException if the given {@code label} is invalid.
+     */
+    public static Label parseLabel(String label) throws ParseException {
+        requireNonNull(label);
+        String trimmedLabel = label.trim();
+        if (!Label.isValidLabelName(trimmedLabel)) {
+            throw new ParseException(Label.MESSAGE_CONSTRAINTS);
+        }
+        return new Label(trimmedLabel);
     }
 
     /**
