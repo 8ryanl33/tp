@@ -52,7 +52,7 @@ public class LogicManagerTest {
     public void execute_deleteHiddenStudent_preservesFilterAndPersists() throws Exception {
         model.addPerson(ALICE);
         model.addPerson(BENSON);
-        logic.execute("find Benson");
+        logic.execute("find n/Benson");
         CommandResult result = logic.execute("delete i/a1234567b");
         assertEquals("Deleted student A1234567B: Alice Pauline.", result.getFeedbackToUser());
         assertEquals(List.of(BENSON), model.getAddressBook().getPersonList());
@@ -163,7 +163,7 @@ public class LogicManagerTest {
     public void execute_deleteAfterFind_usesStudentIdAndPersists() throws Exception {
         model.addPerson(ALICE);
         model.addPerson(BENSON);
-        logic.execute("find Benson");
+        logic.execute("find n/Benson");
         logic.execute("delete i/B1234567C");
         assertEquals(List.of(ALICE), model.getAddressBook().getPersonList());
         assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
