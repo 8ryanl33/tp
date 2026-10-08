@@ -32,6 +32,9 @@ import seedu.address.ui.UiManager;
 public class MainApp extends Application {
 
     public static final String VERSION = "V0.5.1";
+    public static final String MESSAGE_STUDENTS_LOADED = "%1$d students loaded.";
+    public static final String MESSAGE_NO_EXISTING_DATA =
+            "No existing student data found. Starting with an empty student list.";
 
     private static final Logger logger = LogsCenter.getLogger(MainApp.class);
     private static final Path USER_PREFS_FILE_PATH = Paths.get("preferences.json");
@@ -42,6 +45,7 @@ public class MainApp extends Application {
     protected Storage storage;
     protected Model model;
     private boolean isStudentDataAvailable = true;
+    private String startupMessage = "";
 
     @Override
     public void init() throws Exception {
@@ -57,12 +61,13 @@ public class MainApp extends Application {
 
         logic = initLogic(model, storage);
 
-        ui = new UiManager(logic, storage.getAddressBookFilePath());
+        ui = new UiManager(logic, storage.getAddressBookFilePath(), startupMessage);
     }
 
     /**
      * Returns a {@code ModelManager} with the data from {@code storage}'s address book and {@code userPrefs}. <br>
      * Starts empty if the data file is absent or unreadable. A loading failure also blocks modifying commands.
+     * Records the outcome of loading as the startup message shown to the user.
      *
      * @param storage The storage from which to load student data.
      * @param userPrefs The initial user preferences.
@@ -76,17 +81,31 @@ public class MainApp extends Application {
         try {
             addressBookOptional = storage.readAddressBook();
             if (addressBookOptional.isEmpty()) {
-                logger.info("No existing student data found. Starting with an empty student list.");
+                startupMessage = MESSAGE_NO_EXISTING_DATA;
+            } else {
+                startupMessage = String.format(MESSAGE_STUDENTS_LOADED,
+                        addressBookOptional.get().getPersonList().size());
             }
+            logger.info(startupMessage);
             initialData = addressBookOptional.orElseGet(AddressBook::new);
         } catch (DataLoadingException e) {
             logger.warning("Data file at " + storage.getAddressBookFilePath() + " could not be loaded."
                     + " Will be starting with an empty AddressBook.");
             initialData = new AddressBook();
             isStudentDataAvailable = false;
+            startupMessage = e.getMessage();
         }
 
         return new ModelManager(initialData, userPrefs);
+    }
+
+    /**
+     * Returns the message describing the outcome of loading student data at startup.
+     *
+     * @return The startup message, or an empty string if loading has not been attempted.
+     */
+    protected String getStartupMessage() {
+        return startupMessage;
     }
 
     /**

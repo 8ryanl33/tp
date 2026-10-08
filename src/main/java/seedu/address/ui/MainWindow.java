@@ -128,6 +128,15 @@ public class MainWindow extends UiPart<Stage> {
     }
 
     /**
+     * Shows the outcome of loading student data at startup in the result display.
+     *
+     * @param startupMessage The message describing the loading outcome.
+     */
+    void showStartupMessage(String startupMessage) {
+        resultDisplay.setFeedbackToUser(startupMessage);
+    }
+
+    /**
      * Sets the default size based on {@code guiSettings}.
      */
     private void setWindowDefaultSize(GuiSettings guiSettings) {
