@@ -39,6 +39,9 @@ class JsonAdaptedLabel {
      * @throws IllegalValueException if there were any data constraints violated in the adapted label.
      */
     public Label toModelType() throws IllegalValueException {
+        if (labelName == null) {
+            throw new IllegalValueException(Label.MESSAGE_CONSTRAINTS);
+        }
         if (!Label.isValidLabelName(labelName)) {
             throw new IllegalValueException(Label.MESSAGE_CONSTRAINTS);
         }

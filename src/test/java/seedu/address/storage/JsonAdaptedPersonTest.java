@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.storage.JsonAdaptedPerson.MISSING_FIELD_MESSAGE_FORMAT;
+import static seedu.address.storage.JsonAdaptedPerson.MISSING_LABEL_MESSAGE;
+import static seedu.address.storage.JsonAdaptedPerson.MISSING_TAG_MESSAGE;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.BENSON;
 
@@ -202,6 +204,30 @@ public class JsonAdaptedPersonTest {
     }
 
     @Test
+    public void toModelType_nullTagName_throwsIllegalValueException() {
+        List<JsonAdaptedTag> invalidTags = new ArrayList<>(VALID_TAGS);
+
+        // Cast added as there are two overloads for the constructor.
+        // We're just testing against null inputs, and we won't be testing for both dispatches.
+        invalidTags.add(new JsonAdaptedTag((String) null));
+
+        JsonAdaptedPerson person =
+                new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID, VALID_EMAIL,
+                        invalidTags, "");
+        assertThrows(IllegalValueException.class, person::toModelType);
+    }
+
+    @Test
+    public void toModelType_nullTag_throwsIllegalValueException() {
+        List<JsonAdaptedTag> invalidTags = new ArrayList<>(VALID_TAGS);
+        invalidTags.add(null);
+        JsonAdaptedPerson person =
+                new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID, VALID_EMAIL,
+                        invalidTags, "");
+        assertThrows(IllegalValueException.class, MISSING_TAG_MESSAGE, person::toModelType);
+    }
+
+    @Test
     public void toModelType_invalidLabels_throwsIllegalValueException() {
         List<JsonAdaptedLabel> invalidLabels = new ArrayList<>(VALID_LABELS);
         invalidLabels.add(new JsonAdaptedLabel(INVALID_LABEL));
@@ -209,6 +235,29 @@ public class JsonAdaptedPersonTest {
                 new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID, VALID_EMAIL,
                         VALID_TAGS, invalidLabels, "");
         assertThrows(IllegalValueException.class, person::toModelType);
+    }
+
+    @Test
+    public void toModelType_nullLabelName_throwsIllegalValueException() {
+        List<JsonAdaptedLabel> invalidLabels = new ArrayList<>(VALID_LABELS);
+
+        // Cast: similar to above: `toModelType_nullTagName_throwsIllegalValueException`
+        invalidLabels.add(new JsonAdaptedLabel((String) null));
+
+        JsonAdaptedPerson person =
+                new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID, VALID_EMAIL,
+                        VALID_TAGS, invalidLabels, "");
+        assertThrows(IllegalValueException.class, person::toModelType);
+    }
+
+    @Test
+    public void toModelType_nullLabel_throwsIllegalValueException() {
+        List<JsonAdaptedLabel> invalidLabels = new ArrayList<>(VALID_LABELS);
+        invalidLabels.add(null);
+        JsonAdaptedPerson person =
+                new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID, VALID_EMAIL,
+                        VALID_TAGS, invalidLabels, "");
+        assertThrows(IllegalValueException.class, MISSING_LABEL_MESSAGE, person::toModelType);
     }
 
 }

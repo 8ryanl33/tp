@@ -24,6 +24,8 @@ import seedu.address.model.tag.Tag;
 class JsonAdaptedPerson {
 
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Person's %s field is missing!";
+    public static final String MISSING_TAG_MESSAGE = "Person's tag field is missing!";
+    public static final String MISSING_LABEL_MESSAGE = "Person's label field is missing!";
 
     private final String name;
     private final String studentId;
@@ -83,10 +85,16 @@ class JsonAdaptedPerson {
     public Person toModelType() throws IllegalValueException {
         final List<Tag> personTags = new ArrayList<>();
         for (JsonAdaptedTag tag : tags) {
+            if (tag == null) {
+                throw new IllegalValueException(MISSING_TAG_MESSAGE);
+            }
             personTags.add(tag.toModelType());
         }
         final List<Label> personLabels = new ArrayList<>();
         for (JsonAdaptedLabel label : labels) {
+            if (label == null) {
+                throw new IllegalValueException(MISSING_LABEL_MESSAGE);
+            }
             personLabels.add(label.toModelType());
         }
 
