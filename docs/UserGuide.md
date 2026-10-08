@@ -61,7 +61,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 * Parameters can be in any order.<br>
   For example, `add e/john@example.com i/A0123456B n/John Doe` is also acceptable.
 
-* Extraneous parameters for commands that take no parameters, such as `help`, `list`, `exit`, and `clear`, are ignored.<br>
+* Extraneous parameters for commands that take no parameters, such as `help`, `exit`, and `clear`, are ignored.<br>
   For example, `help 123` is interpreted as `help`.
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
@@ -145,11 +145,13 @@ missing parameters, then empty compulsory values before validating field values.
 Within repeated/missing/empty checks, `n/`, `i/`, and `e/` are checked in that order; repeated `r/` is checked after them.
 Failed commands do not change existing student records or the saved file.
 
-### Listing all persons: `list`
+### Listing all students: `list`
 
-Shows a list of all persons in the address book.
+Shows all students in TeachAssist. If the displayed list was previously filtered, this command restores the complete student list.
 
 Format: `list`
+
+The `list` command does not accept additional arguments. For example, `list 3` is rejected as an invalid command.
 
 ### Editing a person: `edit`
 
