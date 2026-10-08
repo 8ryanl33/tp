@@ -39,6 +39,27 @@ public class JsonAdaptedPersonTest {
             new JsonAdaptedLabel("Discrete Math Tutorial"));
 
     @Test
+    public void toModelType_nameAndEmailNormalisation_returnsNormalisedPerson() throws Exception {
+        JsonAdaptedPerson person = new JsonAdaptedPerson("  Anne-Marie   O’Neill  ", VALID_STUDENT_ID,
+                "Quiz+Sam@EXAMPLE.COM", VALID_TAGS, "");
+        Person restored = person.toModelType();
+        assertEquals("Anne-Marie O’Neill", restored.getName().fullName);
+        assertEquals("Quiz+Sam@example.com", restored.getEmail().value);
+        String savedJson = JsonUtil.toJsonString(new JsonAdaptedPerson(restored));
+        assertEquals(restored, JsonUtil.fromJsonString(savedJson, JsonAdaptedPerson.class).toModelType());
+    }
+
+    @Test
+    public void toModelType_digitNameOrSingleLabelDomain_throwsIllegalValueException() {
+        JsonAdaptedPerson invalidName = new JsonAdaptedPerson("John 2", VALID_STUDENT_ID,
+                VALID_EMAIL, VALID_TAGS, "");
+        assertThrows(IllegalValueException.class, Name.MESSAGE_CONSTRAINTS, invalidName::toModelType);
+        JsonAdaptedPerson invalidEmail = new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID,
+                "a@localhost", VALID_TAGS, "");
+        assertThrows(IllegalValueException.class, Email.MESSAGE_CONSTRAINTS, invalidEmail::toModelType);
+    }
+
+    @Test
     public void toModelType_oversizedRemark_throwsIllegalValueException() {
         JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID,
                 VALID_EMAIL, VALID_TAGS, "x".repeat(Remark.MAX_LENGTH + 1));

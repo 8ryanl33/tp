@@ -188,6 +188,78 @@ Design notes:
 * `EditCommand` preserves a person's existing labels when rebuilding a `Person` with edited fields.
 * `PersonCard` renders labels in the same `FlowPane` used for tags so labels inherit the existing AB3 tag-style UI.
 
+### Adding student information
+
+Command format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [t/TAG]...`.
+Tags retain their existing optional, repeatable behaviour; this feature does not change their rules.
+The accepted values and exact error messages are documented in the [User Guide](UserGuide.md#adding-a-student-add).
+
+#### Validation and identity
+
+* `ArgumentTokenizer` recognises supported prefixes at the start of arguments or after whitespace, including tabs.
+* `AddCommandParser` checks line breaks, unknown alphabetic prefixes, preamble text, repeated prefixes,
+  missing mandatory fields, then empty mandatory fields. Errors are reported before parsing field values.
+  Repeated/missing/empty checks follow `n/`, `i/`, `e/` order; repeated `r/` is checked last.
+* `ParserUtil` trims values and converts invalid fields into `ParseException`s. Model constructors also validate,
+  so records created by storage or other callers follow the same rules.
+* `Name` accepts 1–100 Unicode code points after trimming and collapsing repeated spaces, requires a letter,
+  and permits Unicode letters/combining marks, spaces, apostrophes, hyphens, and periods. Case is preserved.
+* `StudentId` accepts nine ASCII alphanumeric characters and stores uppercase using `Locale.ROOT`.
+  `Person#isSamePerson` compares this normalised ID, not the name or email.
+* `Email` enforces the supported ASCII format, local-part limit of 64, overall limit of 254, domain-label limits
+  of 63, and a final label of 2–63 letters. Only the domain is lowercased using `Locale.ROOT`.
+* `Remark` accepts at most 4,000 Unicode code points; command parsing trims only surrounding whitespace.
+  Empty or omitted remarks become empty strings. `r/` can appear anywhere and does not consume later parameters.
+
+For example, `add n/  Alex   Tan i/a0123456b e/Alex@EXAMPLE.COM r/Quiz: 8/10 t/friends` creates a student with
+name `Alex Tan`, ID `A0123456B`, email `Alex@example.com`, remark `Quiz: 8/10`, and tag `friends`.
+An alphabetic token such as `x/value` is rejected even inside a remark; `8/10` and URLs remain literal text.
+A duplicate ID rejects the complete command without merging any details or remarks.
+
+#### Saving before publishing changes
+
+The execution path is:
+
+```text
+AddressBookParser → AddCommandParser → AddCommand
+LogicManager → temporary ModelManager → JsonAddressBookStorage → live ModelManager
+```
+
+1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, and `clear`
+   return true. Future modifying commands must override this method too.
+2. `LogicManager` copies the live records and current filter into a temporary `ModelManager`, then executes the command
+   against that copy. Copying the filter preserves the meaning of displayed indices for existing edit/delete commands.
+3. `JsonAddressBookStorage` writes the proposed records to a temporary file in the destination directory.
+   `Files.move` with `ATOMIC_MOVE` and `REPLACE_EXISTING` replaces the old file only after writing completes.
+   There is no fallback overwrite when atomic replacement is unsupported. Temporary files are removed after failure.
+4. After saving succeeds, `LogicManager` publishes the proposed records and filter to the live model, then returns
+   the success feedback. If saving fails, it returns `Unable to save student data.`; live records and the active filter
+   are unchanged, and the previous data file remains intact.
+
+For example, adding a student while viewing a filtered list restores the complete list only after saving succeeds.
+If replacement fails, the filtered list remains as it was and the new student is not added.
+Read-only commands such as `find`, `list`, `help`, and `exit` execute on the live model without saving student data.
+
+#### Startup and feedback
+
+`MainApp` starts empty when the data file is missing. If loading fails, it creates an empty model and configures
+`LogicManager` to block modifying commands until the file is fixed and the application is restarted.
+The error is `Student data is unavailable because loading failed. Fix the data file and restart.`
+This prevents an empty model from overwriting unreadable or invalid records. Read-only commands remain available.
+
+Successful adds display `Added student ID: NAME.`, followed by ` Remark: TEXT` when the remark is non-empty,
+and the total student count on the next line. The count uses the complete record list.
+`PersonCard` displays non-empty remarks with wrapping and hides the label for empty remarks.
+JSON storage preserves remarks and defaults missing/null remark fields to empty strings.
+
+#### Verification
+
+Tests cover field boundaries and normalisation, parameter errors and ordering, duplicate IDs with changed details,
+feedback with/without remarks, JSON round trips, filtered index handling, startup loading failures, and save failures.
+Replacement-failure tests simulate an error after the temporary file is written and check that the original file,
+records, and active filter remain unchanged. They also check temporary-file cleanup and failed first saves.
+
+
 ### \[Proposed\] Undo/redo feature
 
 #### Proposed Implementation
@@ -390,7 +462,13 @@ MSS:
 
 **Extensions**
 * 1a. The command format is invalid or required parameters are missing or empty.
-* 1a1. TeachAssist shows an error message indicating the invalid format or missing parameter.
+* 1a1. TeachAssist shows an error message naming the missing/empty parameter or explaining the invalid format.
+* Use case ends.
+* 1b. An unknown or repeated parameter is supplied.
+* 1b1. TeachAssist shows an error message naming the offending prefix. No student data changes.
+* Use case ends.
+* 1c. The student data file failed to load at startup.
+* 1c1. TeachAssist blocks the add command and asks the TA to fix the data file and restart.
 * Use case ends.
 * 2a. One or more field values are invalid (e.g., malformed student ID, invalid email format, or invalid name characters).
 * 2a1. TeachAssist shows an error message indicating the invalid field value.
@@ -400,7 +478,7 @@ MSS:
 * Use case ends.
 * 3a. Saving data to the file fails.
 * 3a1. TeachAssist shows an error message indicating that it is unable to save student data.
-* 3a2. TeachAssist does not modify the existing student records.
+* 3a2. TeachAssist leaves existing student records, the displayed filter, and the previous saved file unchanged.
 * Use case ends.
 
 ---

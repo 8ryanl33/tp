@@ -2,6 +2,7 @@ package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.HOON;
@@ -9,8 +10,10 @@ import static seedu.address.testutil.TypicalPersons.IDA;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -26,6 +29,51 @@ public class JsonAddressBookStorageTest {
 
     @TempDir
     public Path testFolder;
+
+    @Test
+    public void saveAddressBook_replacementFailure_preservesFileAndRemovesTemporaryFile() throws Exception {
+        Path file = testFolder.resolve("existing.json");
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(file);
+        AddressBook original = getTypicalAddressBook();
+        storage.saveAddressBook(original);
+        String originalText = Files.readString(file);
+        JsonAddressBookStorage failingStorage = replacementFailingStorage(file);
+        assertThrows(IOException.class, () -> failingStorage.saveAddressBook(new AddressBook()));
+        assertEquals(originalText, Files.readString(file));
+        assertEquals(original, storage.readAddressBook().orElseThrow());
+        try (Stream<Path> files = Files.list(testFolder)) {
+            assertEquals(1, files.count());
+        }
+    }
+
+    @Test
+    public void saveAddressBook_firstSaveFails_doesNotCreateEmptyDataFile() throws Exception {
+        Path file = testFolder.resolve("new.json");
+        assertThrows(IOException.class, () -> replacementFailingStorage(file).saveAddressBook(new AddressBook()));
+        assertFalse(Files.exists(file));
+        try (Stream<Path> files = Files.list(testFolder)) {
+            assertEquals(0, files.count());
+        }
+    }
+
+    @Test
+    public void saveAddressBook_missingParentDirectories_createsThem() throws Exception {
+        Path file = testFolder.resolve("nested/data/students.json");
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(file);
+        storage.saveAddressBook(getTypicalAddressBook());
+        assertTrue(Files.isRegularFile(file));
+        assertEquals(getTypicalAddressBook(), storage.readAddressBook().orElseThrow());
+    }
+
+    private JsonAddressBookStorage replacementFailingStorage(Path file) {
+        return new JsonAddressBookStorage(file) {
+            @Override
+            protected void replaceDataFile(Path temporaryFile, Path targetFile) throws IOException {
+                assertTrue(Files.size(temporaryFile) > 0);
+                throw new IOException("Simulated replacement failure");
+            }
+        };
+    }
 
     @Test
     public void readAndSaveAddressBook_withRemark_preservesRemark() throws Exception {
