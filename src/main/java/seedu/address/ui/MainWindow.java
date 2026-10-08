@@ -118,6 +118,7 @@ public class MainWindow extends UiPart<Stage> {
         personListPanelPlaceholder.getChildren().add(personListPanel.getRoot());
 
         resultDisplay = new ResultDisplay();
+        resultDisplay.setFeedbackToUser(logic.getStartupMessage());
         resultDisplayPlaceholder.getChildren().add(resultDisplay.getRoot());
 
         StatusBarFooter statusBarFooter = new StatusBarFooter(dataFilePath);
@@ -125,15 +126,6 @@ public class MainWindow extends UiPart<Stage> {
 
         CommandBox commandBox = new CommandBox(this::executeCommand);
         commandBoxPlaceholder.getChildren().add(commandBox.getRoot());
-    }
-
-    /**
-     * Shows the outcome of loading student data at startup in the result display.
-     *
-     * @param startupMessage The message describing the loading outcome.
-     */
-    void showStartupMessage(String startupMessage) {
-        resultDisplay.setFeedbackToUser(startupMessage);
     }
 
     /**

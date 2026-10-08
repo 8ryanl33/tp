@@ -61,7 +61,7 @@ public class MainApp extends Application {
 
         logic = initLogic(model, storage);
 
-        ui = new UiManager(logic, storage.getAddressBookFilePath(), startupMessage);
+        ui = new UiManager(logic, storage.getAddressBookFilePath());
     }
 
     /**
@@ -100,23 +100,14 @@ public class MainApp extends Application {
     }
 
     /**
-     * Returns the message describing the outcome of loading student data at startup.
-     *
-     * @return The startup message, or an empty string if loading has not been attempted.
-     */
-    protected String getStartupMessage() {
-        return startupMessage;
-    }
-
-    /**
      * Creates the logic component using the result of startup student-data loading.
      *
      * @param model The initial student model.
      * @param storage The student-data storage.
-     * @return Logic that blocks modifications if startup loading failed.
+     * @return Logic that blocks modifications if startup loading failed and reports the loading outcome.
      */
     protected Logic initLogic(Model model, Storage storage) {
-        return new LogicManager(model, storage, isStudentDataAvailable);
+        return new LogicManager(model, storage, isStudentDataAvailable, startupMessage);
     }
 
     /**
