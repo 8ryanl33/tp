@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 
 public class ArgumentTokenizerTest {
@@ -13,6 +15,21 @@ public class ArgumentTokenizerTest {
     private final Prefix pSlash = new Prefix("p/");
     private final Prefix dashT = new Prefix("-t");
     private final Prefix hatQ = new Prefix("^Q");
+
+    @Test
+    public void findUnknownPrefix_unsupportedTokens_returnsFirstInInputOrder() {
+        assertEquals(new Prefix("x/"), ArgumentTokenizer.findUnknownPrefix("p/value\tx/first y/second",
+                Set.of(pSlash)).orElseThrow());
+        assertEquals(new Prefix("P/"), ArgumentTokenizer.findUnknownPrefix("P/value",
+                Set.of(pSlash)).orElseThrow());
+    }
+
+    @Test
+    public void findUnknownPrefix_supportedAndLiteralSlashText_returnsEmpty() {
+        assertTrue(ArgumentTokenizer.findUnknownPrefix("p/8/10 https://example.com/a/b example.com/x/value",
+                Set.of(pSlash)).isEmpty());
+        assertTrue(ArgumentTokenizer.findUnknownPrefix("", Set.of(pSlash)).isEmpty());
+    }
 
     @Test
     public void tokenize_prefixAtStartAndAfterTabs_extractsValues() {

@@ -1,7 +1,6 @@
 package seedu.address.logic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static seedu.address.logic.Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.logic.commands.CommandTestUtil.EMAIL_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.NAME_DESC_AMY;
@@ -49,6 +48,44 @@ public class LogicManagerTest {
     private Logic logic;
     private StorageManager storage;
 
+    @Test
+    public void execute_deleteHiddenStudent_preservesFilterAndPersists() throws Exception {
+        model.addPerson(ALICE);
+        model.addPerson(BENSON);
+        logic.execute("find n/Benson");
+        CommandResult result = logic.execute("delete i/a1234567b");
+        assertEquals("Deleted student A1234567B: Alice Pauline.", result.getFeedbackToUser());
+        assertEquals(List.of(BENSON), model.getAddressBook().getPersonList());
+        assertEquals(List.of(BENSON), model.getFilteredPersonList());
+        assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+    }
+
+    @Test
+    public void execute_delete_removesEntireStudentRecordFromSavedData() throws Exception {
+        Person student = new PersonBuilder().withStudentId("A0123456B").withName("Alex Tan")
+                .withEmail("alex@example.com").withRemark("Weak in recursion.").withTags("tutorial").build();
+        model.addPerson(student);
+        storage.saveAddressBook(model.getAddressBook());
+        assertEquals("Deleted student A0123456B: Alex Tan.",
+                logic.execute("delete i/A0123456B").getFeedbackToUser());
+        assertEquals(List.of(), model.getAddressBook().getPersonList());
+        assertEquals(List.of(), storage.readAddressBook().orElseThrow().getPersonList());
+    }
+
+    @Test
+    public void execute_deleteInvalidOrUnknownId_preservesRecordsAndSavedFile() throws Exception {
+        model.addPerson(ALICE);
+        model.updateFilteredPersonList(new NameContainsKeywordsPredicate(List.of("Alice")));
+        storage.saveAddressBook(model.getAddressBook());
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+        assertParseException("delete i/", "Parameter i/ cannot be empty.");
+        assertParseException("delete i/A1234567B x/value", "Unknown parameter: x/.");
+        assertCommandException("delete i/Z9999999Z", "Student with ID Z9999999Z is not in the records.");
+        assertEquals(List.of(ALICE), model.getAddressBook().getPersonList());
+        assertEquals(List.of(ALICE), model.getFilteredPersonList());
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
+    }
+
     @BeforeEach
     public void setUp() {
         JsonAddressBookStorage addressBookStorage =
@@ -88,7 +125,7 @@ public class LogicManagerTest {
         Files.writeString(storage.getAddressBookFilePath(), "invalid student data");
         assertThrows(DataLoadingException.class, storage::readAddressBook);
         logic = new LogicManager(model, storage, false);
-        for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "clear", "delete 1",
+        for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "clear", "delete i/B1234567C",
                 "edit 1 n/Samuel", "label l/Tutorial 1 i/A0123456B")) {
             assertCommandException(command, LogicManager.MESSAGE_DATA_UNAVAILABLE);
         }
@@ -113,7 +150,7 @@ public class LogicManagerTest {
         };
         logic = new LogicManager(model, new StorageManager(failingStorage,
                 new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
-        for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "delete 1", "clear",
+        for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "delete i/B1234567C", "clear",
                 "edit 1 n/Updated Name")) {
             assertThrows(CommandException.class, LogicManager.MESSAGE_SAVE_FAILURE, () -> logic.execute(command));
             assertEquals(previousRecords, model.getAddressBook());
@@ -123,11 +160,11 @@ public class LogicManagerTest {
     }
 
     @Test
-    public void execute_deleteAfterFind_usesFilteredIndexAndPersists() throws Exception {
+    public void execute_deleteAfterFind_usesStudentIdAndPersists() throws Exception {
         model.addPerson(ALICE);
         model.addPerson(BENSON);
-        logic.execute("find n/ Benson");
-        logic.execute("delete 1");
+        logic.execute("find n/Benson");
+        logic.execute("delete i/B1234567C");
         assertEquals(List.of(ALICE), model.getAddressBook().getPersonList());
         assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
         logic.execute("list");
@@ -142,8 +179,9 @@ public class LogicManagerTest {
 
     @Test
     public void execute_commandExecutionError_throwsCommandException() {
-        String deleteCommand = "delete 9";
-        assertCommandException(deleteCommand, MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+        String deleteCommand = "delete i/Z9999999Z";
+        assertCommandException(deleteCommand,
+                "Student with ID Z9999999Z is not in the records.");
     }
 
     @Test
