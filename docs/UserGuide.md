@@ -61,7 +61,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 * Parameters can be in any order.<br>
   For example, `add e/john@example.com i/A0123456B n/John Doe` is also acceptable.
 
-* Extraneous parameters for commands that take no parameters, such as `help`, `list`, `exit`, and `clear`, are ignored.<br>
+* Extraneous parameters for commands that take no parameters, such as `help`, `exit`, and `clear`, are ignored.<br>
   For example, `help 123` is interpreted as `help`.
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
@@ -145,11 +145,13 @@ missing parameters, then empty compulsory values before validating field values.
 Within repeated/missing/empty checks, `n/`, `i/`, and `e/` are checked in that order; repeated `r/` is checked after them.
 Failed commands do not change existing student records or the saved file.
 
-### Listing all persons: `list`
+### Listing all students: `list`
 
-Shows a list of all persons in the address book.
+Shows all students in TeachAssist. If the displayed list was previously filtered, this command restores the complete student list.
 
 Format: `list`
+
+The `list` command does not accept additional arguments. For example, `list 3` is rejected as an invalid command.
 
 ### Editing a person: `edit`
 
@@ -168,6 +170,30 @@ Format: `edit INDEX [n/NAME] [e/EMAIL] [t/TAG]...`
 Examples:
 * `edit 1 e/johndoe@example.com` Changes the first person's email address to `johndoe@example.com`.
 *  `edit 2 n/Betsy Crower t/` Edits the name of the 2nd person to be `Betsy Crower` and clears all existing tags.
+
+### Labelling a student by group: `label`
+
+Adds a group label to an existing student.
+
+Format: `label l/LABEL_NAME i/STUDENT_ID`
+
+* `LABEL_NAME` must not be empty after trimming leading and trailing whitespace.
+* `LABEL_NAME` can contain 1 to 60 characters.
+* `LABEL_NAME` must contain at least one letter or digit.
+* `LABEL_NAME` can contain letters, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods.
+* `LABEL_NAME` cannot contain `/` or ASCII control characters.
+* Internal spacing and capitalization are preserved for display.
+* `STUDENT_ID` must identify an existing student.
+* A student cannot have the same label more than once. Duplicate checks are case-insensitive.
+
+Examples:
+* `label l/Discrete Math Tutorial i/A0101010A`
+* `label i/A0101010A l/Tutorial (Monday)`
+
+Note: Currently, labels and tags are indistinguishable in the UI. Dedicated styling will be implemented soon.
+
+Expected successful output:
+`Added label "Discrete Math Tutorial" to Samuel Tan (A0101010A).`
 
 ### Locating persons by name, student ID, or email: `find`
 
@@ -257,6 +283,7 @@ Commands such as `list` remain available and do not overwrite the invalid file. 
 Furthermore, certain edits can cause the AddressBook to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 
 Each person record must include a valid `studentId`. Older data files that do not include `studentId` for every person may fail to load until the missing values are added manually.
+Group labels are saved under each person record as `labels`. Older data files without `labels` still load; those persons simply start with no labels.
 </box>
 
 ### Archiving data files `[coming in v2.0]`
@@ -288,5 +315,6 @@ Action     | Format, Examples
 **Delete** | `delete i/STUDENT_ID`<br> e.g., `delete i/A0123456B`
 **Edit**   | `edit INDEX [n/NAME] [e/EMAIL] [t/TAG]...`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
 **Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
+**Label**  | `label l/LABEL_NAME i/STUDENT_ID`<br> e.g., `label l/Discrete Math Tutorial i/A0101010A`
 **List**   | `list`
 **Help**   | `help`

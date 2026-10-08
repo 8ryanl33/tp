@@ -56,6 +56,9 @@ public class PersonCard extends UiPart<Region> {
         person.getTags().stream()
                 .sorted(Comparator.comparing(tag -> tag.tagName))
                 .forEach(tag -> tags.getChildren().add(new Label(tag.tagName)));
+        person.getLabels().stream()
+                .sorted(Comparator.comparing(label -> label.labelName))
+                .forEach(label -> tags.getChildren().add(new Label(label.labelName)));
         studentIds.getChildren().add(new Label("Student ID: " + person.getStudentId()));
     }
 }
