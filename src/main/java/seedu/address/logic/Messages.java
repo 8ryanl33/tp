@@ -41,8 +41,8 @@ public class Messages {
                 .append(person.getStudentId())
                 .append("; Email: ")
                 .append(person.getEmail())
-                .append("; Tags: ");
-        person.getTags().forEach(builder::append);
+                .append("; Labels: ");
+        person.getLabels().forEach(builder::append);
         return builder.toString();
     }
 
