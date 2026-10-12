@@ -63,7 +63,7 @@ public class LogicManagerTest {
     @Test
     public void execute_delete_removesEntireStudentRecordFromSavedData() throws Exception {
         Person student = new PersonBuilder().withStudentId("A0123456B").withName("Alex Tan")
-                .withEmail("alex@example.com").withRemark("Weak in recursion.").withTags("tutorial").build();
+                .withEmail("alex@example.com").withRemark("Weak in recursion.").build();
         model.addPerson(student);
         storage.saveAddressBook(model.getAddressBook());
         assertEquals("Deleted student A0123456B: Alex Tan.",

@@ -72,7 +72,7 @@ public class AddCommandParserTest {
 
     @Test
     public void parse_tabsAndReorderedParameters_success() {
-        Person expected = new PersonBuilder(BOB).withTags().withRemark("Quiz 1: 8/10.").build();
+        Person expected = new PersonBuilder(BOB).withRemark("Quiz 1: 8/10.").build();
         String input = "r/Quiz 1: 8/10.\te/" + VALID_EMAIL_BOB + "\ti/" + VALID_STUDENT_ID_BOB
                 + "\tn/" + VALID_NAME_BOB;
         assertParseSuccess(parser, input, new AddCommand(expected));
@@ -81,7 +81,7 @@ public class AddCommandParserTest {
     @Test
     public void parse_remarkLiteralSlashesAndSpacing_success() {
         String remark = "Quiz: 8/10.  See https://example.com/a/b; use /r literally.";
-        Person expected = new PersonBuilder(BOB).withTags().withRemark(remark).build();
+        Person expected = new PersonBuilder(BOB).withRemark(remark).build();
         assertParseSuccess(parser, REQUIRED_FIELDS_BOB + " r/" + remark, new AddCommand(expected));
     }
 
@@ -102,7 +102,7 @@ public class AddCommandParserTest {
     @Test
     public void parse_normalisedNameAndEmail_success() {
         Person expectedPerson = new PersonBuilder(BOB).withName("Anne-Marie O’Neill")
-                .withEmail("Quiz+Sam@example.com").withTags().build();
+                .withEmail("Quiz+Sam@example.com").build();
         assertParseSuccess(parser, " n/  Anne-Marie   O’Neill  " + STUDENT_ID_DESC_BOB
                 + " e/  Quiz+Sam@EXAMPLE.COM  ", new AddCommand(expectedPerson));
     }
@@ -116,7 +116,7 @@ public class AddCommandParserTest {
 
     @Test
     public void parse_remarkLengthBoundary_validatesLimit() {
-        Person expectedPerson = new PersonBuilder(BOB).withTags()
+        Person expectedPerson = new PersonBuilder(BOB)
                 .withRemark("x".repeat(Remark.MAX_LENGTH)).build();
         assertParseSuccess(parser, REQUIRED_FIELDS_BOB + " r/" + "x".repeat(Remark.MAX_LENGTH),
                 new AddCommand(expectedPerson));
@@ -127,7 +127,7 @@ public class AddCommandParserTest {
     @Test
     public void parse_remarkPresent_success() {
         String remark = "Needs help with recursion: follow up next week!";
-        Person expectedPerson = new PersonBuilder(BOB).withTags().withRemark(remark).build();
+        Person expectedPerson = new PersonBuilder(BOB).withRemark(remark).build();
         assertParseSuccess(parser, REQUIRED_FIELDS_BOB + " r/" + remark,
                 new AddCommand(expectedPerson));
         assertParseSuccess(parser, " r/" + remark + REQUIRED_FIELDS_BOB,
@@ -136,7 +136,7 @@ public class AddCommandParserTest {
 
     @Test
     public void parse_labelPresent_success() {
-        Person expectedPerson = new PersonBuilder(BOB).withTags().withLabels(VALID_LABEL).build();
+        Person expectedPerson = new PersonBuilder(BOB).withLabels(VALID_LABEL).build();
         assertParseSuccess(parser, REQUIRED_FIELDS_BOB + LABEL_DESC_TUTORIAL, new AddCommand(expectedPerson));
         assertParseSuccess(parser, LABEL_DESC_TUTORIAL + REQUIRED_FIELDS_BOB, new AddCommand(expectedPerson));
     }
@@ -160,7 +160,7 @@ public class AddCommandParserTest {
 
     @Test
     public void parse_remarkEmptyOrMissing_success() {
-        Person expectedPerson = new PersonBuilder(BOB).withTags().withRemark("").build();
+        Person expectedPerson = new PersonBuilder(BOB).withRemark("").build();
         assertParseSuccess(parser, REQUIRED_FIELDS_BOB, new AddCommand(expectedPerson));
         assertParseSuccess(parser, REQUIRED_FIELDS_BOB + " r/", new AddCommand(expectedPerson));
         assertParseSuccess(parser, REQUIRED_FIELDS_BOB + " r/   ", new AddCommand(expectedPerson));
@@ -176,7 +176,7 @@ public class AddCommandParserTest {
 
     @Test
     public void parse_requiredFieldsPresent_success() {
-        Person expectedPerson = new PersonBuilder(BOB).withTags().build();
+        Person expectedPerson = new PersonBuilder(BOB).build();
         assertParseSuccess(parser, PREAMBLE_WHITESPACE + REQUIRED_FIELDS_BOB,
                 new AddCommand(expectedPerson));
         assertParseSuccess(parser, NAME_DESC_BOB + " " + PREFIX_STUDENT_ID
@@ -214,7 +214,7 @@ public class AddCommandParserTest {
 
     @Test
     public void parse_optionalFieldsMissing_success() {
-        Person expectedPerson = new PersonBuilder(AMY).withTags().build();
+        Person expectedPerson = new PersonBuilder(AMY).build();
         assertParseSuccess(parser, NAME_DESC_AMY + STUDENT_ID_DESC_AMY + EMAIL_DESC_AMY,
                 new AddCommand(expectedPerson));
     }

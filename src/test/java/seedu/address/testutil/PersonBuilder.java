@@ -9,8 +9,6 @@ import seedu.address.model.person.Name;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Remark;
 import seedu.address.model.person.StudentId;
-import seedu.address.model.tag.Tag;
-import seedu.address.model.util.SampleDataUtil;
 
 /**
  * A utility class to help with building Person objects.
@@ -26,7 +24,6 @@ public class PersonBuilder {
     private StudentId studentId;
     private Email email;
     private Remark remark;
-    private Set<Tag> tags;
     private Set<Label> labels;
 
     /**
@@ -37,7 +34,6 @@ public class PersonBuilder {
         studentId = new StudentId(DEFAULT_STUDENT_ID);
         email = new Email(DEFAULT_EMAIL);
         remark = new Remark(DEFAULT_REMARK);
-        tags = new HashSet<>();
         labels = new HashSet<>();
     }
 
@@ -49,7 +45,6 @@ public class PersonBuilder {
         studentId = personToCopy.getStudentId();
         email = personToCopy.getEmail();
         remark = personToCopy.getRemark();
-        tags = new HashSet<>(personToCopy.getTags());
         labels = new HashSet<>(personToCopy.getLabels());
     }
 
@@ -66,14 +61,6 @@ public class PersonBuilder {
      */
     public PersonBuilder withStudentId(String studentId) {
         this.studentId = new StudentId(studentId);
-        return this;
-    }
-
-    /**
-     * Parses the {@code tags} into a {@code Set<Tag>} and sets it to the {@code Person} that we are building.
-     */
-    public PersonBuilder withTags(String ... tags) {
-        this.tags = SampleDataUtil.getTagSet(tags);
         return this;
     }
 
@@ -108,7 +95,7 @@ public class PersonBuilder {
      * Builds a {@code Person} with the configured details.
      */
     public Person build() {
-        return new Person(name, studentId, email, tags, labels, remark);
+        return new Person(name, studentId, email, labels, remark);
     }
 
 }

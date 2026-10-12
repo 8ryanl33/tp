@@ -56,7 +56,7 @@ public class AddCommandParser implements Parser<AddCommand> {
         Set<Label> labelList = parseLabels(argMultimap);
         Remark remark = ParserUtil.parseRemark(argMultimap.getValue(PREFIX_REMARK).orElse(""));
 
-        Person person = new Person(name, studentId, email, Set.of(), labelList, remark);
+        Person person = new Person(name, studentId, email, labelList, remark);
 
         return new AddCommand(person);
     }

@@ -37,7 +37,7 @@ public class PersonCard extends UiPart<Region> {
     @FXML
     private Label remark;
     @FXML
-    private FlowPane tags;
+    private FlowPane labels;
     @FXML
     private FlowPane studentIds;
 
@@ -53,12 +53,9 @@ public class PersonCard extends UiPart<Region> {
         remark.setText("Remark: " + person.getRemark().value);
         remark.setVisible(!person.getRemark().value.isEmpty());
         remark.setManaged(remark.isVisible());
-        person.getTags().stream()
-                .sorted(Comparator.comparing(tag -> tag.tagName))
-                .forEach(tag -> tags.getChildren().add(new Label(tag.tagName)));
         person.getLabels().stream()
                 .sorted(Comparator.comparing(label -> label.labelName))
-                .forEach(label -> tags.getChildren().add(new Label(label.labelName)));
+                .forEach(label -> labels.getChildren().add(new Label(label.labelName)));
         studentIds.getChildren().add(new Label("Student ID: " + person.getStudentId()));
     }
 }

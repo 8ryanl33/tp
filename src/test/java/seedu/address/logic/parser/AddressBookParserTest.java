@@ -42,7 +42,7 @@ public class AddressBookParserTest {
         Person person = new PersonBuilder().withRemark("Quiz: 8/10.").build();
         String command = "add\tn/" + person.getName() + "\ti/" + person.getStudentId()
                 + "\te/" + person.getEmail() + "\tr/" + person.getRemark();
-        Person expected = new PersonBuilder(person).withTags().build();
+        Person expected = new PersonBuilder(person).build();
         assertEquals(new AddCommand(expected), parser.parseCommand(command));
     }
 
