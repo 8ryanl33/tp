@@ -90,14 +90,8 @@ Here's a (partial) class diagram of the `Logic` component:
 
 <puml src="diagrams/LogicClassDiagram.puml" width="550"/>
 
-The sequence diagram below illustrates `execute("delete i/A0123456B")`, including saving before publishing changes.
-
-<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Delete by Student ID and save before updating the live model" />
-
-<box type="info" seamless>
-
-**Note:** The lifeline for `DeleteCommandParser` should end at the destroy marker (X), but due to a limitation of PlantUML, the lifeline continues till the end of diagram.
-</box>
+The [add](#adding-student-information) and [delete](#deleting-student-information) sequence diagrams below
+show how parsed commands change a temporary model before the live model is updated.
 
 
 How the `Logic` component works:
@@ -239,6 +233,11 @@ LogicManager → temporary ModelManager → JsonAddressBookStorage → live Mode
    the success feedback. If saving fails, it returns `Unable to save student data.`; live records and the active filter
    are unchanged, and the previous data file remains intact.
 
+The sequence diagram shows an add with an optional remark and label. It also shows that a failed save leaves the
+live model unchanged. Invalid parameters or a duplicate Student ID stop execution before saving.
+
+<puml src="diagrams/AddSequenceDiagram.puml" alt="Add a student and save before updating the live model" />
+
 For example, adding a student while viewing a filtered list restores the complete list only after saving succeeds.
 If replacement fails, the filtered list remains as it was and the new student is not added.
 Read-only commands such as `find`, `filter`, `list`, `help`, and `exit` execute on the live model without saving student data.
@@ -286,6 +285,15 @@ Deletion preserves the current filter and returns true from `Command#isModifying
 `LogicManager` therefore performs it on the temporary model, saves the proposed records, and only then publishes
 the change. If saving fails, the live record, filter, and previous saved file remain unchanged.
 If startup loading failed, deletion is blocked by the existing loading guard.
+
+The sequence diagram shows deletion by Student ID, including the save-failure path.
+
+<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Delete by Student ID and save before updating the live model" />
+
+<box type="info" seamless>
+
+**Note:** The lifeline for `DeleteCommandParser` should end at the destroy marker (X), but due to a limitation of PlantUML, the lifeline continues till the end of the diagram.
+</box>
 
 Tests cover normalised IDs, visible/hidden students, an empty displayed list, nonexistent IDs, malformed parameters,
 whole-record removal from persisted JSON, filter preservation, and save failures.
