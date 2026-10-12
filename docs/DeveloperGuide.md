@@ -236,7 +236,9 @@ LogicManager → temporary ModelManager → JsonAddressBookStorage → live Mode
 The sequence diagram shows an add with an optional remark and label. It also shows that a failed save leaves the
 live model unchanged. Invalid parameters or a duplicate Student ID stop execution before saving.
 
-<puml src="diagrams/AddSequenceDiagram.puml" alt="Add a student and save before updating the live model" />
+![Add a student and save before updating the live model](images/AddSequenceDiagram.svg)
+
+[PlantUML source](diagrams/AddSequenceDiagram.puml)
 
 For example, adding a student while viewing a filtered list restores the complete list only after saving succeeds.
 If replacement fails, the filtered list remains as it was and the new student is not added.
@@ -288,7 +290,9 @@ If startup loading failed, deletion is blocked by the existing loading guard.
 
 The sequence diagram shows deletion by Student ID, including the save-failure path.
 
-<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Delete by Student ID and save before updating the live model" />
+![Delete by Student ID and save before updating the live model](images/DeleteSequenceDiagram.svg)
+
+[PlantUML source](diagrams/DeleteSequenceDiagram.puml)
 
 <box type="info" seamless>
 
