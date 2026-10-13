@@ -8,43 +8,70 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import seedu.address.logic.Messages;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.model.person.EmailContainsKeywordsPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.StudentIdContainsKeywordsPredicate;
 
 public class FindCommandParserTest {
+    private static final String SEARCH_PARAMETER = "n/, i/, or e/";
+    private static final String MESSAGE_UNKNOWN_PARAMETER = "Unknown parameter: %s.";
+    private static final String MESSAGE_REPEATED_PARAMETER = "Parameter %s must be specified only once.";
+    private static final String MESSAGE_MISSING_PARAMETER = "Missing required parameter: %s.";
+    private static final String MESSAGE_EMPTY_PARAMETER = "Parameter %s cannot be empty.";
 
     private FindCommandParser parser = new FindCommandParser();
 
     @Test
     public void parse_emptyArg_throwsParseException() {
-        assertParseFailure(parser, "     ", String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "     ", String.format(MESSAGE_MISSING_PARAMETER, SEARCH_PARAMETER));
     }
 
     @Test
     public void parse_noPrefix_throwsParseException() {
-        assertParseFailure(parser, " Alice Bob",
+        assertParseFailure(parser, " Alice Bob", String.format(MESSAGE_MISSING_PARAMETER, SEARCH_PARAMETER));
+    }
+
+    @Test
+    public void parse_wordsBeforeFirstPrefix_throwsParseException() {
+        assertParseFailure(parser, "Alice n/Bob",
+                String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
+    }
+
+    @Test
+    public void parse_wordsBeforeFirstPrefixWithOtherErrors_throwsParseExceptionForWordsBeforeFirstPrefix() {
+        assertParseFailure(parser, "Alice p/123",
+                String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "Alice n/Bob n/Carol",
                 String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_multiplePrefixes_throwsParseException() {
         assertParseFailure(parser, " n/Alice i/A1234567B",
-                String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
+                String.format(MESSAGE_REPEATED_PARAMETER, SEARCH_PARAMETER));
     }
 
     @Test
     public void parse_duplicatePrefix_throwsParseException() {
         assertParseFailure(parser, " n/Alice n/Bob",
-                Messages.getErrorMessageForDuplicatePrefixes(CliSyntax.PREFIX_NAME));
+                String.format(MESSAGE_REPEATED_PARAMETER, CliSyntax.PREFIX_NAME));
     }
 
     @Test
     public void parse_emptyPrefixValue_throwsParseException() {
-        assertParseFailure(parser, " n/   ",
-                String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, " n/   ", String.format(MESSAGE_EMPTY_PARAMETER, CliSyntax.PREFIX_NAME));
+    }
+
+    @Test
+    public void parse_unknownPrefix_throwsParseException() {
+        assertParseFailure(parser, " p/123", String.format(MESSAGE_UNKNOWN_PARAMETER, new Prefix("p/")));
+    }
+
+    @Test
+    public void parse_unknownPrefixWithRepeatedPrefix_throwsParseExceptionForUnknownPrefix() {
+        assertParseFailure(parser, " p/123 n/Alice n/Bob",
+                String.format(MESSAGE_UNKNOWN_PARAMETER, new Prefix("p/")));
     }
 
     @Test

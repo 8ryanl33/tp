@@ -233,13 +233,27 @@ Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or 
 * The search is case-insensitive; for example, `hans` matches `Hans`.
 * The search accepts exactly one prefix: `n/`, `i/`, or `e/`.
 * Partial words match; for example, `Han` matches `Hans`.
-* Multiple keywords for search; for example `Tristan Alex` matches with `Tristan Tay` and `Alex Tan`
 
 Examples:
-* `find n/John` returns `john` and `John Doe`
 * `find i/a03 a02` returns students whose student ids start with `a03` or `a02`
-* `find n/alex david` returns `Alex Yeoh`, `David Li`<br>
-  ![result for 'find alex david'](images/findAlexDavidResult.png)
+* `find n/John` returns `john` and `John Doe`
+* `find n/tri sam` returns `tristan`, `samuel`<br>
+  ![result for 'find n/tri sam'](images/findIncompleteResult.png)
+
+#### Errors
+
+| Problem | Message |
+|---------|---------|
+| Extra words before the search parameter | `Invalid command format!` followed by the correct `find` format |
+| Unknown search parameter | `Unknown parameter: p/.` |
+| Repeated same search parameter | `Parameter n/ must be specified only once.` |
+| Missing search parameter | `Missing required parameter: n/, i/, or e/.` |
+| More than one search parameter type | `Parameter n/, i/, or e/ must be specified only once.` |
+| Empty search parameter | `Parameter n/ cannot be empty.` |
+
+The parser checks for errors in the order of extra words before the first search parameter, unknown parameters,
+repeated parameters, missing parameters, multiple search parameter types, then empty values before searching.
+Failed commands do not change the displayed student records or the saved file.
 
 ### Filtering students by label: `filter`
 
