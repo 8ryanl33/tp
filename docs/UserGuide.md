@@ -4,9 +4,9 @@
   pageNav: 3
 ---
 
-# AB-3 User Guide
+# TeachAssist User Guide
 
-AddressBook Level 3 (AB3) is a **desktop application for managing contacts, optimized for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you type quickly, AB3 can help you manage contacts faster than traditional GUI applications.
+TeachAssist is a **desktop application for managing contacts, optimized for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you type quickly, AB3 can help you manage contacts faster than traditional GUI applications.
 
 <!-- * Table of Contents -->
 <page-nav-print />
@@ -209,9 +209,11 @@ Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or 
 * The search is case-insensitive; for example, `hans` matches `Hans`.
 * The search accepts exactly one prefix: `n/`, `i/`, or `e/`.
 * Partial words match; for example, `Han` matches `Hans`.
+* Multiple keywords for search; for example `Tristan Alex` matches with `Tristan Tay` and `Alex Tan`
 
 Examples:
 * `find n/John` returns `john` and `John Doe`
+* `find i/a03 a02` returns students whose student ids start with `a03` or `a02`
 * `find n/alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 

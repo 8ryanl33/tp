@@ -264,6 +264,58 @@ feedback with/without remarks, JSON round trips, filtered index handling, startu
 Replacement-failure tests simulate an error after the temporary file is written and check that the original file,
 records, and active filter remain unchanged. They also check temporary-file cleanup and failed first saves.
 
+### Find command
+
+Command format: `find n/KEYWORD [MORE_KEYWORDS]...` or `find i/KEYWORD [MORE_KEYWORDS]...`
+or `find e/KEYWORD [MORE_KEYWORDS]...`.
+Exactly one supported search field must be supplied: name, student ID, or email.
+The accepted format and user-facing examples are documented in the
+[User Guide](UserGuide.md#locating-persons-by-name-student-id-or-email-find).
+
+#### Validation and matching
+
+* `ArgumentTokenizer` recognises the supported prefixes `n/`, `i/`, and `e/`.
+* `FindCommandParser` rejects commands with no search prefix, more than one search prefix, preamble text,
+  duplicate search prefixes, or an empty keyword value.
+* Search keywords are split on whitespace. Multiple spaces, tabs, and line breaks between keywords are collapsed.
+* `FindCommandParser` creates a field-specific predicate: `NameContainsKeywordsPredicate`,
+  `StudentIdContainsKeywordsPredicate`, or `EmailContainsKeywordsPredicate`.
+* Each predicate checks whether the selected field contains any keyword using `StringUtil#containsIgnoreCase`.
+  Matching is therefore case-insensitive and supports partial matches.
+
+For example, `find n/alex david` creates a `NameContainsKeywordsPredicate` with keywords `alex` and `david`.
+Any student whose name contains either keyword is shown.
+`find i/a012` searches student IDs, while `find e/example.com` searches email addresses.
+
+#### Execution and displayed list
+
+The execution path is:
+
+```text
+AddressBookParser → FindCommandParser → FindCommand
+FindCommand → Model#updateFilteredPersonList
+```
+
+`FindCommand` stores only the predicate created by the parser. During execution, it calls
+`Model#updateFilteredPersonList` with that predicate, replacing the current displayed list with the matching students.
+The underlying student records are not modified.
+
+The command returns the standard listed-students feedback containing the number of matching records.
+When no records match, the filtered list becomes empty and the feedback reports zero listed students.
+The previous filter is replaced by the new search predicate.
+
+#### Saving and startup behaviour
+
+`FindCommand` does not override `Command#isModifyingData`, so it remains a read-only command.
+`LogicManager` executes it on the live model without creating a temporary model and without writing the JSON data file.
+If startup loading failed, the command is still available because it does not risk overwriting invalid persisted data.
+
+#### Verification
+
+Tests cover missing prefixes, multiple prefixes, duplicate prefixes, empty keyword values, name searches with
+multiple keywords and whitespace, student ID searches, email searches, zero-result execution, multi-result execution,
+and equality of commands with equivalent predicates.
+
 ### Deleting student information
 
 Command format: `delete i/STUDENT_ID`. The display index is not used to identify students for deletion.
