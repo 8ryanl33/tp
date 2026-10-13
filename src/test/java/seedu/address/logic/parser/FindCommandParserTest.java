@@ -1,5 +1,6 @@
 package seedu.address.logic.parser;
 
+import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 
@@ -32,6 +33,20 @@ public class FindCommandParserTest {
     }
 
     @Test
+    public void parse_wordsBeforeFirstPrefix_throwsParseException() {
+        assertParseFailure(parser, "Alice n/Bob",
+                String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
+    }
+
+    @Test
+    public void parse_wordsBeforeFirstPrefixWithOtherErrors_throwsParseExceptionForWordsBeforeFirstPrefix() {
+        assertParseFailure(parser, "Alice p/123",
+                String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "Alice n/Bob n/Carol",
+                String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
+    }
+
+    @Test
     public void parse_multiplePrefixes_throwsParseException() {
         assertParseFailure(parser, " n/Alice i/A1234567B",
                 String.format(MESSAGE_REPEATED_PARAMETER, SEARCH_PARAMETER));
@@ -51,6 +66,12 @@ public class FindCommandParserTest {
     @Test
     public void parse_unknownPrefix_throwsParseException() {
         assertParseFailure(parser, " p/123", String.format(MESSAGE_UNKNOWN_PARAMETER, new Prefix("p/")));
+    }
+
+    @Test
+    public void parse_unknownPrefixWithRepeatedPrefix_throwsParseExceptionForUnknownPrefix() {
+        assertParseFailure(parser, " p/123 n/Alice n/Bob",
+                String.format(MESSAGE_UNKNOWN_PARAMETER, new Prefix("p/")));
     }
 
     @Test

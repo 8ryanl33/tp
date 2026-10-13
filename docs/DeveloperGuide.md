@@ -275,8 +275,9 @@ The accepted format and user-facing examples are documented in the
 #### Validation and matching
 
 * `ArgumentTokenizer` recognises the supported prefixes `n/`, `i/`, and `e/`.
-* `FindCommandParser` rejects commands with no search prefix, more than one search prefix, preamble text,
-  duplicate search prefixes, or an empty keyword value.
+* `FindCommandParser` validates malformed input in this order: words before the first parameter prefix, unknown
+  parameter prefixes, repeated search prefixes, missing search prefixes, more than one search prefix type, and empty
+  keyword values.
 * Search keywords are split on whitespace. Multiple spaces, tabs, and line breaks between keywords are collapsed.
 * `FindCommandParser` creates a field-specific predicate: `NameContainsKeywordsPredicate`,
   `StudentIdContainsKeywordsPredicate`, or `EmailContainsKeywordsPredicate`.
@@ -305,7 +306,7 @@ When no records match, the filtered list becomes empty and the feedback reports 
 The previous filter is replaced by the new search predicate.
 
 The sequence diagram below shows how a successful `find n/Alex` command is parsed and executed.
-<puml src="diagrams/FindSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `find` Command" />
+<puml src="diagrams/FindCommandSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `find` Command" />
 
 #### Saving and startup behaviour
 
@@ -315,9 +316,9 @@ If startup loading failed, the command is still available because it does not ri
 
 #### Verification
 
-Tests cover missing prefixes, multiple prefixes, duplicate prefixes, empty keyword values, name searches with
-multiple keywords and whitespace, student ID searches, email searches, zero-result execution, multi-result execution,
-and equality of commands with equivalent predicates.
+Tests cover words before the first prefix, unknown prefixes, validation precedence, missing prefixes, multiple prefixes,
+duplicate prefixes, empty keyword values, name searches with multiple keywords and whitespace, student ID searches,
+email searches, zero-result execution, multi-result execution, and equality of commands with equivalent predicates.
 
 ### Deleting student information
 

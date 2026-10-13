@@ -1,5 +1,6 @@
 package seedu.address.logic.parser;
 
+import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_STUDENT_ID;
@@ -8,6 +9,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -20,6 +23,7 @@ import seedu.address.model.person.StudentIdContainsKeywordsPredicate;
  * Parses input arguments and creates a new FindCommand object
  */
 public class FindCommandParser implements Parser<FindCommand> {
+    private static final Pattern PARAMETER_PREFIX = Pattern.compile("(?:^|\\p{javaWhitespace})([A-Za-z]+/)");
     private static final Set<Prefix> SUPPORTED_PREFIXES = Set.of(PREFIX_NAME, PREFIX_STUDENT_ID, PREFIX_EMAIL);
     private static final String SEARCH_PARAMETER = PREFIX_NAME + ", " + PREFIX_STUDENT_ID + ", or " + PREFIX_EMAIL;
     private static final String MESSAGE_UNKNOWN_PARAMETER = "Unknown parameter: %s.";
@@ -51,10 +55,8 @@ public class FindCommandParser implements Parser<FindCommand> {
     }
 
     private static void validateStructure(String args, ArgumentMultimap arguments) throws ParseException {
+        rejectWordsBeforeFirstPrefix(args);
         rejectUnknownPrefixes(args);
-        if (!arguments.getPreamble().isEmpty()) {
-            throw new ParseException(String.format(MESSAGE_MISSING_PARAMETER, SEARCH_PARAMETER));
-        }
         rejectRepeatedPrefixes(arguments);
         long searchPrefixCount = SUPPORTED_PREFIXES.stream()
                 .filter(prefix -> arguments.getValue(prefix).isPresent())
@@ -64,6 +66,13 @@ public class FindCommandParser implements Parser<FindCommand> {
         }
         if (searchPrefixCount > 1) {
             throw new ParseException(String.format(MESSAGE_REPEATED_PARAMETER, SEARCH_PARAMETER));
+        }
+    }
+
+    private static void rejectWordsBeforeFirstPrefix(String args) throws ParseException {
+        Matcher matcher = PARAMETER_PREFIX.matcher(args);
+        if (matcher.find() && !args.substring(0, matcher.start(1)).isBlank()) {
+            throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
         }
     }
 
