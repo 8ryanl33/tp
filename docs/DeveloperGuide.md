@@ -304,6 +304,9 @@ The command returns the standard listed-students feedback containing the number 
 When no records match, the filtered list becomes empty and the feedback reports zero listed students.
 The previous filter is replaced by the new search predicate.
 
+The sequence diagram below shows how a successful `find n/Alex` command is parsed and executed.
+<puml src="diagrams/FindSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `find` Command" />
+
 #### Saving and startup behaviour
 
 `FindCommand` does not override `Command#isModifyingData`, so it remains a read-only command.
