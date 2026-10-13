@@ -158,15 +158,30 @@ Example:
 list
 ```
 
-Expected successful output:
+If at least one student exists, the expected successful output is:
 
 ```text
 Listed all students.
 ```
 
-If there are no stored students, the displayed list remains empty and the same successful output is shown.
+If there are no stored students, the displayed list remains empty and the command reports:
 
-The `list` command does not accept additional arguments. For example, `list 3` is rejected and the correct command usage is displayed.
+```text
+No students found.
+```
+
+The command does not add, edit, delete, reorder, or save student records. Students remain in the existing master-list
+order.
+
+The `list` command does not accept additional arguments. Leading and trailing whitespace is ignored, but command words
+are case-sensitive.
+
+| Problem | Example | Message |
+|---------|---------|---------|
+| Additional argument | `list 3` | `Invalid command format!` followed by `Usage: list` on the next line |
+| Parameter-like argument | `list n/Samuel` or `list n/` | `Invalid command format!` followed by `Usage: list` on the next line |
+| Misspelled command | `lisst` | `Unknown command.` |
+| Incorrect capitalisation | `List` or `LIST` | `Unknown command.` |
 
 ### Editing a person: `edit`
 
