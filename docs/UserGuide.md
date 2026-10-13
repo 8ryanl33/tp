@@ -6,7 +6,7 @@
 
 # TeachAssist User Guide
 
-TeachAssist is a **desktop application for managing contacts, optimized for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you type quickly, AB3 can help you manage contacts faster than traditional GUI applications.
+TeachAssist is a **desktop application for managing student records, optimized for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you type quickly, TeachAssist can help you manage student information faster than traditional GUI applications.
 
 <!-- * Table of Contents -->
 <page-nav-print />
@@ -18,9 +18,9 @@ TeachAssist is a **desktop application for managing contacts, optimized for use 
 1. Ensure that Java `25` or later is installed on your computer.<br>
    **Mac users:** Ensure you have the precise JDK version prescribed [here](https://se-education.org/guides/tutorials/javaInstallationMac.html).
 
-1. Download the latest `.jar` file from [here](https://github.com/se-edu/addressbook-level3/releases).
+1. Download the latest `.jar` file from [the TeachAssist releases page](https://github.com/AY2627S1-CS2103T-F12-1/tp/releases).
 
-1. Copy the file to the folder you want to use as the _home folder_ for your AddressBook.
+1. Copy the file to the folder you want to use as the _home folder_ for TeachAssist.
 
 1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
    A GUI similar to the one below should appear in a few seconds. With no saved data file, the student list starts empty.<br>
@@ -29,13 +29,13 @@ TeachAssist is a **desktop application for managing contacts, optimized for use 
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
    Some example commands you can try:
 
-   * `list` : Lists all contacts.
+   * `list` : Lists all students.
 
    * `add n/John Doe i/A0123456B e/johnd@example.com r/Needs help with recursion` : Adds a student named `John Doe`.
 
    * `delete i/A0123456B` : Deletes the student whose Student ID is `A0123456B`.
 
-   * `clear` : Deletes all contacts.
+   * `clear` : Deletes all students.
 
    * `exit` : Exits the app.
 
@@ -148,11 +148,25 @@ Failed commands do not change existing student records or the saved file.
 
 ### Listing all students: `list`
 
-Shows all students in TeachAssist. If the displayed list was previously filtered, this command restores the complete student list.
+Displays every student stored in TeachAssist. If the displayed list was previously restricted by `find` or `filter`, this command restores the complete student list.
 
 Format: `list`
 
-The `list` command does not accept additional arguments. For example, `list 3` is rejected as an invalid command.
+Example:
+
+```text
+list
+```
+
+Expected successful output:
+
+```text
+Listed all students.
+```
+
+If there are no stored students, the displayed list remains empty and the same successful output is shown.
+
+The `list` command does not accept additional arguments. For example, `list 3` is rejected and the correct command usage is displayed.
 
 ### Editing a person: `edit`
 
