@@ -369,11 +369,11 @@ modified by filtering.
 
 The following sequence diagram shows the main command flow:
 
-![FilterCommandSequenceDiagram](images/FilterCommandSequenceDiagram.png)
+<puml src="diagrams/FilterCommandSequenceDiagram.puml" alt="FilterCommandSequenceDiagram" />
 
 The following activity diagram shows the success and failure paths:
 
-![FilterCommandActivityDiagram](images/FilterCommandActivityDiagram.png)
+<puml src="diagrams/FilterCommandActivityDiagram.puml" alt="FilterCommandActivityDiagram" />
 
 ### \[Proposed\] Undo/redo feature
 
