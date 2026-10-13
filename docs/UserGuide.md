@@ -211,8 +211,8 @@ Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or 
 * Partial words match; for example, `Han` matches `Hans`.
 
 Examples:
-* `find n/John` returns `john` and `John Doe`
 * `find i/a03 a02` returns students whose student ids start with `a03` or `a02`
+* `find n/John` returns `john` and `John Doe`
 * `find n/tri sam` returns `tristan`, `samuel`<br>
   ![result for 'find n/tri sam'](images/findIncompleteResult.png)
 
