@@ -58,7 +58,7 @@ public class LabelCommand extends Command {
         }
 
         Person labelledStudent = new Person(student.getName(), student.getStudentId(), student.getEmail(),
-                student.getTags(), addLabelTo(student), student.getRemark());
+                addLabelTo(student), student.getRemark());
         model.setPerson(student, labelledStudent);
         return new CommandResult(String.format(MESSAGE_SUCCESS, label.labelName, student.getName(), studentId));
     }

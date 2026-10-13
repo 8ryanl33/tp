@@ -4,9 +4,9 @@
   pageNav: 3
 ---
 
-# AB-3 User Guide
+# TeachAssist User Guide
 
-AddressBook Level 3 (AB3) is a **desktop application for managing contacts, optimized for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you type quickly, AB3 can help you manage contacts faster than traditional GUI applications.
+TeachAssist is a **desktop application for managing student records, optimized for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you type quickly, TeachAssist can help you manage student information faster than traditional GUI applications.
 
 <!-- * Table of Contents -->
 <page-nav-print />
@@ -18,9 +18,9 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 1. Ensure that Java `25` or later is installed on your computer.<br>
    **Mac users:** Ensure you have the precise JDK version prescribed [here](https://se-education.org/guides/tutorials/javaInstallationMac.html).
 
-1. Download the latest `.jar` file from [here](https://github.com/se-edu/addressbook-level3/releases).
+1. Download the latest `.jar` file from [the TeachAssist releases page](https://github.com/AY2627S1-CS2103T-F12-1/tp/releases).
 
-1. Copy the file to the folder you want to use as the _home folder_ for your AddressBook.
+1. Copy the file to the folder you want to use as the _home folder_ for TeachAssist.
 
 1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
    A GUI similar to the one below should appear in a few seconds. With no saved data file, the student list starts empty.<br>
@@ -29,13 +29,13 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
    Some example commands you can try:
 
-   * `list` : Lists all contacts.
+   * `list` : Lists all students.
 
    * `add n/John Doe i/A0123456B e/johnd@example.com r/Needs help with recursion` : Adds a student named `John Doe`.
 
    * `delete i/A0123456B` : Deletes the student whose Student ID is `A0123456B`.
 
-   * `clear` : Deletes all contacts.
+   * `clear` : Deletes all students.
 
    * `exit` : Exits the app.
 
@@ -53,10 +53,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
   For example, in `add n/NAME`, replace `NAME` with a value such as `John Doe`.
 
 * Items in square brackets are optional.<br>
-  For example, `n/NAME [t/TAG]` can be used as `n/John Doe t/friend` or as `n/John Doe`.
-
-* Items followed by `...` can appear zero or more times.<br>
-  For example, `[t/TAG]... ` may be omitted, or written as `t/friend` or `t/friend t/family`.
+  For example, `n/NAME [l/LABEL_NAME]` can be used as `n/John Doe l/Tutorial` or as `n/John Doe`.
 
 * Parameters can be in any order.<br>
   For example, `add e/john@example.com i/A0123456B n/John Doe` is also acceptable.
@@ -81,12 +78,12 @@ Format: `help`
 Adds a student to TeachAssist with identifying information and optional free-text remarks.
 Use remarks for observations such as test results, weak topics, and consultation timings.
 
-Format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [t/TAG]...`
+Format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]`
 
 #### Parameter rules
 
 * `n/`, `i/`, and `e/` are compulsory and cannot be empty. Each can appear only once.
-* Parameters can appear in any order, including `r/`. Prefixes are lowercase and case-sensitive.
+* Parameters can appear in any order, including `r/` and `l/`. Prefixes are lowercase and case-sensitive.
 * Enter one command line. Leading and trailing whitespace around the command and each value is ignored.
 * A supported prefix at the start of a whitespace-separated token starts a parameter. Spaces or tabs can separate parameters.
 * Unknown alphabetic prefix tokens, such as `x/` or `p/`, are rejected, including inside remarks.
@@ -98,14 +95,15 @@ Format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [t/TAG]...`
 | Student ID | Exactly nine ASCII letters or digits, without internal spaces or punctuation. Stored in uppercase; `a0123456b` and `A0123456B` identify the same student. |
 | Email | At most 254 characters with exactly one `@`. The local part has 1–64 ASCII letters, digits, periods, underscores, plus signs, or hyphens. It cannot start/end with a period or contain consecutive periods. The domain has at least two dot-separated labels of 1–63 ASCII letters, digits, or hyphens, without boundary hyphens. The final label has 2–63 letters. Only the domain is lowercased. Spaces are rejected, and mailbox existence is not checked. |
 | Remark | Optional, at most 4,000 Unicode code points after trimming. Internal spacing and capitalisation are preserved. Omitting `r/` or supplying an empty `r/` stores an empty remark. At most one `r/` is allowed. Dates, grades, and the meaning of the text are not validated. Long remarks wrap on the student card. |
-| Tags | Optional and repeatable. Existing tag rules apply: non-empty alphanumeric values, with identical tags stored once. |
+| Label | Optional. Follows the same label name rules as the `label` command. At most one `l/` is allowed. Omitting `l/` stores no label. |
 
 Unlike numeric text such as `8/10`, a recognised prefix after `r/` starts another parameter.
-For example, `r/Quiz: 8/10 t/friends` stores `Quiz: 8/10` as the remark and `friends` as a tag.
+For example, `r/Quiz: 8/10 l/Tutorial` stores `Quiz: 8/10` as the remark and `Tutorial` as a label.
 
 Examples:
 
 * `add n/Samuel i/A0456832Y e/samuel123@example.com r/Consultation time: 3rd Oct 12pm at Science`
+* `add n/James Ho i/A0123456B e/jamesho@example.com l/Discrete Math Tutorial r/Needs help with recursion`
 * `add n/Jamie Lim i/A0234567C e/jamie@example.com r/Struggles with recursion. Quiz 1: 8/10.`
 * `add r/Needs help with recursion e/Alex@EXAMPLE.COM i/a0123456b n/Alex Tan`
 
@@ -135,41 +133,57 @@ If the normalised Student ID already exists, the entire command is rejected; exi
 | Invalid name | `Name must contain 1-100 characters, include a letter, and use only letters, spaces, apostrophes, hyphens, or periods.` |
 | Invalid Student ID | `Student ID must contain exactly 9 letters or digits, with no spaces.` |
 | Invalid email | `Email must have the form name@example.com and meet the supported email format.` |
+| Empty label | `Parameter l/ cannot be empty.` |
+| Invalid label | `Label names should be 1 to 60 characters long, contain at least one letter or digit, and only contain letters, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods.` |
 | Oversized remark | `Remark must not exceed 4000 characters.` |
-| Invalid command structure | `Invalid command format. Usage: add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [t/TAG]...` |
+| Invalid command structure | `Invalid command format. Usage: add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]` |
 | Saving fails | `Unable to save student data.` |
 
 Invalid structure, such as text before the first parameter or an embedded line break, displays the add usage.
 If several errors exist, the parser checks line breaks, unknown prefixes, preamble text, repeated parameters,
 missing parameters, then empty compulsory values before validating field values.
-Within repeated/missing/empty checks, `n/`, `i/`, and `e/` are checked in that order; repeated `r/` is checked after them.
+Within repeated/missing/empty checks, `n/`, `i/`, and `e/` are checked in that order; repeated `r/` and `l/`
+are checked after them.
 Failed commands do not change existing student records or the saved file.
 
 ### Listing all students: `list`
 
-Shows all students in TeachAssist. If the displayed list was previously filtered, this command restores the complete student list.
+Displays every student stored in TeachAssist. If the displayed list was previously restricted by `find` or `filter`, this command restores the complete student list.
 
 Format: `list`
 
-The `list` command does not accept additional arguments. For example, `list 3` is rejected as an invalid command.
+Example:
+
+```text
+list
+```
+
+Expected successful output:
+
+```text
+Listed all students.
+```
+
+If there are no stored students, the displayed list remains empty and the same successful output is shown.
+
+The `list` command does not accept additional arguments. For example, `list 3` is rejected and the correct command usage is displayed.
 
 ### Editing a person: `edit`
 
 Edits an existing person in the address book.
 
-Format: `edit INDEX [n/NAME] [e/EMAIL] [t/TAG]...`
+Format: `edit INDEX [n/NAME] [e/EMAIL] [r/REMARK]`
 
 * Edits the person at the specified `INDEX`. The index refers to the index number shown in the displayed person list. The index **must be a positive integer** 1, 2, 3, ...
 * At least one of the optional fields must be provided.
 * Existing values will be updated to the input values.
 * Student ID cannot be edited with this command.
-* Remarks are preserved when editing other fields. Name and email values follow the rules listed under `add`.
-* When editing tags, all of the person's existing tags are removed; adding tags is not cumulative.
-* To remove all of a person's tags, enter `t/` without a tag after it.
+* Remarks and labels are preserved when editing other fields. Name, email, and remark values follow the rules listed under `add`.
+* An empty `r/` clears the existing remark. Use the `label` command to add another group label.
 
 Examples:
 * `edit 1 e/johndoe@example.com` Changes the first person's email address to `johndoe@example.com`.
-*  `edit 2 n/Betsy Crower t/` Edits the name of the 2nd person to be `Betsy Crower` and clears all existing tags.
+* `edit 2 n/Betsy Crower r/Needs follow-up` Changes the 2nd person's name and remark.
 
 ### Labelling a student by group: `label`
 
@@ -190,7 +204,7 @@ Examples:
 * `label l/Discrete Math Tutorial i/A0101010A`
 * `label i/A0101010A l/Tutorial (Monday)`
 
-Note: Currently, labels and tags are indistinguishable in the UI. Dedicated styling will be implemented soon.
+Labels appear on student cards.
 
 Expected successful output:
 `Added label "Discrete Math Tutorial" to Samuel Tan (A0101010A).`
@@ -204,15 +218,33 @@ Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or 
 * The search is case-insensitive; for example, `hans` matches `Hans`.
 * The search accepts exactly one prefix: `n/`, `i/`, or `e/`.
 * Partial words match; for example, `Han` matches `Hans`.
+* Multiple keywords for search; for example `Tristan Alex` matches with `Tristan Tay` and `Alex Tan`
 
 Examples:
 * `find n/John` returns `john` and `John Doe`
+* `find i/a03 a02` returns students whose student ids start with `a03` or `a02`
 * `find n/alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
+### Filtering students by label: `filter`
+
+Shows only students who have a label matching the given label name.
+
+Format: `filter l/LABEL_NAME`
+
+Examples:
+
+* `filter l/Discrete Math Tutorial`
+* `filter l/discrete math tutorial`
+
+Notes:
+
+* The match is case-insensitive. For example, `filter l/discrete math tutorial` matches students labelled `Discrete Math Tutorial`.
+* If no students have the given label, the displayed list is cleared and the app reports that no students were found.
+
 ### Deleting a student: `delete`
 
-Deletes the student with the specified Student ID, including their name, email, remark, and tags.
+Deletes the student with the specified Student ID, including their name, email, remark, and labels.
 
 Format: `delete i/STUDENT_ID`
 
@@ -228,7 +260,7 @@ Format: `delete i/STUDENT_ID`
 Examples:
 
 * `delete i/A0123456B` deletes the student with that ID.
-* After `find Betsy`, `delete i/A0123456B` still deletes that ID, whether or not the student appears in the results.
+* After `find n/Betsy`, `delete i/A0123456B` still deletes that ID, whether or not the student appears in the results.
 
 Successful output, when the student is Alex Yeoh:
 
@@ -264,8 +296,8 @@ Format: `exit`
 
 ### Saving the data
 
-TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, and `clear`).
-You do not need to save manually. Commands such as `find`, `list`, `help`, and `exit` do not write student data.
+TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, `label`, and `clear`).
+You do not need to save manually. Commands such as `find`, `filter`, `list`, `help`, and `exit` do not write student data.
 If saving fails, the proposed change is not applied, and existing records, the displayed filter, and the previous
 saved file remain unchanged. The application displays `Unable to save student data.`
 Storage must support atomic file replacement; unsupported storage produces the same save error.
@@ -284,6 +316,7 @@ Furthermore, certain edits can cause the AddressBook to behave in unexpected way
 
 Each person record must include a valid `studentId`. Older data files that do not include `studentId` for every person may fail to load until the missing values are added manually.
 Group labels are saved under each person record as `labels`. Older data files without `labels` still load; those persons simply start with no labels.
+Legacy `tags` fields are ignored when loading and are not saved again.
 </box>
 
 ### Archiving data files `[coming in v2.0]`
@@ -310,11 +343,12 @@ _Details coming soon ..._
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [t/TAG]...` <br> e.g., `add n/James Ho i/A0123456B e/jamesho@example.com r/Needs help with recursion t/friend`
+**Add**    | `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]` <br> e.g., `add n/James Ho i/A0123456B e/jamesho@example.com r/Needs help with recursion l/Discrete Math Tutorial`
 **Clear**  | `clear`
 **Delete** | `delete i/STUDENT_ID`<br> e.g., `delete i/A0123456B`
-**Edit**   | `edit INDEX [n/NAME] [e/EMAIL] [t/TAG]...`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
+**Edit**   | `edit INDEX [n/NAME] [e/EMAIL] [r/REMARK]`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
 **Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
 **Label**  | `label l/LABEL_NAME i/STUDENT_ID`<br> e.g., `label l/Discrete Math Tutorial i/A0101010A`
+**Filter** | `filter l/LABEL_NAME`<br> e.g., `filter l/Discrete Math Tutorial`
 **List**   | `list`
 **Help**   | `help`

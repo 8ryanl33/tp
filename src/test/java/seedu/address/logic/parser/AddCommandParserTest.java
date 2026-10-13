@@ -5,20 +5,15 @@ import static seedu.address.logic.commands.CommandTestUtil.EMAIL_DESC_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.INVALID_EMAIL_DESC;
 import static seedu.address.logic.commands.CommandTestUtil.INVALID_NAME_DESC;
 import static seedu.address.logic.commands.CommandTestUtil.INVALID_STUDENT_ID_DESC;
-import static seedu.address.logic.commands.CommandTestUtil.INVALID_TAG_DESC;
 import static seedu.address.logic.commands.CommandTestUtil.NAME_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.NAME_DESC_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.PREAMBLE_NON_EMPTY;
 import static seedu.address.logic.commands.CommandTestUtil.PREAMBLE_WHITESPACE;
 import static seedu.address.logic.commands.CommandTestUtil.STUDENT_ID_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.STUDENT_ID_DESC_BOB;
-import static seedu.address.logic.commands.CommandTestUtil.TAG_DESC_FRIEND;
-import static seedu.address.logic.commands.CommandTestUtil.TAG_DESC_HUSBAND;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_EMAIL_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_NAME_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_STUDENT_ID_BOB;
-import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_FRIEND;
-import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_HUSBAND;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_STUDENT_ID;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
@@ -28,16 +23,19 @@ import static seedu.address.testutil.TypicalPersons.BOB;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.AddCommand;
+import seedu.address.model.label.Label;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Remark;
 import seedu.address.model.person.StudentId;
-import seedu.address.model.tag.Tag;
 import seedu.address.testutil.PersonBuilder;
 
 public class AddCommandParserTest {
     private static final String REQUIRED_FIELDS_BOB = NAME_DESC_BOB + STUDENT_ID_DESC_BOB + EMAIL_DESC_BOB;
+    private static final String VALID_LABEL = "Discrete Math Tutorial";
+    private static final String LABEL_DESC_TUTORIAL = " l/" + VALID_LABEL;
+    private static final String INVALID_LABEL_DESC = " l/Tutorial/1";
 
     private AddCommandParser parser = new AddCommandParser();
 
@@ -69,11 +67,12 @@ public class AddCommandParserTest {
         assertParseFailure(parser, REQUIRED_FIELDS_BOB + " r/Quiz x/hello", "Unknown parameter: x/.");
         assertParseFailure(parser, REQUIRED_FIELDS_BOB + "\tunknown/value", "Unknown parameter: unknown/.");
         assertParseFailure(parser, REQUIRED_FIELDS_BOB + " N/John", "Unknown parameter: N/.");
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " t/friends", "Unknown parameter: t/.");
     }
 
     @Test
     public void parse_tabsAndReorderedParameters_success() {
-        Person expected = new PersonBuilder(BOB).withTags().withRemark("Quiz 1: 8/10.").build();
+        Person expected = new PersonBuilder(BOB).withRemark("Quiz 1: 8/10.").build();
         String input = "r/Quiz 1: 8/10.\te/" + VALID_EMAIL_BOB + "\ti/" + VALID_STUDENT_ID_BOB
                 + "\tn/" + VALID_NAME_BOB;
         assertParseSuccess(parser, input, new AddCommand(expected));
@@ -82,7 +81,7 @@ public class AddCommandParserTest {
     @Test
     public void parse_remarkLiteralSlashesAndSpacing_success() {
         String remark = "Quiz: 8/10.  See https://example.com/a/b; use /r literally.";
-        Person expected = new PersonBuilder(BOB).withTags().withRemark(remark).build();
+        Person expected = new PersonBuilder(BOB).withRemark(remark).build();
         assertParseSuccess(parser, REQUIRED_FIELDS_BOB + " r/" + remark, new AddCommand(expected));
     }
 
@@ -103,7 +102,7 @@ public class AddCommandParserTest {
     @Test
     public void parse_normalisedNameAndEmail_success() {
         Person expectedPerson = new PersonBuilder(BOB).withName("Anne-Marie O’Neill")
-                .withEmail("Quiz+Sam@example.com").withTags().build();
+                .withEmail("Quiz+Sam@example.com").build();
         assertParseSuccess(parser, " n/  Anne-Marie   O’Neill  " + STUDENT_ID_DESC_BOB
                 + " e/  Quiz+Sam@EXAMPLE.COM  ", new AddCommand(expectedPerson));
     }
@@ -117,7 +116,7 @@ public class AddCommandParserTest {
 
     @Test
     public void parse_remarkLengthBoundary_validatesLimit() {
-        Person expectedPerson = new PersonBuilder(BOB).withTags()
+        Person expectedPerson = new PersonBuilder(BOB)
                 .withRemark("x".repeat(Remark.MAX_LENGTH)).build();
         assertParseSuccess(parser, REQUIRED_FIELDS_BOB + " r/" + "x".repeat(Remark.MAX_LENGTH),
                 new AddCommand(expectedPerson));
@@ -129,15 +128,39 @@ public class AddCommandParserTest {
     public void parse_remarkPresent_success() {
         String remark = "Needs help with recursion: follow up next week!";
         Person expectedPerson = new PersonBuilder(BOB).withRemark(remark).build();
-        assertParseSuccess(parser, REQUIRED_FIELDS_BOB + " r/" + remark + TAG_DESC_FRIEND + TAG_DESC_HUSBAND,
+        assertParseSuccess(parser, REQUIRED_FIELDS_BOB + " r/" + remark,
                 new AddCommand(expectedPerson));
-        assertParseSuccess(parser, " r/" + remark + REQUIRED_FIELDS_BOB + TAG_DESC_FRIEND + TAG_DESC_HUSBAND,
+        assertParseSuccess(parser, " r/" + remark + REQUIRED_FIELDS_BOB,
                 new AddCommand(expectedPerson));
     }
 
     @Test
+    public void parse_labelPresent_success() {
+        Person expectedPerson = new PersonBuilder(BOB).withLabels(VALID_LABEL).build();
+        assertParseSuccess(parser, REQUIRED_FIELDS_BOB + LABEL_DESC_TUTORIAL, new AddCommand(expectedPerson));
+        assertParseSuccess(parser, LABEL_DESC_TUTORIAL + REQUIRED_FIELDS_BOB, new AddCommand(expectedPerson));
+    }
+
+    @Test
+    public void parse_emptyLabel_failure() {
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " l/", "Parameter l/ cannot be empty.");
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " l/   ", "Parameter l/ cannot be empty.");
+    }
+
+    @Test
+    public void parse_repeatedLabel_failure() {
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + LABEL_DESC_TUTORIAL + " l/CS2103T Tutorial",
+                "Parameter l/ must be specified only once.");
+    }
+
+    @Test
+    public void parse_invalidLabel_failure() {
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + INVALID_LABEL_DESC, Label.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
     public void parse_remarkEmptyOrMissing_success() {
-        Person expectedPerson = new PersonBuilder(BOB).withTags().withRemark("").build();
+        Person expectedPerson = new PersonBuilder(BOB).withRemark("").build();
         assertParseSuccess(parser, REQUIRED_FIELDS_BOB, new AddCommand(expectedPerson));
         assertParseSuccess(parser, REQUIRED_FIELDS_BOB + " r/", new AddCommand(expectedPerson));
         assertParseSuccess(parser, REQUIRED_FIELDS_BOB + " r/   ", new AddCommand(expectedPerson));
@@ -152,21 +175,17 @@ public class AddCommandParserTest {
     }
 
     @Test
-    public void parse_allFieldsPresent_success() {
-        Person expectedPerson = new PersonBuilder(BOB).withTags(VALID_TAG_FRIEND).build();
-        assertParseSuccess(parser, PREAMBLE_WHITESPACE + REQUIRED_FIELDS_BOB + TAG_DESC_FRIEND,
+    public void parse_requiredFieldsPresent_success() {
+        Person expectedPerson = new PersonBuilder(BOB).build();
+        assertParseSuccess(parser, PREAMBLE_WHITESPACE + REQUIRED_FIELDS_BOB,
                 new AddCommand(expectedPerson));
         assertParseSuccess(parser, NAME_DESC_BOB + " " + PREFIX_STUDENT_ID
-                + VALID_STUDENT_ID_BOB.toLowerCase() + EMAIL_DESC_BOB + TAG_DESC_FRIEND,
+                + VALID_STUDENT_ID_BOB.toLowerCase() + EMAIL_DESC_BOB,
                 new AddCommand(expectedPerson));
-        Person expectedPersonMultipleTags = new PersonBuilder(BOB).withTags(VALID_TAG_FRIEND, VALID_TAG_HUSBAND)
-                .build();
-        assertParseSuccess(parser, REQUIRED_FIELDS_BOB + TAG_DESC_HUSBAND + TAG_DESC_FRIEND,
-                new AddCommand(expectedPersonMultipleTags));
     }
 
     @Test
-    public void parse_repeatedNonTagValue_failure() {
+    public void parse_repeatedRequiredValue_failure() {
         assertParseFailure(parser, NAME_DESC_AMY + REQUIRED_FIELDS_BOB,
                 "Parameter n/ must be specified only once.");
         assertParseFailure(parser, STUDENT_ID_DESC_AMY + REQUIRED_FIELDS_BOB,
@@ -195,7 +214,7 @@ public class AddCommandParserTest {
 
     @Test
     public void parse_optionalFieldsMissing_success() {
-        Person expectedPerson = new PersonBuilder(AMY).withTags().build();
+        Person expectedPerson = new PersonBuilder(AMY).build();
         assertParseSuccess(parser, NAME_DESC_AMY + STUDENT_ID_DESC_AMY + EMAIL_DESC_AMY,
                 new AddCommand(expectedPerson));
     }
@@ -217,7 +236,6 @@ public class AddCommandParserTest {
         assertParseFailure(parser, NAME_DESC_BOB + INVALID_STUDENT_ID_DESC + EMAIL_DESC_BOB,
                 StudentId.MESSAGE_CONSTRAINTS);
         assertParseFailure(parser, NAME_DESC_BOB + STUDENT_ID_DESC_BOB + INVALID_EMAIL_DESC, Email.MESSAGE_CONSTRAINTS);
-        assertParseFailure(parser, REQUIRED_FIELDS_BOB + INVALID_TAG_DESC, Tag.MESSAGE_CONSTRAINTS);
         assertParseFailure(parser, INVALID_NAME_DESC + STUDENT_ID_DESC_BOB + INVALID_EMAIL_DESC,
                 Name.MESSAGE_CONSTRAINTS);
         assertParseFailure(parser, PREAMBLE_NON_EMPTY + REQUIRED_FIELDS_BOB,

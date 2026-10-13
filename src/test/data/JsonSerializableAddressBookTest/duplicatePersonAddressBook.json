@@ -4,8 +4,7 @@
     "studentId": "A1234567B",
     "phone": "94351253",
     "email": "alice@example.com",
-    "address": "123, Jurong West Ave 6, #08-111",
-    "tags": [ "friends" ]
+    "address": "123, Jurong West Ave 6, #08-111"
   }, {
     "name": "Alice Pauline",
     "studentId": "a1234567b",

@@ -17,7 +17,6 @@ import seedu.address.model.person.Name;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Remark;
 import seedu.address.model.person.StudentId;
-import seedu.address.model.tag.Tag;
 
 /**
  * Jackson-friendly version of {@link Person}.
@@ -25,7 +24,6 @@ import seedu.address.model.tag.Tag;
 class JsonAdaptedPerson {
 
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Person's %s field is missing!";
-    public static final String MISSING_TAG_MESSAGE = "Person's tag field is missing!";
     public static final String MISSING_LABEL_MESSAGE = "Person's label field is missing!";
     public static final String MESSAGE_DUPLICATE_LABEL = "Person's labels contain duplicate label(s).";
 
@@ -33,7 +31,6 @@ class JsonAdaptedPerson {
     private final String studentId;
     private final String email;
     private final String remark;
-    private final List<JsonAdaptedTag> tags = new ArrayList<>();
     private final List<JsonAdaptedLabel> labels = new ArrayList<>();
 
     /**
@@ -42,25 +39,15 @@ class JsonAdaptedPerson {
      */
     @JsonCreator
     public JsonAdaptedPerson(@JsonProperty("name") String name, @JsonProperty("studentId") String studentId,
-            @JsonProperty("email") String email, @JsonProperty("tags") List<JsonAdaptedTag> tags,
-            @JsonProperty("labels") List<JsonAdaptedLabel> labels, @JsonProperty("remark") String remark) {
+            @JsonProperty("email") String email, @JsonProperty("labels") List<JsonAdaptedLabel> labels,
+            @JsonProperty("remark") String remark) {
         this.name = name;
         this.studentId = studentId;
         this.email = email;
         this.remark = remark == null ? "" : remark;
-        if (tags != null) {
-            this.tags.addAll(tags);
-        }
         if (labels != null) {
             this.labels.addAll(labels);
         }
-    }
-
-    /**
-     * Constructs a {@code JsonAdaptedPerson} without labels for older tests and callers.
-     */
-    public JsonAdaptedPerson(String name, String studentId, String email, List<JsonAdaptedTag> tags, String remark) {
-        this(name, studentId, email, tags, List.of(), remark);
     }
 
     /**
@@ -71,9 +58,6 @@ class JsonAdaptedPerson {
         studentId = source.getStudentId().value;
         email = source.getEmail().value;
         remark = source.getRemark().value;
-        tags.addAll(source.getTags().stream()
-                .map(JsonAdaptedTag::new)
-                .collect(Collectors.toList()));
         labels.addAll(source.getLabels().stream()
                 .map(JsonAdaptedLabel::new)
                 .collect(Collectors.toList()));
@@ -85,13 +69,6 @@ class JsonAdaptedPerson {
      * @throws IllegalValueException if there were any data constraints violated in the adapted person.
      */
     public Person toModelType() throws IllegalValueException {
-        final List<Tag> personTags = new ArrayList<>();
-        for (JsonAdaptedTag tag : tags) {
-            if (tag == null) {
-                throw new IllegalValueException(MISSING_TAG_MESSAGE);
-            }
-            personTags.add(tag.toModelType());
-        }
         final List<Label> personLabels = new ArrayList<>();
         final Set<String> labelNames = new HashSet<>();
         for (JsonAdaptedLabel label : labels) {
@@ -130,13 +107,12 @@ class JsonAdaptedPerson {
         }
         final Email modelEmail = new Email(email);
 
-        final Set<Tag> modelTags = new HashSet<>(personTags);
         final Set<Label> modelLabels = new HashSet<>(personLabels);
         if (!Remark.isValidRemark(remark)) {
             throw new IllegalValueException(Remark.MESSAGE_CONSTRAINTS);
         }
         final Remark modelRemark = new Remark(remark);
-        return new Person(modelName, modelStudentId, modelEmail, modelTags, modelLabels, modelRemark);
+        return new Person(modelName, modelStudentId, modelEmail, modelLabels, modelRemark);
     }
 
 }

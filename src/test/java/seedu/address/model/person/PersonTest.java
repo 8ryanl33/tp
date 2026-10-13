@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_EMAIL_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_NAME_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_STUDENT_ID_BOB;
-import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_HUSBAND;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.BOB;
@@ -21,10 +20,9 @@ public class PersonTest {
     private static final String VALID_LABEL_TUTORIAL = "Discrete Math Tutorial";
 
     @Test
-    public void asObservableList_modifyList_throwsUnsupportedOperationException() {
+    public void getLabels_modifySet_throwsUnsupportedOperationException() {
         Person person = new PersonBuilder().build();
-        assertThrows(UnsupportedOperationException.class, () -> person.getTags().remove(0));
-        assertThrows(UnsupportedOperationException.class, () -> person.getLabels().remove(0));
+        assertThrows(UnsupportedOperationException.class, () -> person.getLabels().clear());
     }
 
     @Test
@@ -37,7 +35,7 @@ public class PersonTest {
 
         // same student ID, all other attributes different -> returns true
         Person editedAlice = new PersonBuilder(ALICE).withName(VALID_NAME_BOB)
-                .withEmail(VALID_EMAIL_BOB).withTags(VALID_TAG_HUSBAND).build();
+                .withEmail(VALID_EMAIL_BOB).withLabels(VALID_LABEL_TUTORIAL).build();
         assertTrue(ALICE.isSamePerson(editedAlice));
 
         // different student ID, all other attributes same -> returns false
@@ -86,10 +84,6 @@ public class PersonTest {
         editedAlice = new PersonBuilder(ALICE).withEmail(VALID_EMAIL_BOB).build();
         assertFalse(ALICE.equals(editedAlice));
 
-        // different tags -> returns false
-        editedAlice = new PersonBuilder(ALICE).withTags(VALID_TAG_HUSBAND).build();
-        assertFalse(ALICE.equals(editedAlice));
-
         // different labels -> returns false
         editedAlice = new PersonBuilder(ALICE).withLabels(VALID_LABEL_TUTORIAL).build();
         assertFalse(ALICE.equals(editedAlice));
@@ -97,8 +91,7 @@ public class PersonTest {
 
     @Test
     public void constructor_withoutRemark_defaultsToEmptyRemark() {
-        Person person = new Person(ALICE.getName(), ALICE.getStudentId(),
-                ALICE.getEmail(), ALICE.getTags());
+        Person person = new Person(ALICE.getName(), ALICE.getStudentId(), ALICE.getEmail());
 
         assertEquals(ALICE.getStudentId(), person.getStudentId());
         assertEquals(new Remark(""), person.getRemark());
@@ -123,14 +116,14 @@ public class PersonTest {
     }
 
     private Person withRemark(Person person, Remark remark) {
-        return new Person(person.getName(), person.getStudentId(), person.getEmail(), person.getTags(), remark);
+        return new Person(person.getName(), person.getStudentId(), person.getEmail(), person.getLabels(), remark);
     }
 
     @Test
     public void toStringMethod() {
         String expected = Person.class.getCanonicalName() + "{name=" + ALICE.getName()
                 + ", studentId=" + ALICE.getStudentId() + ", email=" + ALICE.getEmail()
-                + ", tags=" + ALICE.getTags() + ", labels=" + ALICE.getLabels()
+                + ", labels=" + ALICE.getLabels()
                 + ", remark=" + ALICE.getRemark() + "}";
         assertEquals(expected, ALICE.toString());
     }

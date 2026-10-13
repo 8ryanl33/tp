@@ -90,14 +90,8 @@ Here's a (partial) class diagram of the `Logic` component:
 
 <puml src="diagrams/LogicClassDiagram.puml" width="550"/>
 
-The sequence diagram below illustrates `execute("delete i/A0123456B")`, including saving before publishing changes.
-
-<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Delete by Student ID and save before updating the live model" />
-
-<box type="info" seamless>
-
-**Note:** The lifeline for `DeleteCommandParser` should end at the destroy marker (X), but due to a limitation of PlantUML, the lifeline continues till the end of diagram.
-</box>
+The [add](#adding-student-information) and [delete](#deleting-student-information) sequence diagrams below
+show how parsed commands change a temporary model before the live model is updated.
 
 
 How the `Logic` component works:
@@ -126,7 +120,7 @@ The `Model` component,
 
 * stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object).
 * uses `studentId` as the domain identifier for `Person` duplicate checks. The JavaFX `id` label in `PersonListCard.fxml` is only the displayed list index, not the student's identifier.
-* stores group labels as `Label` objects inside each `Person`, separate from `Tag` objects. This keeps group-label validation and storage independent from tag validation and storage.
+* stores group labels as `Label` objects inside each `Person`.
 * stores the `Person` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Person>` that the UI can observe and bind to, so the UI updates when the list changes.
 * stores a `UserPrefs` object that represents the user's preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
@@ -134,7 +128,7 @@ The `Model` component,
 
 <box type="info" seamless>
 
-**Note:** The alternative, arguably more object-oriented, design below keeps unique lists of tags and labels in `AddressBook`, and each `Person` references values from those lists. This lets `AddressBook` maintain one value object per unique tag or label instead of each `Person` holding its own objects.<br>
+**Note:** The alternative, arguably more object-oriented, design below keeps a unique list of labels in `AddressBook`, and each `Person` references values from that list. This lets `AddressBook` maintain one value object per unique label instead of each `Person` holding its own objects.<br>
 
 <puml src="diagrams/BetterModelClassDiagram.puml" width="450" />
 </box>
@@ -150,6 +144,7 @@ The `Storage` component,
 * can save both address book data and user preference data in JSON format, and read them back into corresponding objects.
 * expects each stored `Person` JSON object to contain a valid `studentId`. There is currently no migration or default-value strategy for old data files missing this field.
 * stores group labels through `JsonAdaptedLabel`. Missing or null `labels` fields are treated as empty label sets for compatibility with older data files.
+* ignores legacy `tags` fields when loading older data files and omits them when saving.
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
 
@@ -171,7 +166,7 @@ Format: `label l/LABEL_NAME i/STUDENT_ID`
 
 The implementation uses the following classes:
 
-* `Label` is a model value object for group labels. It is separate from `Tag`, even though labels are rendered using the existing tag-style UI component.
+* `Label` is a model value object for group labels.
 * `ParserUtil#parseLabel` trims command input and converts valid label text into a `Label`.
 * `LabelCommandParser` checks command structure, required `l/` and `i/` parameters, empty values, duplicate parameters, label validity, and student ID validity.
 * `LabelCommand` locates the target student by `StudentId`, rejects case-insensitive duplicate labels on the same student, creates an updated `Person`, and calls `Model#setPerson`.
@@ -183,15 +178,14 @@ The sequence diagram below shows how a successful `label l/Tutorial 1 i/A0101010
 
 Design notes:
 
-* Labels and tags intentionally remain separate model/storage concepts so that future changes to tag behavior do not silently change group labels, and vice versa.
 * Duplicate detection is case-insensitive, but the originally stored label capitalization is preserved for display and duplicate error messages.
 * `EditCommand` preserves a person's existing labels when rebuilding a `Person` with edited fields.
-* `PersonCard` renders labels in the same `FlowPane` used for tags so labels inherit the existing AB3 tag-style UI.
+* `PersonCard` renders labels in its `FlowPane`.
 
 ### Adding student information
 
-Command format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [t/TAG]...`.
-Tags retain their existing optional, repeatable behaviour; this feature does not change their rules.
+Command format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]`.
+One optional group label can be assigned during add; it follows the same label-name rules as the `label` command.
 The accepted values and exact error messages are documented in the [User Guide](UserGuide.md#adding-a-student-add).
 
 #### Validation and identity
@@ -199,7 +193,7 @@ The accepted values and exact error messages are documented in the [User Guide](
 * `ArgumentTokenizer` recognises supported prefixes at the start of arguments or after whitespace, including tabs.
 * `AddCommandParser` checks line breaks, unknown alphabetic prefixes, preamble text, repeated prefixes,
   missing mandatory fields, then empty mandatory fields. Errors are reported before parsing field values.
-  Repeated/missing/empty checks follow `n/`, `i/`, `e/` order; repeated `r/` is checked last.
+  Repeated/missing/empty checks follow `n/`, `i/`, `e/` order; repeated `r/` and `l/` are checked after them.
 * `ParserUtil` trims values and converts invalid fields into `ParseException`s. Model constructors also validate,
   so records created by storage or other callers follow the same rules.
 * `Name` accepts 1–100 Unicode code points after trimming and collapsing repeated spaces, requires a letter,
@@ -210,9 +204,12 @@ The accepted values and exact error messages are documented in the [User Guide](
   of 63, and a final label of 2–63 letters. Only the domain is lowercased using `Locale.ROOT`.
 * `Remark` accepts at most 4,000 Unicode code points; command parsing trims only surrounding whitespace.
   Empty or omitted remarks become empty strings. `r/` can appear anywhere and does not consume later parameters.
+* `Label` accepts the same values as the `label` command. Empty labels are rejected, omitted labels become an empty
+  label set, and `l/` can appear anywhere without consuming later parameters.
 
-For example, `add n/  Alex   Tan i/a0123456b e/Alex@EXAMPLE.COM r/Quiz: 8/10 t/friends` creates a student with
-name `Alex Tan`, ID `A0123456B`, email `Alex@example.com`, remark `Quiz: 8/10`, and tag `friends`.
+For example, `add n/  Alex   Tan i/a0123456b e/Alex@EXAMPLE.COM l/Tutorial 1 r/Quiz: 8/10`
+creates a student with name `Alex Tan`, ID `A0123456B`, email `Alex@example.com`, label `Tutorial 1`,
+and remark `Quiz: 8/10`.
 An alphabetic token such as `x/value` is rejected even inside a remark; `8/10` and URLs remain literal text.
 A duplicate ID rejects the complete command without merging any details or remarks.
 
@@ -225,7 +222,7 @@ AddressBookParser → AddCommandParser → AddCommand
 LogicManager → temporary ModelManager → JsonAddressBookStorage → live ModelManager
 ```
 
-1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, and `clear`
+1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, `label`, and `clear`
    return true. Future modifying commands must override this method too.
 2. `LogicManager` copies the live records and current filter into a temporary `ModelManager`, then executes the command
    against that copy. Copying the filter preserves displayed indices for `edit` and the active view for `delete`.
@@ -236,9 +233,16 @@ LogicManager → temporary ModelManager → JsonAddressBookStorage → live Mode
    the success feedback. If saving fails, it returns `Unable to save student data.`; live records and the active filter
    are unchanged, and the previous data file remains intact.
 
+The sequence diagram shows an add with an optional remark and label. It also shows that a failed save leaves the
+live model unchanged. Invalid parameters or a duplicate Student ID stop execution before saving.
+
+![Add a student and save before updating the live model](images/AddSequenceDiagram.svg)
+
+[PlantUML source](diagrams/AddSequenceDiagram.puml)
+
 For example, adding a student while viewing a filtered list restores the complete list only after saving succeeds.
 If replacement fails, the filtered list remains as it was and the new student is not added.
-Read-only commands such as `find`, `list`, `help`, and `exit` execute on the live model without saving student data.
+Read-only commands such as `find`, `filter`, `list`, `help`, and `exit` execute on the live model without saving student data.
 
 #### Startup and feedback
 
@@ -249,15 +253,68 @@ This prevents an empty model from overwriting unreadable or invalid records. Rea
 
 Successful adds display `Added student ID: NAME.`, followed by ` Remark: TEXT` when the remark is non-empty,
 and the total student count on the next line. The count uses the complete record list.
-`PersonCard` displays non-empty remarks with wrapping and hides the label for empty remarks.
+`PersonCard` displays labels and non-empty remarks with wrapping, and hides the remark field for
+empty remarks.
 JSON storage preserves remarks and defaults missing/null remark fields to empty strings.
 
 #### Verification
 
-Tests cover field boundaries and normalisation, parameter errors and ordering, duplicate IDs with changed details,
+Tests cover field boundaries and normalisation, label parsing, parameter errors and ordering, duplicate IDs with changed details,
 feedback with/without remarks, JSON round trips, filtered index handling, startup loading failures, and save failures.
 Replacement-failure tests simulate an error after the temporary file is written and check that the original file,
 records, and active filter remain unchanged. They also check temporary-file cleanup and failed first saves.
+
+### Find command
+
+Command format: `find n/KEYWORD [MORE_KEYWORDS]...` or `find i/KEYWORD [MORE_KEYWORDS]...`
+or `find e/KEYWORD [MORE_KEYWORDS]...`.
+Exactly one supported search field must be supplied: name, student ID, or email.
+The accepted format and user-facing examples are documented in the
+[User Guide](UserGuide.md#locating-persons-by-name-student-id-or-email-find).
+
+#### Validation and matching
+
+* `ArgumentTokenizer` recognises the supported prefixes `n/`, `i/`, and `e/`.
+* `FindCommandParser` rejects commands with no search prefix, more than one search prefix, preamble text,
+  duplicate search prefixes, or an empty keyword value.
+* Search keywords are split on whitespace. Multiple spaces, tabs, and line breaks between keywords are collapsed.
+* `FindCommandParser` creates a field-specific predicate: `NameContainsKeywordsPredicate`,
+  `StudentIdContainsKeywordsPredicate`, or `EmailContainsKeywordsPredicate`.
+* Each predicate checks whether the selected field contains any keyword using `StringUtil#containsIgnoreCase`.
+  Matching is therefore case-insensitive and supports partial matches.
+
+For example, `find n/alex david` creates a `NameContainsKeywordsPredicate` with keywords `alex` and `david`.
+Any student whose name contains either keyword is shown.
+`find i/a012` searches student IDs, while `find e/example.com` searches email addresses.
+
+#### Execution and displayed list
+
+The execution path is:
+
+```text
+AddressBookParser → FindCommandParser → FindCommand
+FindCommand → Model#updateFilteredPersonList
+```
+
+`FindCommand` stores only the predicate created by the parser. During execution, it calls
+`Model#updateFilteredPersonList` with that predicate, replacing the current displayed list with the matching students.
+The underlying student records are not modified.
+
+The command returns the standard listed-students feedback containing the number of matching records.
+When no records match, the filtered list becomes empty and the feedback reports zero listed students.
+The previous filter is replaced by the new search predicate.
+
+#### Saving and startup behaviour
+
+`FindCommand` does not override `Command#isModifyingData`, so it remains a read-only command.
+`LogicManager` executes it on the live model without creating a temporary model and without writing the JSON data file.
+If startup loading failed, the command is still available because it does not risk overwriting invalid persisted data.
+
+#### Verification
+
+Tests cover missing prefixes, multiple prefixes, duplicate prefixes, empty keyword values, name searches with
+multiple keywords and whitespace, student ID searches, email searches, zero-result execution, multi-result execution,
+and equality of commands with equivalent predicates.
 
 ### Deleting student information
 
@@ -270,10 +327,10 @@ An invalid Student ID retains the field constraint message instead of being repl
 
 `DeleteCommand` stores the validated `StudentId` and searches `model.getAddressBook().getPersonList()` for an exact
 normalised ID match. It retrieves the existing `Person` and passes that object to `model.deletePerson`.
-This removes the entire record, including remarks and tags, without separately deleting its fields.
+This removes the entire record, including remarks and labels, without separately deleting its fields.
 The complete record list is searched so a student hidden by a filter can still be deleted.
 
-For example, after `find Benson`, `delete i/a1234567b` removes Alice's `A1234567B` record while the displayed Benson
+For example, after `find n/Benson`, `delete i/a1234567b` removes Alice's `A1234567B` record while the displayed Benson
 results remain unchanged. If Alice is already absent, the command reports
 `Student with ID A1234567B is not in the records.` and changes no data.
 Successful feedback is `Deleted student A1234567B: Alice Pauline.`
@@ -283,8 +340,40 @@ Deletion preserves the current filter and returns true from `Command#isModifying
 the change. If saving fails, the live record, filter, and previous saved file remain unchanged.
 If startup loading failed, deletion is blocked by the existing loading guard.
 
+The sequence diagram shows deletion by Student ID, including the save-failure path.
+
+![Delete by Student ID and save before updating the live model](images/DeleteSequenceDiagram.svg)
+
+[PlantUML source](diagrams/DeleteSequenceDiagram.puml)
+
+<box type="info" seamless>
+
+**Note:** The lifeline for `DeleteCommandParser` should end at the destroy marker (X), but due to a limitation of PlantUML, the lifeline continues till the end of the diagram.
+</box>
+
 Tests cover normalised IDs, visible/hidden students, an empty displayed list, nonexistent IDs, malformed parameters,
 whole-record removal from persisted JSON, filter preservation, and save failures.
+
+### Filter feature
+
+The `filter` command lets the user display only students with a matching label.
+It reuses the label prefix and label validation rules introduced by the `label`
+command, so invalid label names are rejected during parsing before the model is
+updated.
+
+Given `filter l/Discrete Math Tutorial`, `AddressBookParser` delegates parsing
+to `FilterCommandParser`. The parser returns a `FilterCommand` containing the
+validated label. When executed, `FilterCommand` creates a case-insensitive label
+predicate and calls `Model#updateFilteredPersonList`. Student records are not
+modified by filtering.
+
+The following sequence diagram shows the main command flow:
+
+![FilterCommandSequenceDiagram](images/FilterCommandSequenceDiagram.png)
+
+The following activity diagram shows the success and failure paths:
+
+![FilterCommandActivityDiagram](images/FilterCommandActivityDiagram.png)
 
 ### \[Proposed\] Undo/redo feature
 
