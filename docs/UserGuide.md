@@ -212,8 +212,22 @@ Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or 
 
 Examples:
 * `find n/John` returns `john` and `John Doe`
-* `find n/alex david` returns `Alex Yeoh`, `David Li`<br>
-  ![result for 'find alex david'](images/findAlexDavidResult.png)
+* `find n/tri sam` returns `tristan`, `samuel`<br>
+  ![result for 'find n/tri sam'](images/findIncompleteResult.png)
+
+#### Errors
+
+| Problem | Message |
+|---------|---------|
+| Missing search parameter | `Missing required parameter: n/, i/, or e/.` |
+| Empty search parameter | `Parameter n/ cannot be empty.` |
+| Repeated same search parameter | `Parameter n/ must be specified only once.` |
+| More than one search parameter type | `Parameter n/, i/, or e/ must be specified only once.` |
+| Unknown parameter | `Unknown parameter: p/.` |
+
+The parser checks for errors in the order of unknown prefixes, preamble text, repeated parameters,
+missing parameters, multiple search parameter types, then empty values before searching.
+Failed commands do not change the displayed student records or the saved file.
 
 ### Filtering students by label: `filter`
 
