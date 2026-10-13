@@ -14,6 +14,7 @@ import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.person.Person;
+import seedu.address.storage.DataStorageLocationException;
 import seedu.address.storage.Storage;
 
 /**
@@ -21,6 +22,7 @@ import seedu.address.storage.Storage;
  */
 public class LogicManager implements Logic {
     public static final String MESSAGE_SAVE_FAILURE = "Unable to save student data.";
+    public static final String MESSAGE_STORAGE_LOCATION_FAILURE = "Unable to create data storage location.";
     public static final String MESSAGE_DATA_UNAVAILABLE =
             "Student data is unavailable because loading failed. Fix the data file and restart.";
 
@@ -30,6 +32,7 @@ public class LogicManager implements Logic {
     private final Storage storage;
     private final AddressBookParser addressBookParser;
     private final boolean isStudentDataAvailable;
+    private final String startupMessage;
 
     /**
      * Constructs a {@code LogicManager} whose student data is available for modification.
@@ -38,7 +41,7 @@ public class LogicManager implements Logic {
      * @param storage The storage used for saving changes.
      */
     public LogicManager(Model model, Storage storage) {
-        this(model, storage, true);
+        this(model, storage, true, "");
     }
 
     /**
@@ -47,11 +50,13 @@ public class LogicManager implements Logic {
      * @param model The live model.
      * @param storage The storage used for saving changes.
      * @param isStudentDataAvailable Whether startup loading succeeded or no data file existed.
+     * @param startupMessage The message describing the outcome of startup loading.
      */
-    public LogicManager(Model model, Storage storage, boolean isStudentDataAvailable) {
+    public LogicManager(Model model, Storage storage, boolean isStudentDataAvailable, String startupMessage) {
         this.model = model;
         this.storage = storage;
         this.isStudentDataAvailable = isStudentDataAvailable;
+        this.startupMessage = startupMessage;
         addressBookParser = new AddressBookParser();
     }
 
@@ -87,10 +92,18 @@ public class LogicManager implements Logic {
     private void saveStudentData(Model pendingModel) throws CommandException {
         try {
             storage.saveAddressBook(pendingModel.getAddressBook());
+        } catch (DataStorageLocationException dsle) {
+            logger.warning("Unable to create data storage location: " + dsle.getMessage());
+            throw new CommandException(MESSAGE_STORAGE_LOCATION_FAILURE, dsle);
         } catch (IOException ioe) {
             logger.warning("Unable to save student data: " + ioe.getMessage());
             throw new CommandException(MESSAGE_SAVE_FAILURE, ioe);
         }
+    }
+
+    @Override
+    public String getStartupMessage() {
+        return startupMessage;
     }
 
     @Override

@@ -57,6 +57,15 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void saveAddressBook_folderCannotBeCreated_throwsDataStorageLocationException() throws Exception {
+        Path blockingFile = Files.writeString(testFolder.resolve("data"), "not a folder");
+        Path file = blockingFile.resolve("addressBook.json");
+        assertThrows(DataStorageLocationException.class, () ->
+                new JsonAddressBookStorage(file).saveAddressBook(getTypicalAddressBook()));
+        assertEquals("not a folder", Files.readString(blockingFile));
+    }
+
+    @Test
     public void saveAddressBook_missingParentDirectories_createsThem() throws Exception {
         Path file = testFolder.resolve("nested/data/students.json");
         JsonAddressBookStorage storage = new JsonAddressBookStorage(file);
@@ -91,6 +100,21 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAndSaveAddressBook_withLabel_preservesLabel() throws Exception {
+        Path filePath = testFolder.resolve("LabelsAddressBook.json");
+        Person person = new PersonBuilder(ALICE).withLabels("Discrete Math Tutorial").build();
+        AddressBook original = new AddressBook();
+        original.addPerson(person);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+
+        storage.saveAddressBook(original);
+        ReadOnlyAddressBook restored = new JsonAddressBookStorage(filePath).readAddressBook().get();
+
+        assertEquals(original, new AddressBook(restored));
+        assertEquals(person.getLabels(), restored.getPersonList().get(0).getLabels());
+    }
+
+    @Test
     public void readAddressBook_nullFilePath_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> readAddressBook(null));
     }
@@ -112,17 +136,44 @@ public class JsonAddressBookStorageTest {
 
     @Test
     public void read_notJsonFormat_exceptionThrown() {
-        assertThrows(DataLoadingException.class, () -> readAddressBook("notJsonFormatAddressBook.json"));
+        assertThrows(DataLoadingException.class, JsonAddressBookStorage.MESSAGE_INVALID_FILE, () ->
+                readAddressBook("notJsonFormatAddressBook.json"));
     }
 
     @Test
     public void readAddressBook_invalidPersonAddressBook_throwDataLoadingException() {
-        assertThrows(DataLoadingException.class, () -> readAddressBook("invalidPersonAddressBook.json"));
+        assertThrows(DataLoadingException.class, JsonAddressBookStorage.MESSAGE_INVALID_FILE, () ->
+                readAddressBook("invalidPersonAddressBook.json"));
     }
 
     @Test
     public void readAddressBook_invalidAndValidPersonAddressBook_throwDataLoadingException() {
-        assertThrows(DataLoadingException.class, () -> readAddressBook("invalidAndValidPersonAddressBook.json"));
+        assertThrows(DataLoadingException.class, JsonAddressBookStorage.MESSAGE_INVALID_FILE, () ->
+                readAddressBook("invalidAndValidPersonAddressBook.json"));
+    }
+
+    @Test
+    public void readAddressBook_duplicateStudentId_throwsDuplicateStudentIdMessage() {
+        Path file = Paths.get("src", "test", "data", "JsonSerializableAddressBookTest",
+                "duplicatePersonAddressBook.json");
+        assertThrows(DataLoadingException.class,
+                String.format(JsonSerializableAddressBook.MESSAGE_DUPLICATE_STUDENT_ID, "A1234567B"), () ->
+                new JsonAddressBookStorage(file).readAddressBook());
+    }
+
+    @Test
+    public void readAddressBook_wrongJsonStructure_throwsInvalidFileMessage() throws Exception {
+        Path file = testFolder.resolve("wrongStructure.json");
+        Files.writeString(file, "{ \"persons\": \"not a list\" }");
+        assertThrows(DataLoadingException.class, JsonAddressBookStorage.MESSAGE_INVALID_FILE, () ->
+                new JsonAddressBookStorage(file).readAddressBook());
+    }
+
+    @Test
+    public void readAddressBook_unreadableFile_throwsUnreadableFileMessage() throws Exception {
+        Path directory = Files.createDirectory(testFolder.resolve("addressBook.json"));
+        assertThrows(DataLoadingException.class, JsonAddressBookStorage.MESSAGE_UNREADABLE_FILE, () ->
+                new JsonAddressBookStorage(directory).readAddressBook());
     }
 
     @Test

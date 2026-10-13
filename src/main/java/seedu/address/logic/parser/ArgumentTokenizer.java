@@ -2,7 +2,11 @@ package seedu.address.logic.parser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -14,6 +18,28 @@ import java.util.stream.Collectors;
  *    in the above example.<br>
  */
 public class ArgumentTokenizer {
+
+    // Alphabetic prefix tokens are reserved; numeric text such as 8/10 remains an ordinary value.
+    private static final Pattern PARAMETER_PREFIX = Pattern.compile("(?:^|\\p{javaWhitespace})([A-Za-z]+/)");
+
+    /**
+     * Finds the first unsupported alphabetic prefix at the beginning of a whitespace-separated token.
+     * Comparisons are case-sensitive. Joined prefixes, numeric slash text, and URLs are not prefix tokens.
+     *
+     * @param argsString The non-null arguments to inspect.
+     * @param supportedPrefixes The prefixes accepted by the command.
+     * @return The first unknown prefix in input order, or empty if all prefix tokens are supported.
+     */
+    public static Optional<Prefix> findUnknownPrefix(String argsString, Collection<Prefix> supportedPrefixes) {
+        Matcher matcher = PARAMETER_PREFIX.matcher(argsString);
+        while (matcher.find()) {
+            Prefix prefix = new Prefix(matcher.group(1));
+            if (!supportedPrefixes.contains(prefix)) {
+                return Optional.of(prefix);
+            }
+        }
+        return Optional.empty();
+    }
 
     /**
      * Tokenizes an arguments string and returns an {@code ArgumentMultimap} object that maps prefixes to their

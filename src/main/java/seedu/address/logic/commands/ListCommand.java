@@ -6,13 +6,15 @@ import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 import seedu.address.model.Model;
 
 /**
- * Lists all persons in the address book to the user.
+ * Lists all students in TeachAssist.
  */
 public class ListCommand extends Command {
 
     public static final String COMMAND_WORD = "list";
 
-    public static final String MESSAGE_SUCCESS = "Listed all persons.";
+    public static final String MESSAGE_USAGE = COMMAND_WORD + ": Lists all students.\n"
+            + "Example: " + COMMAND_WORD;
+    public static final String MESSAGE_SUCCESS = "Listed all students.";
 
 
     @Override
@@ -22,3 +24,4 @@ public class ListCommand extends Command {
         return new CommandResult(MESSAGE_SUCCESS);
     }
 }
+

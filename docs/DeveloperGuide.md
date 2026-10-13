@@ -50,7 +50,7 @@ The bulk of the app's work is done by the following four components:
 
 **How the architecture components interact with each other**
 
-The *Sequence Diagram* below shows how the components interact with each other for the scenario where the user issues the command `delete 1`.
+The *Sequence Diagram* below shows the components interacting for `delete i/A0123456B`.
 
 <puml src="diagrams/ArchitectureSequenceDiagram.puml" width="574" />
 
@@ -90,9 +90,9 @@ Here's a (partial) class diagram of the `Logic` component:
 
 <puml src="diagrams/LogicClassDiagram.puml" width="550"/>
 
-The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("delete 1")` API call as an example.
+The sequence diagram below illustrates `execute("delete i/A0123456B")`, including saving before publishing changes.
 
-<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `delete 1` Command" />
+<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Delete by Student ID and save before updating the live model" />
 
 <box type="info" seamless>
 
@@ -126,14 +126,15 @@ The `Model` component,
 
 * stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object).
 * uses `studentId` as the domain identifier for `Person` duplicate checks. The JavaFX `id` label in `PersonListCard.fxml` is only the displayed list index, not the student's identifier.
+* stores group labels as `Label` objects inside each `Person`, separate from `Tag` objects. This keeps group-label validation and storage independent from tag validation and storage.
 * stores the `Person` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Person>` that the UI can observe and bind to, so the UI updates when the list changes.
-* stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
+* stores a `UserPrefs` object that represents the user's preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
 
 <box type="info" seamless>
 
-**Note:** The alternative, arguably more object-oriented, design below keeps a unique list of tags in `AddressBook`, and each `Person` references tags from that list. This lets `AddressBook` maintain one `Tag` object per unique tag instead of each `Person` holding its own `Tag` objects.<br>
+**Note:** The alternative, arguably more object-oriented, design below keeps unique lists of tags and labels in `AddressBook`, and each `Person` references values from those lists. This lets `AddressBook` maintain one value object per unique tag or label instead of each `Person` holding its own objects.<br>
 
 <puml src="diagrams/BetterModelClassDiagram.puml" width="450" />
 </box>
@@ -148,6 +149,7 @@ The `Model` component,
 The `Storage` component,
 * can save both address book data and user preference data in JSON format, and read them back into corresponding objects.
 * expects each stored `Person` JSON object to contain a valid `studentId`. There is currently no migration or default-value strategy for old data files missing this field.
+* stores group labels through `JsonAdaptedLabel`. Missing or null `labels` fields are treated as empty label sets for compatibility with older data files.
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
 
@@ -161,9 +163,35 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Label command
+
+The `label` command lets a TA assign a group label to an existing student.
+
+Format: `label l/LABEL_NAME i/STUDENT_ID`
+
+The implementation uses the following classes:
+
+* `Label` is a model value object for group labels. It is separate from `Tag`, even though labels are rendered using the existing tag-style UI component.
+* `ParserUtil#parseLabel` trims command input and converts valid label text into a `Label`.
+* `LabelCommandParser` checks command structure, required `l/` and `i/` parameters, empty values, duplicate parameters, label validity, and student ID validity.
+* `LabelCommand` locates the target student by `StudentId`, rejects case-insensitive duplicate labels on the same student, creates an updated `Person`, and calls `Model#setPerson`.
+* `JsonAdaptedLabel` and `JsonAdaptedPerson` persist labels under each person's `labels` JSON field.
+
+The sequence diagram below shows how a successful `label l/Tutorial 1 i/A0101010A` command is parsed, executed, and saved.
+
+<puml src="diagrams/LabelSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `label` Command" />
+
+Design notes:
+
+* Labels and tags intentionally remain separate model/storage concepts so that future changes to tag behavior do not silently change group labels, and vice versa.
+* Duplicate detection is case-insensitive, but the originally stored label capitalization is preserved for display and duplicate error messages.
+* `EditCommand` preserves a person's existing labels when rebuilding a `Person` with edited fields.
+* `PersonCard` renders labels in the same `FlowPane` used for tags so labels inherit the existing AB3 tag-style UI.
+
 ### Adding student information
 
-Command format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [t/TAG]...`.
+Command format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME] [t/TAG]...`.
+One optional group label can be assigned during add; it follows the same label-name rules as the `label` command.
 Tags retain their existing optional, repeatable behaviour; this feature does not change their rules.
 The accepted values and exact error messages are documented in the [User Guide](UserGuide.md#adding-a-student-add).
 
@@ -172,7 +200,7 @@ The accepted values and exact error messages are documented in the [User Guide](
 * `ArgumentTokenizer` recognises supported prefixes at the start of arguments or after whitespace, including tabs.
 * `AddCommandParser` checks line breaks, unknown alphabetic prefixes, preamble text, repeated prefixes,
   missing mandatory fields, then empty mandatory fields. Errors are reported before parsing field values.
-  Repeated/missing/empty checks follow `n/`, `i/`, `e/` order; repeated `r/` is checked last.
+  Repeated/missing/empty checks follow `n/`, `i/`, `e/` order; repeated `r/` and `l/` are checked after them.
 * `ParserUtil` trims values and converts invalid fields into `ParseException`s. Model constructors also validate,
   so records created by storage or other callers follow the same rules.
 * `Name` accepts 1–100 Unicode code points after trimming and collapsing repeated spaces, requires a letter,
@@ -183,9 +211,12 @@ The accepted values and exact error messages are documented in the [User Guide](
   of 63, and a final label of 2–63 letters. Only the domain is lowercased using `Locale.ROOT`.
 * `Remark` accepts at most 4,000 Unicode code points; command parsing trims only surrounding whitespace.
   Empty or omitted remarks become empty strings. `r/` can appear anywhere and does not consume later parameters.
+* `Label` accepts the same values as the `label` command. Empty labels are rejected, omitted labels become an empty
+  label set, and `l/` can appear anywhere without consuming later parameters.
 
-For example, `add n/  Alex   Tan i/a0123456b e/Alex@EXAMPLE.COM r/Quiz: 8/10 t/friends` creates a student with
-name `Alex Tan`, ID `A0123456B`, email `Alex@example.com`, remark `Quiz: 8/10`, and tag `friends`.
+For example, `add n/  Alex   Tan i/a0123456b e/Alex@EXAMPLE.COM l/Tutorial 1 r/Quiz: 8/10 t/friends`
+creates a student with name `Alex Tan`, ID `A0123456B`, email `Alex@example.com`, label `Tutorial 1`,
+remark `Quiz: 8/10`, and tag `friends`.
 An alphabetic token such as `x/value` is rejected even inside a remark; `8/10` and URLs remain literal text.
 A duplicate ID rejects the complete command without merging any details or remarks.
 
@@ -201,7 +232,7 @@ LogicManager → temporary ModelManager → JsonAddressBookStorage → live Mode
 1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, and `clear`
    return true. Future modifying commands must override this method too.
 2. `LogicManager` copies the live records and current filter into a temporary `ModelManager`, then executes the command
-   against that copy. Copying the filter preserves the meaning of displayed indices for existing edit/delete commands.
+   against that copy. Copying the filter preserves displayed indices for `edit` and the active view for `delete`.
 3. `JsonAddressBookStorage` writes the proposed records to a temporary file in the destination directory.
    `Files.move` with `ATOMIC_MOVE` and `REPLACE_EXISTING` replaces the old file only after writing completes.
    There is no fallback overwrite when atomic replacement is unsupported. Temporary files are removed after failure.
@@ -222,15 +253,64 @@ This prevents an empty model from overwriting unreadable or invalid records. Rea
 
 Successful adds display `Added student ID: NAME.`, followed by ` Remark: TEXT` when the remark is non-empty,
 and the total student count on the next line. The count uses the complete record list.
-`PersonCard` displays non-empty remarks with wrapping and hides the label for empty remarks.
+`PersonCard` displays labels with tags, displays non-empty remarks with wrapping, and hides the remark field for
+empty remarks.
 JSON storage preserves remarks and defaults missing/null remark fields to empty strings.
 
 #### Verification
 
-Tests cover field boundaries and normalisation, parameter errors and ordering, duplicate IDs with changed details,
+Tests cover field boundaries and normalisation, label parsing, parameter errors and ordering, duplicate IDs with changed details,
 feedback with/without remarks, JSON round trips, filtered index handling, startup loading failures, and save failures.
 Replacement-failure tests simulate an error after the temporary file is written and check that the original file,
 records, and active filter remain unchanged. They also check temporary-file cleanup and failed first saves.
+
+### Deleting student information
+
+Command format: `delete i/STUDENT_ID`. The display index is not used to identify students for deletion.
+
+`DeleteCommandParser` accepts exactly one non-empty `i/`. It rejects line breaks, unknown prefixes, preamble text,
+repeated IDs, missing IDs, and empty IDs before calling `ParserUtil#parseStudentId`.
+`ArgumentTokenizer#findUnknownPrefix` shares the same case-sensitive alphabetic-prefix detection with `add`.
+An invalid Student ID retains the field constraint message instead of being replaced with a usage error.
+
+`DeleteCommand` stores the validated `StudentId` and searches `model.getAddressBook().getPersonList()` for an exact
+normalised ID match. It retrieves the existing `Person` and passes that object to `model.deletePerson`.
+This removes the entire record, including remarks and tags, without separately deleting its fields.
+The complete record list is searched so a student hidden by a filter can still be deleted.
+
+For example, after `find Benson`, `delete i/a1234567b` removes Alice's `A1234567B` record while the displayed Benson
+results remain unchanged. If Alice is already absent, the command reports
+`Student with ID A1234567B is not in the records.` and changes no data.
+Successful feedback is `Deleted student A1234567B: Alice Pauline.`
+
+Deletion preserves the current filter and returns true from `Command#isModifyingData`.
+`LogicManager` therefore performs it on the temporary model, saves the proposed records, and only then publishes
+the change. If saving fails, the live record, filter, and previous saved file remain unchanged.
+If startup loading failed, deletion is blocked by the existing loading guard.
+
+Tests cover normalised IDs, visible/hidden students, an empty displayed list, nonexistent IDs, malformed parameters,
+whole-record removal from persisted JSON, filter preservation, and save failures.
+
+### Filter feature
+
+The `filter` command lets the user display only students with a matching label.
+It reuses the label prefix and label validation rules introduced by the `label`
+command, so invalid label names are rejected during parsing before the model is
+updated.
+
+Given `filter l/Discrete Math Tutorial`, `AddressBookParser` delegates parsing
+to `FilterCommandParser`. The parser returns a `FilterCommand` containing the
+validated label. When executed, `FilterCommand` creates a case-insensitive label
+predicate and calls `Model#updateFilteredPersonList`. Student records are not
+modified by filtering.
+
+The following sequence diagram shows the main command flow:
+
+![FilterCommandSequenceDiagram](images/FilterCommandSequenceDiagram.png)
+
+The following activity diagram shows the success and failure paths:
+
+![FilterCommandActivityDiagram](images/FilterCommandActivityDiagram.png)
 
 ### \[Proposed\] Undo/redo feature
 
@@ -250,11 +330,13 @@ Step 1. The user launches the application for the first time. The `VersionedAddr
 
 <puml src="diagrams/UndoRedoState0.puml" alt="UndoRedoState0" />
 
-Step 2. The user executes `delete 5` command to delete the 5th person in the address book. The `delete` command calls `Model#commitAddressBook()`, causing the modified state of the address book after the `delete 5` command executes to be saved in the `addressBookStateList`, and the `currentStatePointer` is shifted to the newly inserted address book state.
+Step 2. The user executes `delete i/A0123456B` to delete that student's record. In this proposed undo/redo design,
+the `delete` command calls `Model#commitAddressBook()` after deletion, saving the modified state in the
+`addressBookStateList` and advancing `currentStatePointer` to the new state.
 
 <puml src="diagrams/UndoRedoState1.puml" alt="UndoRedoState1" />
 
-Step 3. The user executes `add n/David …​` to add a new person. The `add` command also calls `Model#commitAddressBook()`, causing another modified address book state to be saved into the `addressBookStateList`.
+Step 3. The user executes `add n/David ...` to add a new person. The `add` command also calls `Model#commitAddressBook()`, causing another modified address book state to be saved into the `addressBookStateList`.
 
 <puml src="diagrams/UndoRedoState2.puml" alt="UndoRedoState2" />
 
@@ -287,7 +369,7 @@ Similarly, how an undo operation goes through the `Model` component is shown bel
 
 <puml src="diagrams/UndoSequenceDiagram-Model.puml" alt="UndoSequenceDiagram-Model" />
 
-The `redo` command does the opposite — it calls `Model#redoAddressBook()`, which shifts the `currentStatePointer` once to the right, pointing to the previously undone state, and restores the address book to that state.
+The `redo` command does the opposite - it calls `Model#redoAddressBook()`, which shifts the `currentStatePointer` once to the right, pointing to the previously undone state, and restores the address book to that state.
 
 <box type="info" seamless>
 
@@ -298,7 +380,7 @@ Step 5. The user then decides to execute the command `list`. Commands that do no
 
 <puml src="diagrams/UndoRedoState4.puml" alt="UndoRedoState4" />
 
-Step 6. The user executes `clear`, which calls `Model#commitAddressBook()`. Since the `currentStatePointer` is not pointing at the end of the `addressBookStateList`, all address book states after the `currentStatePointer` will be purged. Reason: It no longer makes sense to redo the `add n/David …` command. This is the behavior that most modern desktop applications follow.
+Step 6. The user executes `clear`, which calls `Model#commitAddressBook()`. Since the `currentStatePointer` is not pointing at the end of the `addressBookStateList`, all address book states after the `currentStatePointer` will be purged. Reason: It no longer makes sense to redo the `add n/David ...` command. This is the behavior that most modern desktop applications follow.
 
 <puml src="diagrams/UndoRedoState5.puml" alt="UndoRedoState5" />
 
@@ -358,7 +440,7 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 
 #### Student information
 
-| ID | Priority | As a/an … | I want to … | So that … |
+| ID | Priority | As a/an ... | I want to ... | So that ... |
 |----|----------|--------|-------------|----------------|
 | US01 | `* * *` | TA | add a student under my care | I can keep information about them throughout the semester |
 | US02 | `* * *` | TA | view a student's information | I can quickly recall who the student is |
@@ -370,7 +452,7 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 
 #### Student notes and interactions
 
-| ID | Priority | As a/an … | I want to … | So that … |
+| ID | Priority | As a/an ... | I want to ... | So that ... |
 |----|----------|--------|-------------|----------------|
 | US08 | `* * *` | TA | record notes about a student | I can remember important information about them later |
 | US09 | `* * *` | TA preparing to meet a student | view my previous notes about the student | I can provide support consistent with our earlier interactions |
@@ -381,7 +463,7 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 
 #### Learning progress
 
-| ID | Priority | As a/an … | I want to … | So that … |
+| ID | Priority | As a/an ... | I want to ... | So that ... |
 |----|----------|--------|-------------|----------------|
 | US14 | `* *` | TA | record topics that a student is struggling with | I know where the student may need additional support |
 | US15 | `* *` | TA | record topics that a student has improved in | I can track their learning progress over time |
@@ -391,7 +473,7 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 
 #### Follow-up tasks with students
 
-| ID | Priority | As a/an … | I want to … | So that … |
+| ID | Priority | As a/an ... | I want to ... | So that ... |
 |----|----------|--------|-------------|----------------|
 | US19 | `* *` | TA | record a follow-up action associated with a student | I do not forget things I need to do for them |
 | US20 | `* *` | TA | view my outstanding follow-ups | I know which students still require my attention |
@@ -402,7 +484,7 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 
 #### Attendance and participation
 
-| ID | Priority | As a/an … | I want to … | So that … |
+| ID | Priority | As a/an ... | I want to ... | So that ... |
 |----|----------|--------|-------------|----------------|
 | US25 | `* *` | TA | record a student's tutorial attendance | I can keep track of whether they have been attending classes |
 | US26 | `* *` | TA | record a student's participation in tutorials | I can remember how actively they have been engaging in class |
@@ -412,7 +494,7 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 
 #### Finding and organising information
 
-| ID | Priority | As a/an … | I want to … | So that … |
+| ID | Priority | As a/an ... | I want to ... | So that ... |
 |----|----------|--------|-------------|----------------|
 | US34 | `* * *` | TA in a hurry | quickly find a student by name | I can access their information without interrupting my workflow |
 | US35 | `* *` | TA with many students | filter students based on information relevant to my current task | I only see the students I need to focus on |
@@ -537,12 +619,18 @@ MSS:
 * 1a. The student ID parameter is missing, empty, or improperly formatted.
 * 1a1. TeachAssist shows an error message specifying the invalid parameter or usage format.
 * Use case ends.
+* 1b. The command contains a repeated Student ID or an unknown parameter.
+* 1b1. TeachAssist shows the error message naming the offending prefix without changing student records.
+* Use case ends.
+* 1c. The data file failed to load at startup.
+* 1c1. TeachAssist blocks deletion and asks the TA to fix the data file and restart.
+* Use case ends.
 * 2a. No student with the specified student ID exists in the records.
 * 2a1. TeachAssist shows an error message stating that the student is not in the records.
 * Use case ends.
 * 3a. Saving data to the file fails.
 * 3a1. TeachAssist shows an error message indicating that it is unable to save student data.
-* 3a2. TeachAssist retains the student record without deleting it.
+* 3a2. TeachAssist retains the entire student record, current filter, and previous saved file.
 * Use case ends.
 
 ### Non-Functional Requirements

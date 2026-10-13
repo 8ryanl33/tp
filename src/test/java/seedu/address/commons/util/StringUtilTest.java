@@ -123,6 +123,44 @@ public class StringUtilTest {
         assertTrue(StringUtil.containsWordIgnoreCase("AAA bBb ccc  bbb", "bbB"));
     }
 
+    //---------------- Tests for containsIgnoreCase --------------------------------------
+
+    @Test
+    public void containsIgnoreCase_nullWord_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> StringUtil.containsIgnoreCase("typical sentence", null));
+    }
+
+    @Test
+    public void containsIgnoreCase_emptyWord_throwsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, "Word parameter cannot be empty", ()
+            -> StringUtil.containsIgnoreCase("typical sentence", "  "));
+    }
+
+    @Test
+    public void containsIgnoreCase_nullSentence_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> StringUtil.containsIgnoreCase(null, "abc"));
+    }
+
+    @Test
+    public void containsIgnoreCase_validInputs_correctResult() {
+        // Empty sentence
+        assertFalse(StringUtil.containsIgnoreCase("", "abc"));
+        assertFalse(StringUtil.containsIgnoreCase("    ", "123"));
+
+        // Matches partial words
+        assertTrue(StringUtil.containsIgnoreCase("aaa bbb ccc", "bb"));
+        assertTrue(StringUtil.containsIgnoreCase("aaa bbb ccc", "aa"));
+        assertFalse(StringUtil.containsIgnoreCase("aaa bbb ccc", "dddd"));
+
+        // Matches different upper/lower case letters
+        assertTrue(StringUtil.containsIgnoreCase("aaa bBb ccc", "Bbb"));
+        assertTrue(StringUtil.containsIgnoreCase("aaa bBb ccc@1", "CCc"));
+        assertTrue(StringUtil.containsIgnoreCase("  AAA   bBb   ccc  ", "aaa"));
+        assertTrue(StringUtil.containsIgnoreCase("Aaa", "aa"));
+        assertTrue(StringUtil.containsIgnoreCase("aaa bbb ccc", "  cc  "));
+        assertTrue(StringUtil.containsIgnoreCase("aaa bbb ccc", "  aaa bb  "));
+    }
+
     //---------------- Tests for getDetails --------------------------------------
 
     /*

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ClearCommand;
@@ -18,12 +19,16 @@ import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
 import seedu.address.logic.commands.ExitCommand;
+import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
+import seedu.address.logic.commands.LabelCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.label.Label;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
+import seedu.address.model.person.StudentId;
 import seedu.address.testutil.EditPersonDescriptorBuilder;
 import seedu.address.testutil.PersonBuilder;
 import seedu.address.testutil.PersonUtil;
@@ -37,7 +42,7 @@ public class AddressBookParserTest {
         Person person = new PersonBuilder().withRemark("Quiz: 8/10.").build();
         String command = "add\tn/" + person.getName() + "\ti/" + person.getStudentId()
                 + "\te/" + person.getEmail() + "\tr/" + person.getRemark();
-        Person expected = new PersonBuilder(person).withTags().build();
+        Person expected = new PersonBuilder(person).build();
         assertEquals(new AddCommand(expected), parser.parseCommand(command));
     }
 
@@ -65,8 +70,15 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_delete() throws Exception {
         DeleteCommand command = (DeleteCommand) parser.parseCommand(
-                DeleteCommand.COMMAND_WORD + " " + INDEX_FIRST_PERSON.getOneBased());
-        assertEquals(new DeleteCommand(INDEX_FIRST_PERSON), command);
+                "delete\ti/a0123456b");
+        assertEquals(new DeleteCommand(new StudentId("A0123456B")), command);
+    }
+
+    @Test
+    public void parseCommand_deleteInvalidParameters_reportsSpecificErrors() {
+        assertThrows(ParseException.class, "Missing required parameter: i/.", () -> parser.parseCommand("delete"));
+        assertThrows(ParseException.class, DeleteCommand.MESSAGE_INVALID_FORMAT, () -> parser.parseCommand("delete 1"));
+        assertThrows(ParseException.class, StudentId.MESSAGE_CONSTRAINTS, () -> parser.parseCommand("delete i/123"));
     }
 
     @Test
@@ -85,10 +97,23 @@ public class AddressBookParserTest {
     }
 
     @Test
+    public void parseCommand_filter() throws Exception {
+        FilterCommand command = (FilterCommand) parser.parseCommand(
+                FilterCommand.COMMAND_WORD + " l/Discrete Math Tutorial");
+        assertEquals(new FilterCommand(new Label("Discrete Math Tutorial")), command);
+    }
+
+    @Test
+    public void parseCommand_filterInvalidArgs_throwsParseException() {
+        assertThrows(ParseException.class, FilterCommandParser.MESSAGE_MISSING_LABEL, ()
+            -> parser.parseCommand(FilterCommand.COMMAND_WORD));
+    }
+
+    @Test
     public void parseCommand_find() throws Exception {
         List<String> keywords = List.of("foo", "bar", "baz");
         FindCommand command = (FindCommand) parser.parseCommand(
-                FindCommand.COMMAND_WORD + " " + keywords.stream().collect(Collectors.joining(" ")));
+                FindCommand.COMMAND_WORD + " n/" + keywords.stream().collect(Collectors.joining(" ")));
         assertEquals(new FindCommand(new NameContainsKeywordsPredicate(keywords)), command);
     }
 
@@ -101,7 +126,24 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_list() throws Exception {
         assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD) instanceof ListCommand);
-        assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD + " 3") instanceof ListCommand);
+        String invalidCommand = ListCommand.COMMAND_WORD + " 3";
+        Executable parseInvalidCommand = () -> parser.parseCommand(invalidCommand);
+        assertThrows(ParseException.class,
+                String.format(MESSAGE_INVALID_COMMAND_FORMAT, ListCommand.MESSAGE_USAGE),
+                parseInvalidCommand);
+    }
+
+    @Test
+    public void parseCommand_label() throws Exception {
+        LabelCommand command = (LabelCommand) parser.parseCommand(
+                LabelCommand.COMMAND_WORD + " l/Discrete Math Tutorial i/A0101010A");
+        assertEquals(new LabelCommand(new Label("Discrete Math Tutorial"), new StudentId("A0101010A")), command);
+    }
+
+    @Test
+    public void parseCommand_labelInvalidArgs_throwsParseException() {
+        assertThrows(ParseException.class, LabelCommandParser.MESSAGE_MISSING_STUDENT_ID, ()
+            -> parser.parseCommand(LabelCommand.COMMAND_WORD + " l/Discrete Math Tutorial"));
     }
 
     @Test
@@ -115,3 +157,4 @@ public class AddressBookParserTest {
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("unknownCommand"));
     }
 }
+

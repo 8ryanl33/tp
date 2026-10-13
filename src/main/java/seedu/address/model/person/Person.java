@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import seedu.address.commons.util.ToStringBuilder;
-import seedu.address.model.tag.Tag;
+import seedu.address.model.label.Label;
 
 /**
  * Represents a Person in the address book.
@@ -23,27 +23,47 @@ public class Person {
 
     // Data fields
     private final Remark remark;
-    private final Set<Tag> tags = new HashSet<>();
+    private final Set<Label> labels = new HashSet<>();
 
     /**
-     * Constructs a person with an empty remark.
-     * Every supplied field must be present and not null.
+     * Constructs a person with no labels and an empty remark.
+     *
+     * @param name The non-null student name.
+     * @param studentId The non-null student ID.
+     * @param email The non-null email address.
      */
-    public Person(Name name, StudentId studentId, Email email, Set<Tag> tags) {
-        this(name, studentId, email, tags, new Remark(""));
+    public Person(Name name, StudentId studentId, Email email) {
+        this(name, studentId, email, Set.of(), new Remark(""));
     }
 
     /**
-     * Constructs a person with the supplied details and remark.
-     * Every field must be present and not null.
+     * Constructs a person with the supplied remark and no labels.
+     *
+     * @param name The non-null student name.
+     * @param studentId The non-null student ID.
+     * @param email The non-null email address.
+     * @param remark The non-null remark.
      */
-    public Person(Name name, StudentId studentId, Email email, Set<Tag> tags, Remark remark) {
-        requireAllNonNull(name, studentId, email, tags, remark);
+    public Person(Name name, StudentId studentId, Email email, Remark remark) {
+        this(name, studentId, email, Set.of(), remark);
+    }
+
+    /**
+     * Constructs a person with the supplied details, labels, and remark.
+     *
+     * @param name The non-null student name.
+     * @param studentId The non-null student ID.
+     * @param email The non-null email address.
+     * @param labels The non-null set of labels.
+     * @param remark The non-null remark.
+     */
+    public Person(Name name, StudentId studentId, Email email, Set<Label> labels, Remark remark) {
+        requireAllNonNull(name, studentId, email, labels, remark);
         this.name = name;
         this.studentId = studentId;
         this.email = email;
         this.remark = remark;
-        this.tags.addAll(tags);
+        this.labels.addAll(labels);
     }
 
     public Name getName() {
@@ -63,11 +83,11 @@ public class Person {
     }
 
     /**
-     * Returns an immutable tag set, which throws {@code UnsupportedOperationException}
+     * Returns an immutable label set, which throws {@code UnsupportedOperationException}
      * if modification is attempted.
      */
-    public Set<Tag> getTags() {
-        return Collections.unmodifiableSet(tags);
+    public Set<Label> getLabels() {
+        return Collections.unmodifiableSet(labels);
     }
 
     /**
@@ -102,13 +122,13 @@ public class Person {
                 && studentId.equals(otherPerson.studentId)
                 && email.equals(otherPerson.email)
                 && remark.equals(otherPerson.remark)
-                && tags.equals(otherPerson.tags);
+                && labels.equals(otherPerson.labels);
     }
 
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, studentId, email, tags, remark);
+        return Objects.hash(name, studentId, email, labels, remark);
     }
 
     @Override
@@ -117,7 +137,7 @@ public class Person {
                 .add("name", name)
                 .add("studentId", studentId)
                 .add("email", email)
-                .add("tags", tags)
+                .add("labels", labels)
                 .add("remark", remark)
                 .toString();
     }
