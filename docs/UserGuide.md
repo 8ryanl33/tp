@@ -123,27 +123,35 @@ If the normalised Student ID already exists, the entire command is rejected; exi
 
 #### Errors
 
+The rows below follow the order in which errors are checked. If a command has multiple errors, only the first
+applicable message is shown. Prefixes and Student IDs in messages reflect the supplied command.
+
 | Problem | Message |
 |---------|---------|
-| Missing compulsory parameter | `Missing required parameter: i/.` (the message names the missing prefix) |
+| Command spans multiple lines | `Invalid command format!`<br>`help: Shows program usage instructions.`<br>`Example: help` |
+| Incorrect command word or capitalisation, e.g., `Add` | `Unknown command.` |
+| Unknown parameter, e.g., `p/123` | `Unknown parameter: p/.` |
+| Text before the first parameter | `Invalid command format. Usage: add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]` |
+| Repeated parameter, e.g., two `n/` values | `Parameter n/ must be specified only once.` |
+| Missing compulsory parameter | `Missing required parameter: i/.` |
 | Empty compulsory parameter | `Parameter n/ cannot be empty.` |
-| Repeated parameter | `Parameter n/ must be specified only once.` |
-| Unknown parameter | `Unknown parameter: p/.` |
-| Duplicate Student ID | `Student ID A0123456B already exists.` |
+| Empty label | `Parameter l/ cannot be empty.` |
 | Invalid name | `Name must contain 1-100 characters, include a letter, and use only letters, spaces, apostrophes, hyphens, or periods.` |
 | Invalid Student ID | `Student ID must contain exactly 9 letters or digits, with no spaces.` |
 | Invalid email | `Email must have the form name@example.com and meet the supported email format.` |
-| Empty label | `Parameter l/ cannot be empty.` |
 | Invalid label | `Label names should be 1 to 60 characters long, contain at least one letter or digit, and only contain letters, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods.` |
 | Oversized remark | `Remark must not exceed 4000 characters.` |
-| Invalid command structure | `Invalid command format. Usage: add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]` |
+| Student data failed to load at startup | `Student data is unavailable because loading failed. Fix the data file and restart.` |
+| Duplicate Student ID | `Student ID A0123456B already exists.` |
+| Data storage location cannot be created | `Unable to create data storage location.` |
 | Saving fails | `Unable to save student data.` |
 
-Invalid structure, such as text before the first parameter or an embedded line break, displays the add usage.
-If several errors exist, the parser checks line breaks, unknown prefixes, preamble text, repeated parameters,
-missing parameters, then empty compulsory values before validating field values.
-Within repeated/missing/empty checks, `n/`, `i/`, and `e/` are checked in that order; repeated `r/` and `l/`
-are checked after them.
+For example, `add n/ i/123 e/bad p/123` reports `Unknown parameter: p/.` before checking the empty name,
+invalid Student ID, or invalid email. When multiple parameters are repeated or missing, they are checked in
+`n/`, `i/`, `e/`, `r/`, `l/` order where applicable. Field values are validated in name, Student ID, email,
+label, then remark order. A multiline command is rejected by the general command parser before the add parser
+can display add-specific usage. The startup-loading check occurs after parsing; duplicate and saving checks
+occur only after a valid command passes that check.
 Failed commands do not change existing student records or the saved file.
 
 ### Listing all students: `list`
@@ -297,19 +305,27 @@ Successful output, when the student is Alex Yeoh:
 Deleted student A0123456B: Alex Yeoh.
 ```
 
+The rows below follow error-checking order. If several errors are present, only the first applicable message
+is shown. Prefixes and Student IDs in messages reflect the supplied command.
+
 | Problem | Message |
 |---------|---------|
+| Command spans multiple lines | `Invalid command format!`<br>`help: Shows program usage instructions.`<br>`Example: help` |
+| Incorrect command word or capitalisation, e.g., `Delete` | `Unknown command.` |
+| Unknown parameter, e.g., `x/123` | `Unknown parameter: x/.` |
+| Text before the `i/` parameter | `Invalid command format. Usage: delete i/STUDENT_ID` |
+| Repeated Student ID | `Parameter i/ must be specified only once.` |
 | Missing Student ID | `Missing required parameter: i/.` |
 | Empty Student ID | `Parameter i/ cannot be empty.` |
-| Repeated Student ID | `Parameter i/ must be specified only once.` |
-| Unknown parameter | `Unknown parameter: x/.` (the message names the supplied prefix) |
 | Invalid Student ID | `Student ID must contain exactly 9 letters or digits, with no spaces.` |
+| Student data failed to load at startup | `Student data is unavailable because loading failed. Fix the data file and restart.` |
 | Student does not exist | `Student with ID A0123456B is not in the records.` |
-| Invalid command structure | `Invalid command format. Usage: delete i/STUDENT_ID` |
+| Data storage location cannot be created | `Unable to create data storage location.` |
 | Saving fails | `Unable to save student data.` |
 
-Malformed commands and unknown IDs leave records, the current filter, and the saved file unchanged.
-If loading failed at startup, deletion is blocked until the data file is fixed and TeachAssist is restarted.
+For example, `delete i/123 x/1` reports `Unknown parameter: x/.` before checking the invalid Student ID.
+The startup-loading check occurs after parsing. Finding the student and saving happen only after a valid command
+passes that check. Failed commands leave records, the current filter, and the saved file unchanged.
 
 ### Clearing all entries: `clear`
 
