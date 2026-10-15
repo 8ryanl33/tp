@@ -136,7 +136,7 @@ The `Model` component,
 
 ### Storage component
 
-**API** : [`Storage.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/storage/Storage.java)
+**API** : [`Storage.java`](https://github.com/AY2627S1-CS2103T-F12-1/tp/tree/master/src/main/java/seedu/address/storage/Storage.java)
 
 <puml src="diagrams/StorageClassDiagram.puml" width="550" />
 
@@ -145,6 +145,8 @@ The `Storage` component,
 * expects each stored `Person` JSON object to contain a valid `studentId`. There is currently no migration or default-value strategy for old data files missing this field.
 * stores group labels through `JsonAdaptedLabel`. Missing or null `labels` fields are treated as empty label sets for compatibility with older data files.
 * ignores legacy `tags` fields when loading older data files and omits them when saving.
+* reports loading failures as `DataLoadingException`, distinguishing unreadable files, invalid data, and duplicate Student IDs. See [Loading student data at startup](#loading-student-data-at-startup).
+* writes student data atomically and reports a data folder that cannot be created as `DataStorageLocationException`. See [Saving before publishing changes](#saving-before-publishing-changes).
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
 
@@ -378,6 +380,71 @@ The following sequence diagram shows the main command flow:
 The following activity diagram shows the success and failure paths:
 
 <puml src="diagrams/FilterCommandActivityDiagram.puml" alt="FilterCommandActivityDiagram" />
+
+### Loading student data at startup
+
+The startup messages and the commands available after a failed load are documented in the
+[User Guide](UserGuide.md#loading-the-data).
+
+#### Loading and error reporting
+
+The loading path is:
+
+```text
+MainApp#initModelManager → StorageManager → JsonAddressBookStorage → JsonSerializableAddressBook
+MainApp#initLogic → LogicManager
+```
+
+1. `JsonAddressBookStorage#readAddressBook` returns `Optional.empty()` if the data file does not exist.
+2. If the file exists, `JsonUtil#readJsonFile` reads it. Failures are reported as `DataLoadingException` with one of
+   two messages, chosen by the cause:
+   * an `IOException` other than a JSON error, such as missing read permission, gives `Unable to load student data.`
+   * a `JsonProcessingException`, such as malformed JSON, gives
+     `Unable to load student data. The data file may be corrupted or invalid.`
+3. `JsonSerializableAddressBook#toModelType` converts records in file order. A missing or invalid field throws
+   `IllegalValueException`, which is reported with the corrupted or invalid message. A repeated Student ID throws
+   `DuplicateStudentIdException`, a subclass of `IllegalValueException`. `JsonAddressBookStorage` catches it first so
+   that its specific message, `Unable to load student data: duplicate Student ID A0123456B detected.`, is kept.
+   Student IDs are compared after normalisation to uppercase.
+4. `MainApp` records the outcome as the startup message: `N students loaded.` (`1 student loaded.` for one record),
+   the no-existing-data message, or the `DataLoadingException` message.
+5. `MainWindow#fillInnerParts` shows `Logic#getStartupMessage` in the result display when the window opens.
+
+The sequence diagram below shows the loading path. The `alt` block shows the three outcomes of reading the data file:
+a successful load, a missing file, and a `DataLoadingException`. Model and logic creation continue the same way after
+each outcome.
+
+<puml src="diagrams/LoadSequenceDiagram.puml" alt="Loading student data at startup" />
+
+#### Blocking modifications after a failed load
+
+When loading fails, `MainApp` starts with an empty `AddressBook` and passes `isStudentDataAvailable = false` to
+`LogicManager`. `LogicManager#execute` parses each command first, so malformed commands still receive their usual
+error messages. It then rejects any command whose `Command#isModifyingData` returns true with
+`Student data is unavailable because loading failed. Fix the data file and restart.`
+
+This prevents the empty in-memory list from being saved over the user's data file, which may still be recoverable.
+Read-only commands, such as `list`, `find`, and `filter`, still run against the empty list. Restarting is the only way
+to retry loading.
+
+Saving is described in [Saving before publishing changes](#saving-before-publishing-changes).
+
+#### Design considerations
+
+**Aspect: What to do when the data file cannot be loaded**
+
+* **Alternative 1 (current choice):** Start with an empty list, keep the file, and block modifying commands.
+  * Pros: The user's data file is never overwritten, and the user sees why loading failed.
+  * Cons: The app cannot be used to change records until the file is fixed.
+* **Alternative 2:** Start with an empty list and allow modifying commands, as in AddressBook-Level3.
+  * Pros: The app remains fully usable.
+  * Cons: The first save overwrites the original file, losing data that might have been fixable.
+
+#### Verification
+
+`MainAppTest` covers a missing file, files with zero, one, and several students, a corrupted file, and duplicate Student
+IDs. It checks that modifying commands are blocked and the file is unchanged after a failed load.
+`JsonAddressBookStorageTest` covers unreadable files, invalid JSON, invalid values, and duplicate Student IDs.
 
 ### \[Proposed\] Undo/redo feature
 
