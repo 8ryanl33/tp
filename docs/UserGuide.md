@@ -339,6 +339,31 @@ Exits the program.
 
 Format: `exit`
 
+### Loading the data
+
+When TeachAssist starts, it loads student data from `[JAR file location]/data/addressbook.json` and shows the outcome
+in the result display.
+
+The rows below follow the order in which loading is checked. Records are checked in the order they appear in the file,
+and only the first problem found is shown.
+
+| Situation | Message |
+|-----------|---------|
+| No data file exists yet | `No existing student data found. Starting with an empty student list.` |
+| The data file cannot be read, e.g., file permissions deny access | `Unable to load student data.` |
+| The data file is not valid JSON, or a record has a missing or invalid value | `Unable to load student data. The data file may be corrupted or invalid.` |
+| Two records share a Student ID, ignoring case | `Unable to load student data: duplicate Student ID A0123456B detected.` |
+| Loading succeeds | `3 students loaded.` (or `1 student loaded.`) |
+
+If loading fails, TeachAssist starts with an empty student list and leaves the data file untouched:
+
+* Commands that change student records (`add`, `edit`, `delete`, `label`, and `clear`) are blocked with
+  `Student data is unavailable because loading failed. Fix the data file and restart.`
+* Commands that do not change student records, such as `list`, `find`, `filter`, `help`, and `exit`, remain available.
+
+To recover, close TeachAssist, fix or restore the data file, and restart. Deleting the data file makes TeachAssist start
+with an empty student list.
+
 ### Saving the data
 
 TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, `label`, and `clear`).
@@ -346,18 +371,20 @@ You do not need to save manually. Commands such as `find`, `filter`, `list`, `he
 If saving fails, the proposed change is not applied, and existing records, the displayed filter, and the previous
 saved file remain unchanged. The application displays `Unable to save student data.`
 Storage must support atomic file replacement; unsupported storage produces the same save error.
+If the `data` folder does not exist and cannot be created, e.g., because a file named `data` is in its place or the
+JAR file location is read-only, the application displays `Unable to create data storage location.` instead.
 
 ### Editing the data file
 
-AddressBook data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
+TeachAssist data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
 
 <box type="warning" seamless>
 
 **Caution:**
 If your changes make the data file invalid, TeachAssist starts with an empty student list and preserves the invalid file.
-Commands that modify records are blocked with `Student data is unavailable because loading failed. Fix the data file and restart.`
-Commands such as `list` remain available and do not overwrite the invalid file. Back up the file before editing it.<br>
-Furthermore, certain edits can cause the AddressBook to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
+See [Loading the data](#loading-the-data) for the message shown and the commands that remain available.
+Back up the file before editing it.<br>
+Furthermore, certain edits can cause TeachAssist to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 
 Each person record must include a valid `studentId`. Older data files that do not include `studentId` for every person may fail to load until the missing values are added manually.
 Group labels are saved under each person record as `labels`. Older data files without `labels` still load; those persons simply start with no labels.
