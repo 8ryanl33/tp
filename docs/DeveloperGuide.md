@@ -410,8 +410,9 @@ MainApp#initLogic → LogicManager
    the no-existing-data message, or the `DataLoadingException` message.
 5. `MainWindow#fillInnerParts` shows `Logic#getStartupMessage` in the result display when the window opens.
 
-The sequence diagram below shows the loading path. It shows a successful read; the `alt` block lists how `MainApp`
-handles each outcome.
+The sequence diagram below shows the loading path. The `alt` block shows the three outcomes of reading the data file:
+a successful load, a missing file, and a `DataLoadingException`. Model and logic creation continue the same way after
+each outcome.
 
 <puml src="diagrams/LoadSequenceDiagram.puml" alt="Loading student data at startup" />
 

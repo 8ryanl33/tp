@@ -26,36 +26,39 @@ MainApp -> StorageManager : readAddressBook()
 activate StorageManager
 StorageManager -> JsonAddressBookStorage : readAddressBook()
 activate JsonAddressBookStorage
-note right of JsonAddressBookStorage
-Read the JSON file. A missing file returns
-Optional.empty(). An unreadable file or
-invalid JSON throws DataLoadingException.
-end note
+
+alt data file loaded
 JsonAddressBookStorage -> JsonSerializableAddressBook : toModelType()
 activate JsonSerializableAddressBook
 note right of JsonSerializableAddressBook
-Convert records in file order. The first
-invalid record or duplicate Student ID
-throws an exception.
+Convert records in file order.
 end note
 JsonSerializableAddressBook --> JsonAddressBookStorage : addressBook
 deactivate JsonSerializableAddressBook
 JsonAddressBookStorage --> StorageManager : Optional.of(addressBook)
-deactivate JsonAddressBookStorage
 StorageManager --> MainApp : Optional.of(addressBook)
-deactivate StorageManager
+MainApp -> MainApp : initialData = addressBook\nstartupMessage = "N students loaded."
 
-alt file loaded
-MainApp -> MainApp : startupMessage = "N students loaded."
 else no data file
-MainApp -> MainApp : startupMessage = "No existing student data found. ..."
-else DataLoadingException
-MainApp -> MainApp : isStudentDataAvailable = false\nstartupMessage = exception message
+JsonAddressBookStorage --> StorageManager : Optional.empty()
+StorageManager --> MainApp : Optional.empty()
+MainApp -> MainApp : initialData = new AddressBook()\nstartupMessage = "No existing student data found. ..."
+
+else data file cannot be loaded
+note right of JsonAddressBookStorage
+The file is unreadable or not valid JSON,
+or toModelType() finds an invalid record
+or a duplicate Student ID.
+end note
+JsonAddressBookStorage --> StorageManager : DataLoadingException
+StorageManager --> MainApp : DataLoadingException
+MainApp -> MainApp : initialData = new AddressBook()\nisStudentDataAvailable = false\nstartupMessage = exception message
 note right of MainApp
-Start with an empty AddressBook.
 The data file is not modified.
 end note
 end
+deactivate JsonAddressBookStorage
+deactivate StorageManager
 
 create ModelManager
 MainApp -> ModelManager : new ModelManager(initialData, userPrefs)
