@@ -39,14 +39,14 @@ public class ListCommandTest {
     }
 
     @Test
-    public void execute_emptyAddressBook_showsEmptyList() {
+    public void execute_emptyAddressBook_showsNoStudentsFound() {
         Model emptyModel = new ModelManager(new AddressBook(), new UserPrefs());
         Model expectedEmptyModel = new ModelManager(new AddressBook(), new UserPrefs());
 
         assertCommandSuccess(
                 new ListCommand(),
                 emptyModel,
-                ListCommand.MESSAGE_SUCCESS,
+                ListCommand.MESSAGE_NO_STUDENTS_FOUND,
                 expectedEmptyModel);
     }
 }

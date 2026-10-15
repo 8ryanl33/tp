@@ -123,27 +123,35 @@ If the normalised Student ID already exists, the entire command is rejected; exi
 
 #### Errors
 
+The rows below follow the order in which errors are checked. If a command has multiple errors, only the first
+applicable message is shown. Prefixes and Student IDs in messages reflect the supplied command.
+
 | Problem | Message |
 |---------|---------|
-| Missing compulsory parameter | `Missing required parameter: i/.` (the message names the missing prefix) |
+| Command spans multiple lines | `Invalid command format!`<br>`help: Shows program usage instructions.`<br>`Example: help` |
+| Incorrect command word or capitalisation, e.g., `Add` | `Unknown command.` |
+| Unknown parameter, e.g., `p/123` | `Unknown parameter: p/.` |
+| Text before the first parameter | `Invalid command format. Usage: add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]` |
+| Repeated parameter, e.g., two `n/` values | `Parameter n/ must be specified only once.` |
+| Missing compulsory parameter | `Missing required parameter: i/.` |
 | Empty compulsory parameter | `Parameter n/ cannot be empty.` |
-| Repeated parameter | `Parameter n/ must be specified only once.` |
-| Unknown parameter | `Unknown parameter: p/.` |
-| Duplicate Student ID | `Student ID A0123456B already exists.` |
+| Empty label | `Parameter l/ cannot be empty.` |
 | Invalid name | `Name must contain 1-100 characters, include a letter, and use only letters, spaces, apostrophes, hyphens, or periods.` |
 | Invalid Student ID | `Student ID must contain exactly 9 letters or digits, with no spaces.` |
 | Invalid email | `Email must have the form name@example.com and meet the supported email format.` |
-| Empty label | `Parameter l/ cannot be empty.` |
 | Invalid label | `Label names should be 1 to 60 characters long, contain at least one letter or digit, and only contain letters, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods.` |
 | Oversized remark | `Remark must not exceed 4000 characters.` |
-| Invalid command structure | `Invalid command format. Usage: add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]` |
+| Student data failed to load at startup | `Student data is unavailable because loading failed. Fix the data file and restart.` |
+| Duplicate Student ID | `Student ID A0123456B already exists.` |
+| Data storage location cannot be created | `Unable to create data storage location.` |
 | Saving fails | `Unable to save student data.` |
 
-Invalid structure, such as text before the first parameter or an embedded line break, displays the add usage.
-If several errors exist, the parser checks line breaks, unknown prefixes, preamble text, repeated parameters,
-missing parameters, then empty compulsory values before validating field values.
-Within repeated/missing/empty checks, `n/`, `i/`, and `e/` are checked in that order; repeated `r/` and `l/`
-are checked after them.
+For example, `add n/ i/123 e/bad p/123` reports `Unknown parameter: p/.` before checking the empty name,
+invalid Student ID, or invalid email. When multiple parameters are repeated or missing, they are checked in
+`n/`, `i/`, `e/`, `r/`, `l/` order where applicable. Field values are validated in name, Student ID, email,
+label, then remark order. A multiline command is rejected by the general command parser before the add parser
+can display add-specific usage. The startup-loading check occurs after parsing; duplicate and saving checks
+occur only after a valid command passes that check.
 Failed commands do not change existing student records or the saved file.
 
 ### Listing all students: `list`
@@ -158,15 +166,30 @@ Example:
 list
 ```
 
-Expected successful output:
+If at least one student exists, the expected successful output is:
 
 ```text
 Listed all students.
 ```
 
-If there are no stored students, the displayed list remains empty and the same successful output is shown.
+If there are no stored students, the displayed list remains empty and the command reports:
 
-The `list` command does not accept additional arguments. For example, `list 3` is rejected and the correct command usage is displayed.
+```text
+No students found.
+```
+
+The command does not add, edit, delete, reorder, or save student records. Students remain in the existing master-list
+order.
+
+The `list` command does not accept additional arguments. Leading and trailing whitespace is ignored, but command words
+are case-sensitive.
+
+| Problem | Example | Message |
+|---------|---------|---------|
+| Additional argument | `list 3` | `Invalid command format!` followed by `Usage: list` on the next line |
+| Parameter-like argument | `list n/Samuel` or `list n/` | `Invalid command format!` followed by `Usage: list` on the next line |
+| Misspelled command | `lisst` | `Unknown command.` |
+| Incorrect capitalisation | `List` or `LIST` | `Unknown command.` |
 
 ### Editing a person: `edit`
 
@@ -218,13 +241,27 @@ Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or 
 * The search is case-insensitive; for example, `hans` matches `Hans`.
 * The search accepts exactly one prefix: `n/`, `i/`, or `e/`.
 * Partial words match; for example, `Han` matches `Hans`.
-* Multiple keywords for search; for example `Tristan Alex` matches with `Tristan Tay` and `Alex Tan`
 
 Examples:
-* `find n/John` returns `john` and `John Doe`
 * `find i/a03 a02` returns students whose student ids start with `a03` or `a02`
-* `find n/alex david` returns `Alex Yeoh`, `David Li`<br>
-  ![result for 'find alex david'](images/findAlexDavidResult.png)
+* `find n/John` returns `john` and `John Doe`
+* `find n/tri sam` returns `tristan`, `samuel`<br>
+  ![result for 'find n/tri sam'](images/findIncompleteResult.png)
+
+#### Errors
+
+| Problem | Message |
+|---------|---------|
+| Extra words before the search parameter | `Invalid command format!` followed by the correct `find` format |
+| Unknown search parameter | `Unknown parameter: p/.` |
+| Repeated same search parameter | `Parameter n/ must be specified only once.` |
+| Missing search parameter | `Missing required parameter: n/, i/, or e/.` |
+| More than one search parameter type | `Parameter n/, i/, or e/ must be specified only once.` |
+| Empty search parameter | `Parameter n/ cannot be empty.` |
+
+The parser checks for errors in the order of extra words before the first search parameter, unknown parameters,
+repeated parameters, missing parameters, multiple search parameter types, then empty values before searching.
+Failed commands do not change the displayed student records or the saved file.
 
 ### Filtering students by label: `filter`
 
@@ -268,19 +305,27 @@ Successful output, when the student is Alex Yeoh:
 Deleted student A0123456B: Alex Yeoh.
 ```
 
+The rows below follow error-checking order. If several errors are present, only the first applicable message
+is shown. Prefixes and Student IDs in messages reflect the supplied command.
+
 | Problem | Message |
 |---------|---------|
+| Command spans multiple lines | `Invalid command format!`<br>`help: Shows program usage instructions.`<br>`Example: help` |
+| Incorrect command word or capitalisation, e.g., `Delete` | `Unknown command.` |
+| Unknown parameter, e.g., `x/123` | `Unknown parameter: x/.` |
+| Text before the `i/` parameter | `Invalid command format. Usage: delete i/STUDENT_ID` |
+| Repeated Student ID | `Parameter i/ must be specified only once.` |
 | Missing Student ID | `Missing required parameter: i/.` |
 | Empty Student ID | `Parameter i/ cannot be empty.` |
-| Repeated Student ID | `Parameter i/ must be specified only once.` |
-| Unknown parameter | `Unknown parameter: x/.` (the message names the supplied prefix) |
 | Invalid Student ID | `Student ID must contain exactly 9 letters or digits, with no spaces.` |
+| Student data failed to load at startup | `Student data is unavailable because loading failed. Fix the data file and restart.` |
 | Student does not exist | `Student with ID A0123456B is not in the records.` |
-| Invalid command structure | `Invalid command format. Usage: delete i/STUDENT_ID` |
+| Data storage location cannot be created | `Unable to create data storage location.` |
 | Saving fails | `Unable to save student data.` |
 
-Malformed commands and unknown IDs leave records, the current filter, and the saved file unchanged.
-If loading failed at startup, deletion is blocked until the data file is fixed and TeachAssist is restarted.
+For example, `delete i/123 x/1` reports `Unknown parameter: x/.` before checking the invalid Student ID.
+The startup-loading check occurs after parsing. Finding the student and saving happen only after a valid command
+passes that check. Failed commands leave records, the current filter, and the saved file unchanged.
 
 ### Clearing all entries: `clear`
 
@@ -294,6 +339,31 @@ Exits the program.
 
 Format: `exit`
 
+### Loading the data
+
+When TeachAssist starts, it loads student data from `[JAR file location]/data/addressbook.json` and shows the outcome
+in the result display.
+
+The rows below follow the order in which loading is checked. Records are checked in the order they appear in the file,
+and only the first problem found is shown.
+
+| Situation | Message |
+|-----------|---------|
+| No data file exists yet | `No existing student data found. Starting with an empty student list.` |
+| The data file cannot be read, e.g., file permissions deny access | `Unable to load student data.` |
+| The data file is not valid JSON, or a record has a missing or invalid value | `Unable to load student data. The data file may be corrupted or invalid.` |
+| Two records share a Student ID, ignoring case | `Unable to load student data: duplicate Student ID A0123456B detected.` |
+| Loading succeeds | `3 students loaded.` (or `1 student loaded.`) |
+
+If loading fails, TeachAssist starts with an empty student list and leaves the data file untouched:
+
+* Commands that change student records (`add`, `edit`, `delete`, `label`, and `clear`) are blocked with
+  `Student data is unavailable because loading failed. Fix the data file and restart.`
+* Commands that do not change student records, such as `list`, `find`, `filter`, `help`, and `exit`, remain available.
+
+To recover, close TeachAssist, fix or restore the data file, and restart. Deleting the data file makes TeachAssist start
+with an empty student list.
+
 ### Saving the data
 
 TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, `label`, and `clear`).
@@ -301,18 +371,20 @@ You do not need to save manually. Commands such as `find`, `filter`, `list`, `he
 If saving fails, the proposed change is not applied, and existing records, the displayed filter, and the previous
 saved file remain unchanged. The application displays `Unable to save student data.`
 Storage must support atomic file replacement; unsupported storage produces the same save error.
+If the `data` folder does not exist and cannot be created, e.g., because a file named `data` is in its place or the
+JAR file location is read-only, the application displays `Unable to create data storage location.` instead.
 
 ### Editing the data file
 
-AddressBook data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
+TeachAssist data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
 
 <box type="warning" seamless>
 
 **Caution:**
 If your changes make the data file invalid, TeachAssist starts with an empty student list and preserves the invalid file.
-Commands that modify records are blocked with `Student data is unavailable because loading failed. Fix the data file and restart.`
-Commands such as `list` remain available and do not overwrite the invalid file. Back up the file before editing it.<br>
-Furthermore, certain edits can cause the AddressBook to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
+See [Loading the data](#loading-the-data) for the message shown and the commands that remain available.
+Back up the file before editing it.<br>
+Furthermore, certain edits can cause TeachAssist to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 
 Each person record must include a valid `studentId`. Older data files that do not include `studentId` for every person may fail to load until the missing values are added manually.
 Group labels are saved under each person record as `labels`. Older data files without `labels` still load; those persons simply start with no labels.

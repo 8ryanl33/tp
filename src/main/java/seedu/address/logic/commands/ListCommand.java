@@ -12,16 +12,18 @@ public class ListCommand extends Command {
 
     public static final String COMMAND_WORD = "list";
 
-    public static final String MESSAGE_USAGE = COMMAND_WORD + ": Lists all students.\n"
-            + "Example: " + COMMAND_WORD;
+    public static final String MESSAGE_USAGE = "Usage: " + COMMAND_WORD;
     public static final String MESSAGE_SUCCESS = "Listed all students.";
+    public static final String MESSAGE_NO_STUDENTS_FOUND = "No students found.";
 
 
     @Override
     public CommandResult execute(Model model) {
         requireNonNull(model);
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
-        return new CommandResult(MESSAGE_SUCCESS);
+        String resultMessage = model.getFilteredPersonList().isEmpty()
+                ? MESSAGE_NO_STUDENTS_FOUND
+                : MESSAGE_SUCCESS;
+        return new CommandResult(resultMessage);
     }
 }
-
