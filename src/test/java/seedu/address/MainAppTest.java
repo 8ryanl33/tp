@@ -2,6 +2,7 @@ package seedu.address;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import java.nio.file.Files;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 import seedu.address.logic.Logic;
 import seedu.address.logic.LogicManager;
 import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.UserPrefs;
 import seedu.address.storage.JsonAddressBookStorage;
@@ -56,6 +58,24 @@ public class MainAppTest {
         int studentCount = getTypicalAddressBook().getPersonList().size();
         assertEquals(String.format(MainApp.MESSAGE_STUDENTS_LOADED, studentCount), logic.getStartupMessage());
         assertEquals(studentCount, logic.getFilteredPersonList().size());
+    }
+
+    @Test
+    public void startup_oneStudent_reportsSingularStudentLoaded() throws Exception {
+        Storage storage = createStorage();
+        AddressBook addressBook = new AddressBook();
+        addressBook.addPerson(ALICE);
+        storage.saveAddressBook(addressBook);
+        Logic logic = new TestApp().loadLogic(storage);
+        assertEquals("1 student loaded.", logic.getStartupMessage());
+    }
+
+    @Test
+    public void startup_noStudents_reportsZeroStudentsLoaded() throws Exception {
+        Storage storage = createStorage();
+        storage.saveAddressBook(new AddressBook());
+        Logic logic = new TestApp().loadLogic(storage);
+        assertEquals("0 students loaded.", logic.getStartupMessage());
     }
 
     @Test
