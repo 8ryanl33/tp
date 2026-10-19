@@ -191,22 +191,28 @@ are case-sensitive.
 | Misspelled command | `lisst` | `Unknown command.` |
 | Incorrect capitalisation | `List` or `LIST` | `Unknown command.` |
 
-### Editing a person: `edit`
+### Editing a student: `edit`
 
-Edits an existing person in the address book.
+Edits a student identified by Student ID, including a student hidden by the current filter.
 
-Format: `edit INDEX [n/NAME] [e/EMAIL] [r/REMARK]`
+Format: `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/LABEL_NAME]...`
 
-* Edits the person at the specified `INDEX`. The index refers to the index number shown in the displayed person list. The index **must be a positive integer** 1, 2, 3, ...
-* At least one of the optional fields must be provided.
-* Existing values will be updated to the input values.
-* Student ID cannot be edited with this command.
-* Remarks and labels are preserved when editing other fields. Name, email, and remark values follow the rules listed under `add`.
-* An empty `r/` clears the existing remark. Use the `label` command to add another group label.
+* `i/STUDENT_ID` is required and must identify an existing student. Matching is case-insensitive.
+* At least one field to change must be provided. Student ID itself cannot be edited.
+* `n/` and `e/` replace the existing name and email. Their values cannot be empty and follow the rules under `add`.
+* `r/` replaces the existing remark. An empty `r/` clears it.
+* Each `l/LABEL_NAME` adds a label; each `dl/LABEL_NAME` removes one. Both may be repeated, and label matching is case-insensitive. Label names follow the rules under `label`.
+* An empty `l/` clears **all** labels. It cannot be combined with another `l/` or any `dl/` in the same command.
+* Fields not supplied keep their existing values. A successful edit displays the complete student list.
 
 Examples:
-* `edit 1 e/johndoe@example.com` Changes the first person's email address to `johndoe@example.com`.
-* `edit 2 n/Betsy Crower r/Needs follow-up` Changes the 2nd person's name and remark.
+
+* `edit i/A0123456B e/johndoe@example.com` changes that student's email address.
+* `edit i/A0123456B l/Tutorial 1` adds a group label.
+* `edit i/A0123456B dl/Tutorial 1 l/Tutorial 2` replaces one group label while keeping the others.
+* `edit i/A0123456B l/ r/` removes every label and clears the remark.
+
+If a `dl/` label is absent, an `l/` label already exists, or an empty `l/` is combined with another label change, the edit is rejected and the student remains unchanged.
 
 ### Labelling a student by group: `label`
 
@@ -391,7 +397,7 @@ Action     | Format, Examples
 **Add**    | `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]` <br> e.g., `add n/James Ho i/A0123456B e/jamesho@example.com r/Needs help with recursion l/Discrete Math Tutorial`
 **Clear**  | `clear`
 **Delete** | `delete i/STUDENT_ID`<br> e.g., `delete i/A0123456B`
-**Edit**   | `edit INDEX [n/NAME] [e/EMAIL] [r/REMARK]`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
+**Edit**   | `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/LABEL_NAME]...`<br> e.g., `edit i/A0123456B dl/Tutorial 1 l/Tutorial 2`
 **Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
 **Label**  | `label l/LABEL_NAME i/STUDENT_ID`<br> e.g., `label l/Discrete Math Tutorial i/A0101010A`
 **Filter** | `filter l/LABEL_NAME`<br> e.g., `filter l/Discrete Math Tutorial`
