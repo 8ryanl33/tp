@@ -201,7 +201,7 @@ Format: `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/L
 * At least one field to change must be provided. Student ID itself cannot be edited.
 * `n/` and `e/` replace the existing name and email. Their values cannot be empty and follow the rules under `add`.
 * `r/` replaces the existing remark. An empty `r/` clears it.
-* Each `l/LABEL_NAME` adds a label; each `dl/LABEL_NAME` removes one. Both may be repeated, and label matching is case-insensitive. Label names follow the rules under `label`.
+* Each `l/LABEL_NAME` adds a label; each `dl/LABEL_NAME` removes one. Both may be repeated, and label matching is case-insensitive. Label names follow the `l/LABEL_NAME` rules in the Add section.
 * An empty `l/` clears **all** labels. It cannot be combined with another `l/` or any `dl/` in the same command.
 * Fields not supplied keep their existing values. A successful edit displays the complete student list.
 
