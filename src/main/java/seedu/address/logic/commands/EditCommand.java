@@ -12,6 +12,7 @@ import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -137,8 +138,9 @@ public class EditCommand extends Command {
     }
 
     private static Optional<Label> findMatchingLabel(Set<Label> labels, Label target) {
+        String normalizedTargetName = target.labelName.toLowerCase(Locale.ROOT);
         return labels.stream()
-                .filter(label -> label.labelName.equalsIgnoreCase(target.labelName))
+                .filter(label -> label.labelName.toLowerCase(Locale.ROOT).equals(normalizedTargetName))
                 .findFirst();
     }
 
