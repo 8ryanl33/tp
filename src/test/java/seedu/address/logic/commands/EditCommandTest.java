@@ -107,6 +107,84 @@ public class EditCommandTest {
     }
 
     @Test
+    public void execute_addLabel_preservesExistingLabels() {
+        Person originalPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person student = new PersonBuilder(originalPerson).withLabels("Tutorial A").build();
+        model.setPerson(originalPerson, student);
+        Person editedStudent = new PersonBuilder(student).withLabels("Tutorial A", "Needs Follow-up").build();
+        EditCommand command = new EditCommand(student.getStudentId(),
+                new EditPersonDescriptorBuilder().withLabelsToAdd("Needs Follow-up").build());
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(student, editedStudent);
+
+        assertCommandSuccess(command, model,
+                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedStudent)), expectedModel);
+    }
+
+    @Test
+    public void execute_removeLabel_ignoresCaseAndPreservesOtherLabels() {
+        Person originalPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person student = new PersonBuilder(originalPerson).withLabels("Tutorial A", "Needs Follow-up").build();
+        model.setPerson(originalPerson, student);
+        Person editedStudent = new PersonBuilder(student).withLabels("Needs Follow-up").build();
+        EditCommand command = new EditCommand(student.getStudentId(),
+                new EditPersonDescriptorBuilder().withLabelsToRemove("tutorial a").build());
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(student, editedStudent);
+
+        assertCommandSuccess(command, model,
+                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedStudent)), expectedModel);
+    }
+
+    @Test
+    public void execute_removeAndAddLabel_renamesOneLabel() {
+        Person originalPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person student = new PersonBuilder(originalPerson).withLabels("Tutorial A", "Needs Follow-up").build();
+        model.setPerson(originalPerson, student);
+        Person editedStudent = new PersonBuilder(student).withLabels("Tutorial B", "Needs Follow-up").build();
+        EditCommand command = new EditCommand(student.getStudentId(), new EditPersonDescriptorBuilder()
+                .withLabelsToRemove("Tutorial A").withLabelsToAdd("Tutorial B").build());
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(student, editedStudent);
+
+        assertCommandSuccess(command, model,
+                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedStudent)), expectedModel);
+    }
+
+    @Test
+    public void execute_clearLabelsAndRemark_success() {
+        Person originalPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person student = new PersonBuilder(originalPerson)
+                .withLabels("Tutorial A", "Needs Follow-up").withRemark("Meet on Monday").build();
+        model.setPerson(originalPerson, student);
+        Person editedStudent = new PersonBuilder(student).withLabels().withRemark("").build();
+        EditCommand command = new EditCommand(student.getStudentId(), new EditPersonDescriptorBuilder()
+                .withClearedLabels().withRemark("").build());
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(student, editedStudent);
+
+        assertCommandSuccess(command, model,
+                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedStudent)), expectedModel);
+    }
+
+    @Test
+    public void execute_invalidLabelOperation_preservesStudent() {
+        Person originalPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person student = new PersonBuilder(originalPerson).withLabels("Tutorial A", "Needs Follow-up").build();
+        model.setPerson(originalPerson, student);
+        EditCommand missingLabel = new EditCommand(student.getStudentId(),
+                new EditPersonDescriptorBuilder().withLabelsToRemove("Unknown").build());
+        EditCommand duplicateAfterRemoval = new EditCommand(student.getStudentId(), new EditPersonDescriptorBuilder()
+                .withLabelsToRemove("Tutorial A").withLabelsToAdd("needs follow-up").build());
+
+        assertCommandFailure(missingLabel, model,
+                String.format(EditCommand.MESSAGE_LABEL_NOT_FOUND, student.getStudentId(), "Unknown"));
+        assertCommandFailure(duplicateAfterRemoval, model,
+                String.format(EditCommand.MESSAGE_DUPLICATE_LABEL, student.getStudentId(), "needs follow-up"));
+        assertEquals(student, model.getAddressBook().getPersonList().get(INDEX_FIRST_PERSON.getZeroBased()));
+    }
+
+    @Test
     public void execute_allFieldsSpecifiedUnfilteredList_success() {
         Person personToEdit = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
         Person editedPerson = new PersonBuilder(personToEdit).withName(PersonBuilder.DEFAULT_NAME)

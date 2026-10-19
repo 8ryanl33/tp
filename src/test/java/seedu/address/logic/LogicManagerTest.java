@@ -165,7 +165,7 @@ public class LogicManagerTest {
         logic = new LogicManager(model, new StorageManager(failingStorage,
                 new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
         for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "delete i/B1234567C", "clear",
-                "edit i/A1234567B n/Updated Name")) {
+                "edit i/A1234567B n/Updated Name", "edit i/A1234567B l/Tutorial A")) {
             assertThrows(CommandException.class, LogicManager.MESSAGE_SAVE_FAILURE, () -> logic.execute(command));
             assertEquals(previousRecords, model.getAddressBook());
             assertEquals(List.of(BENSON), model.getFilteredPersonList());

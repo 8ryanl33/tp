@@ -46,6 +46,14 @@ public class EditPersonDescriptorTest {
         editedAmy = new EditPersonDescriptorBuilder(DESC_AMY).withRemark(VALID_REMARK_BOB).build();
         assertFalse(DESC_AMY.equals(editedAmy));
 
+        // different label changes -> returns false
+        editedAmy = new EditPersonDescriptorBuilder(DESC_AMY).withLabelsToAdd("Tutorial A").build();
+        assertFalse(DESC_AMY.equals(editedAmy));
+        editedAmy = new EditPersonDescriptorBuilder(DESC_AMY).withLabelsToRemove("Tutorial A").build();
+        assertFalse(DESC_AMY.equals(editedAmy));
+        editedAmy = new EditPersonDescriptorBuilder(DESC_AMY).withClearedLabels().build();
+        assertFalse(DESC_AMY.equals(editedAmy));
+
     }
 
     @Test
@@ -54,7 +62,8 @@ public class EditPersonDescriptorTest {
         String expected = EditPersonDescriptor.class.getCanonicalName() + "{name="
                 + editPersonDescriptor.getName().orElse(null) + ", email="
                 + editPersonDescriptor.getEmail().orElse(null) + ", remark="
-                + editPersonDescriptor.getRemark().orElse(null) + "}";
+                + editPersonDescriptor.getRemark().orElse(null) + ", labelsToAdd=[]"
+                + ", labelsToRemove=[], isClearingLabels=false}";
         assertEquals(expected, editPersonDescriptor.toString());
     }
 }

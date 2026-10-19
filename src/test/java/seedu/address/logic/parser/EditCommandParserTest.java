@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
+import seedu.address.model.label.Label;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.StudentId;
@@ -68,6 +69,36 @@ public class EditCommandParserTest {
     public void parse_emptyRemark_success() {
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withRemark("").build();
         assertParseSuccess(parser, TARGET + " r/   ", new EditCommand(STUDENT_ID, descriptor));
+    }
+
+    @Test
+    public void parse_addAndRemoveLabels_success() {
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withLabelsToAdd("Tutorial B", "Needs Follow-up")
+                .withLabelsToRemove("Tutorial A").build();
+        assertParseSuccess(parser, TARGET + " dl/Tutorial A l/Tutorial B l/Needs Follow-up",
+                new EditCommand(STUDENT_ID, descriptor));
+    }
+
+    @Test
+    public void parse_clearLabelsAndRemark_success() {
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withClearedLabels().withRemark("").build();
+        assertParseSuccess(parser, TARGET + " l/ r/", new EditCommand(STUDENT_ID, descriptor));
+    }
+
+    @Test
+    public void parse_invalidLabelChanges_failure() {
+        assertParseFailure(parser, TARGET + " dl/", "Parameter dl/ cannot be empty.");
+        assertParseFailure(parser, TARGET + " l/ dl/Tutorial A",
+                "An empty l/ cannot be combined with other label changes.");
+        assertParseFailure(parser, TARGET + " l/ l/Tutorial B",
+                "An empty l/ cannot be combined with other label changes.");
+        assertParseFailure(parser, TARGET + " l/Tutorial A l/tutorial a",
+                "Parameter l/ repeats label \"tutorial a\".");
+        assertParseFailure(parser, TARGET + " dl/Tutorial A dl/tutorial a",
+                "Parameter dl/ repeats label \"tutorial a\".");
+        assertParseFailure(parser, TARGET + " l/Bad!", Label.MESSAGE_CONSTRAINTS);
     }
 
     @Test
