@@ -95,7 +95,7 @@ Format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]`
 | Student ID | Exactly nine ASCII letters or digits, without internal spaces or punctuation. Stored in uppercase; `a0123456b` and `A0123456B` identify the same student. |
 | Email | At most 254 characters with exactly one `@`. The local part has 1–64 ASCII letters, digits, periods, underscores, plus signs, or hyphens. It cannot start/end with a period or contain consecutive periods. The domain has at least two dot-separated labels of 1–63 ASCII letters, digits, or hyphens, without boundary hyphens. The final label has 2–63 letters. Only the domain is lowercased. Spaces are rejected, and mailbox existence is not checked. |
 | Remark | Optional, at most 4,000 Unicode code points after trimming. Internal spacing and capitalisation are preserved. Omitting `r/` or supplying an empty `r/` stores an empty remark. At most one `r/` is allowed. Dates, grades, and the meaning of the text are not validated. Long remarks wrap on the student card. |
-| Label | Optional. Follows the same label name rules as the `label` command. At most one `l/` is allowed. Omitting `l/` stores no label. |
+| Label | Optional. Contains 1–60 Unicode code points, including at least one letter or digit. Allows letters, combining marks, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods. Surrounding whitespace is trimmed; internal spacing and capitalisation are preserved. At most one `l/` is allowed. Omitting `l/` stores no label. |
 
 Unlike numeric text such as `8/10`, a recognised prefix after `r/` starts another parameter.
 For example, `r/Quiz: 8/10 l/Tutorial` stores `Quiz: 8/10` as the remark and `Tutorial` as a label.
@@ -202,35 +202,11 @@ Format: `edit INDEX [n/NAME] [e/EMAIL] [r/REMARK]`
 * Existing values will be updated to the input values.
 * Student ID cannot be edited with this command.
 * Remarks and labels are preserved when editing other fields. Name, email, and remark values follow the rules listed under `add`.
-* An empty `r/` clears the existing remark. Use the `label` command to add another group label.
+* An empty `r/` clears the existing remark. Labels can only be assigned when adding a student; `edit` cannot change them.
 
 Examples:
 * `edit 1 e/johndoe@example.com` Changes the first person's email address to `johndoe@example.com`.
 * `edit 2 n/Betsy Crower r/Needs follow-up` Changes the 2nd person's name and remark.
-
-### Labelling a student by group: `label`
-
-Adds a group label to an existing student.
-
-Format: `label l/LABEL_NAME i/STUDENT_ID`
-
-* `LABEL_NAME` must not be empty after trimming leading and trailing whitespace.
-* `LABEL_NAME` can contain 1 to 60 characters.
-* `LABEL_NAME` must contain at least one letter or digit.
-* `LABEL_NAME` can contain letters, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods.
-* `LABEL_NAME` cannot contain `/` or ASCII control characters.
-* Internal spacing and capitalization are preserved for display.
-* `STUDENT_ID` must identify an existing student.
-* A student cannot have the same label more than once. Duplicate checks are case-insensitive.
-
-Examples:
-* `label l/Discrete Math Tutorial i/A0101010A`
-* `label i/A0101010A l/Tutorial (Monday)`
-
-Labels appear on student cards.
-
-Expected successful output:
-`Added label "Discrete Math Tutorial" to Samuel Tan (A0101010A).`
 
 ### Locating persons by name, student ID, or email: `find`
 
@@ -357,7 +333,7 @@ and only the first problem found is shown.
 
 If loading fails, TeachAssist starts with an empty student list and leaves the data file untouched:
 
-* Commands that change student records (`add`, `edit`, `delete`, `label`, and `clear`) are blocked with
+* Commands that change student records (`add`, `edit`, `delete`, and `clear`) are blocked with
   `Student data is unavailable because loading failed. Fix the data file and restart.`
 * Commands that do not change student records, such as `list`, `find`, `filter`, `help`, and `exit`, remain available.
 
@@ -366,7 +342,7 @@ with an empty student list.
 
 ### Saving the data
 
-TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, `label`, and `clear`).
+TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, and `clear`).
 You do not need to save manually. Commands such as `find`, `filter`, `list`, `help`, and `exit` do not write student data.
 If saving fails, the proposed change is not applied, and existing records, the displayed filter, and the previous
 saved file remain unchanged. The application displays `Unable to save student data.`
@@ -420,7 +396,6 @@ Action     | Format, Examples
 **Delete** | `delete i/STUDENT_ID`<br> e.g., `delete i/A0123456B`
 **Edit**   | `edit INDEX [n/NAME] [e/EMAIL] [r/REMARK]`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
 **Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
-**Label**  | `label l/LABEL_NAME i/STUDENT_ID`<br> e.g., `label l/Discrete Math Tutorial i/A0101010A`
 **Filter** | `filter l/LABEL_NAME`<br> e.g., `filter l/Discrete Math Tutorial`
 **List**   | `list`
 **Help**   | `help`
