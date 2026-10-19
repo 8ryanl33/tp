@@ -168,6 +168,23 @@ An optional group label is assigned when creating a student with `add ... l/LABE
 `EditCommand` preserves existing labels, and `PersonCard` renders them in its `FlowPane`.
 Existing saved labels remain compatible, including records containing multiple labels.
 
+### Edit command
+
+Format: `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/LABEL_NAME]...`
+
+`EditCommandParser` checks command structure and parses the Student ID and requested field changes.
+It collects repeated `l/` and `dl/` values into the `EditPersonDescriptor`. An empty `l/` requests
+clearing all labels and is rejected if combined with another label change. An empty `r/` becomes
+an empty remark.
+
+`EditCommand` finds the student by Student ID in the complete address book, so a filtered view
+does not change the target. It builds a replacement `Person`, keeping fields that were not supplied.
+For labels, it copies the student's set, removes each `dl/` label, then adds each `l/` label.
+Matching is case-insensitive. Removing a missing label or adding one already present throws a
+`CommandException`, leaving the record unchanged. An empty `l/` produces an empty label set.
+The command then replaces the student through `Model#setPerson`; `LogicManager` saves the pending
+model before publishing it to the live model.
+
 ### Adding student information
 
 Command format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]`.
@@ -212,7 +229,8 @@ LogicManager → temporary ModelManager → JsonAddressBookStorage → live Mode
 1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, and `clear`
    return true. Future modifying commands must override this method too.
 2. `LogicManager` copies the live records and current filter into a temporary `ModelManager`, then executes the command
-   against that copy. Copying the filter preserves displayed indices for `edit` and the active view for `delete`.
+   against that copy. Copying the filter preserves the active view if saving fails; `edit` identifies its target by
+   Student ID from the full record list rather than by displayed index.
 3. `JsonAddressBookStorage` writes the proposed records to a temporary file in the destination directory.
    `Files.move` with `ATOMIC_MOVE` and `REPLACE_EXISTING` replaces the old file only after writing completes.
    There is no fallback overwrite when atomic replacement is unsupported. Temporary files are removed after failure.

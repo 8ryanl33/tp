@@ -22,6 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
 import seedu.address.commons.exceptions.DataLoadingException;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -120,6 +121,24 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_editUnicodeEquivalentLabel_keepsSavedDataReadable() throws Exception {
+        String studentId = "A0123456B";
+        String storedLabel = "\u0130stanbul";
+        String equivalentLabel = "i\u0307stanbul";
+        logic.execute("add n/Alex i/" + studentId + " e/alex@example.com l/" + storedLabel);
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+
+        assertCommandException("edit i/" + studentId + " l/" + equivalentLabel,
+                String.format(EditCommand.MESSAGE_DUPLICATE_LABEL, studentId, equivalentLabel));
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
+        assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+
+        logic.execute("edit i/" + studentId + " dl/" + equivalentLabel);
+        assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+        assertEquals(0, model.getAddressBook().getPersonList().getFirst().getLabels().size());
+    }
+
+    @Test
     public void execute_readOnlyCommands_doNotSave() throws Exception {
         model.addPerson(new PersonBuilder().withName("Samuel Tan")
                 .withStudentId("A0101010A")
@@ -147,7 +166,7 @@ public class LogicManagerTest {
         assertThrows(DataLoadingException.class, storage::readAddressBook);
         logic = new LogicManager(model, storage, false, "");
         for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "clear", "delete i/B1234567C",
-                "edit 1 n/Samuel")) {
+                "edit i/A0123456B n/Samuel")) {
             assertCommandException(command, LogicManager.MESSAGE_DATA_UNAVAILABLE);
         }
         logic.execute("list");
@@ -172,7 +191,7 @@ public class LogicManagerTest {
         logic = new LogicManager(model, new StorageManager(failingStorage,
                 new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
         for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "delete i/B1234567C", "clear",
-                "edit 1 n/Updated Name")) {
+                "edit i/A1234567B n/Updated Name", "edit i/A1234567B l/Tutorial A")) {
             assertThrows(CommandException.class, LogicManager.MESSAGE_SAVE_FAILURE, () -> logic.execute(command));
             assertEquals(previousRecords, model.getAddressBook());
             assertEquals(List.of(BENSON), model.getFilteredPersonList());
