@@ -31,8 +31,9 @@ import seedu.address.ui.UiManager;
  */
 public class MainApp extends Application {
 
-    public static final String VERSION = "V0.5.1";
+    public static final String VERSION = "V1.3";
     public static final String MESSAGE_STUDENTS_LOADED = "%1$d students loaded.";
+    public static final String MESSAGE_ONE_STUDENT_LOADED = "1 student loaded.";
     public static final String MESSAGE_NO_EXISTING_DATA =
             "No existing student data found. Starting with an empty student list.";
 
@@ -83,20 +84,23 @@ public class MainApp extends Application {
             if (addressBookOptional.isEmpty()) {
                 startupMessage = MESSAGE_NO_EXISTING_DATA;
             } else {
-                startupMessage = String.format(MESSAGE_STUDENTS_LOADED,
-                        addressBookOptional.get().getPersonList().size());
+                startupMessage = formatStudentsLoaded(addressBookOptional.get().getPersonList().size());
             }
             logger.info(startupMessage);
             initialData = addressBookOptional.orElseGet(AddressBook::new);
         } catch (DataLoadingException e) {
             logger.warning("Data file at " + storage.getAddressBookFilePath() + " could not be loaded."
-                    + " Will be starting with an empty AddressBook.");
+                    + " Will be starting with an empty student list.");
             initialData = new AddressBook();
             isStudentDataAvailable = false;
             startupMessage = e.getMessage();
         }
 
         return new ModelManager(initialData, userPrefs);
+    }
+
+    private static String formatStudentsLoaded(int studentCount) {
+        return studentCount == 1 ? MESSAGE_ONE_STUDENT_LOADED : String.format(MESSAGE_STUDENTS_LOADED, studentCount);
     }
 
     /**

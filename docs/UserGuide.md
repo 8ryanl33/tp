@@ -95,7 +95,7 @@ Format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]`
 | Student ID | Exactly nine ASCII letters or digits, without internal spaces or punctuation. Stored in uppercase; `a0123456b` and `A0123456B` identify the same student. |
 | Email | At most 254 characters with exactly one `@`. The local part has 1–64 ASCII letters, digits, periods, underscores, plus signs, or hyphens. It cannot start/end with a period or contain consecutive periods. The domain has at least two dot-separated labels of 1–63 ASCII letters, digits, or hyphens, without boundary hyphens. The final label has 2–63 letters. Only the domain is lowercased. Spaces are rejected, and mailbox existence is not checked. |
 | Remark | Optional, at most 4,000 Unicode code points after trimming. Internal spacing and capitalisation are preserved. Omitting `r/` or supplying an empty `r/` stores an empty remark. At most one `r/` is allowed. Dates, grades, and the meaning of the text are not validated. Long remarks wrap on the student card. |
-| Label | Optional. Follows the same label name rules as the `label` command. At most one `l/` is allowed. Omitting `l/` stores no label. |
+| Label | Optional. Contains 1–60 Unicode code points, including at least one letter or digit. Allows letters, combining marks, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods. Surrounding whitespace is trimmed; internal spacing and capitalisation are preserved. At most one `l/` is allowed. Omitting `l/` stores no label. |
 
 Unlike numeric text such as `8/10`, a recognised prefix after `r/` starts another parameter.
 For example, `r/Quiz: 8/10 l/Tutorial` stores `Quiz: 8/10` as the remark and `Tutorial` as a label.
@@ -214,30 +214,6 @@ Examples:
 
 If a `dl/` label is absent, an `l/` label already exists, or an empty `l/` is combined with another label change, the edit is rejected and the student remains unchanged.
 
-### Labelling a student by group: `label`
-
-Adds a group label to an existing student.
-
-Format: `label l/LABEL_NAME i/STUDENT_ID`
-
-* `LABEL_NAME` must not be empty after trimming leading and trailing whitespace.
-* `LABEL_NAME` can contain 1 to 60 characters.
-* `LABEL_NAME` must contain at least one letter or digit.
-* `LABEL_NAME` can contain letters, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods.
-* `LABEL_NAME` cannot contain `/` or ASCII control characters.
-* Internal spacing and capitalization are preserved for display.
-* `STUDENT_ID` must identify an existing student.
-* A student cannot have the same label more than once. Duplicate checks are case-insensitive.
-
-Examples:
-* `label l/Discrete Math Tutorial i/A0101010A`
-* `label i/A0101010A l/Tutorial (Monday)`
-
-Labels appear on student cards.
-
-Expected successful output:
-`Added label "Discrete Math Tutorial" to Samuel Tan (A0101010A).`
-
 ### Locating persons by name, student ID, or email: `find`
 
 Finds persons whose name, student ID, or email matches any of the given keywords.
@@ -345,25 +321,52 @@ Exits the program.
 
 Format: `exit`
 
+### Loading the data
+
+When TeachAssist starts, it loads student data from `[JAR file location]/data/addressbook.json` and shows the outcome
+in the result display.
+
+The rows below follow the order in which loading is checked. Records are checked in the order they appear in the file,
+and only the first problem found is shown.
+
+| Situation | Message |
+|-----------|---------|
+| No data file exists yet | `No existing student data found. Starting with an empty student list.` |
+| The data file cannot be read, e.g., file permissions deny access | `Unable to load student data.` |
+| The data file is not valid JSON, or a record has a missing or invalid value | `Unable to load student data. The data file may be corrupted or invalid.` |
+| Two records share a Student ID, ignoring case | `Unable to load student data: duplicate Student ID A0123456B detected.` |
+| Loading succeeds | `3 students loaded.` (or `1 student loaded.`) |
+
+If loading fails, TeachAssist starts with an empty student list and leaves the data file untouched:
+
+* Commands that change student records (`add`, `edit`, `delete`, and `clear`) are blocked with
+  `Student data is unavailable because loading failed. Fix the data file and restart.`
+* Commands that do not change student records, such as `list`, `find`, `filter`, `help`, and `exit`, remain available.
+
+To recover, close TeachAssist, fix or restore the data file, and restart. Deleting the data file makes TeachAssist start
+with an empty student list.
+
 ### Saving the data
 
-TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, `label`, and `clear`).
+TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, and `clear`).
 You do not need to save manually. Commands such as `find`, `filter`, `list`, `help`, and `exit` do not write student data.
 If saving fails, the proposed change is not applied, and existing records, the displayed filter, and the previous
 saved file remain unchanged. The application displays `Unable to save student data.`
 Storage must support atomic file replacement; unsupported storage produces the same save error.
+If the `data` folder does not exist and cannot be created, e.g., because a file named `data` is in its place or the
+JAR file location is read-only, the application displays `Unable to create data storage location.` instead.
 
 ### Editing the data file
 
-AddressBook data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
+TeachAssist data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
 
 <box type="warning" seamless>
 
 **Caution:**
 If your changes make the data file invalid, TeachAssist starts with an empty student list and preserves the invalid file.
-Commands that modify records are blocked with `Student data is unavailable because loading failed. Fix the data file and restart.`
-Commands such as `list` remain available and do not overwrite the invalid file. Back up the file before editing it.<br>
-Furthermore, certain edits can cause the AddressBook to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
+See [Loading the data](#loading-the-data) for the message shown and the commands that remain available.
+Back up the file before editing it.<br>
+Furthermore, certain edits can cause TeachAssist to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 
 Each person record must include a valid `studentId`. Older data files that do not include `studentId` for every person may fail to load until the missing values are added manually.
 Group labels are saved under each person record as `labels`. Older data files without `labels` still load; those persons simply start with no labels.
@@ -399,7 +402,6 @@ Action     | Format, Examples
 **Delete** | `delete i/STUDENT_ID`<br> e.g., `delete i/A0123456B`
 **Edit**   | `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/LABEL_NAME]...`<br> e.g., `edit i/A0123456B dl/Tutorial 1 l/Tutorial 2`
 **Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
-**Label**  | `label l/LABEL_NAME i/STUDENT_ID`<br> e.g., `label l/Discrete Math Tutorial i/A0101010A`
 **Filter** | `filter l/LABEL_NAME`<br> e.g., `filter l/Discrete Math Tutorial`
 **List**   | `list`
 **Help**   | `help`
