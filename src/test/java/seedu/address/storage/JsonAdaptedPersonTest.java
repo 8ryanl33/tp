@@ -3,12 +3,15 @@ package seedu.address.storage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.storage.JsonAdaptedPerson.MESSAGE_DUPLICATE_ATTENDANCE;
 import static seedu.address.storage.JsonAdaptedPerson.MESSAGE_DUPLICATE_LABEL;
+import static seedu.address.storage.JsonAdaptedPerson.MISSING_ATTENDANCE_MESSAGE;
 import static seedu.address.storage.JsonAdaptedPerson.MISSING_FIELD_MESSAGE_FORMAT;
 import static seedu.address.storage.JsonAdaptedPerson.MISSING_LABEL_MESSAGE;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.BENSON;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +19,8 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.JsonUtil;
+import seedu.address.model.attendance.AttendanceRecord;
+import seedu.address.model.label.Label;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Person;
@@ -90,6 +95,64 @@ public class JsonAdaptedPersonTest {
 
         assertTrue(json.contains("\"labels\""));
         assertEquals(original, restored.toModelType());
+    }
+
+    @Test
+    public void jsonAdaptedPerson_attendance_roundTripPreservesRecords() throws Exception {
+        AttendanceRecord record = new AttendanceRecord(LocalDate.parse("2026-10-20"), new Label("Tutorial 1"));
+        Person original = new PersonBuilder(BENSON).withAttendance(record).build();
+        String json = JsonUtil.toJsonString(new JsonAdaptedPerson(original));
+
+        assertTrue(json.contains("\"attendance\""));
+        assertTrue(json.contains("\"date\" : \"2026-10-20\""));
+        assertEquals(original, JsonUtil.fromJsonString(json, JsonAdaptedPerson.class).toModelType());
+    }
+
+    @Test
+    public void jsonAdaptedPerson_missingOrNullAttendance_defaultsToEmpty() throws Exception {
+        String legacyJson = "{\"name\":\"" + VALID_NAME + "\",\"studentId\":\"" + VALID_STUDENT_ID
+                + "\",\"email\":\"" + VALID_EMAIL + "\"}";
+        Person expected = new JsonAdaptedPerson(BENSON).toModelType();
+        assertEquals(expected, JsonUtil.fromJsonString(legacyJson, JsonAdaptedPerson.class).toModelType());
+        String nullJson = legacyJson.substring(0, legacyJson.length() - 1) + ",\"attendance\":null}";
+        assertEquals(expected, JsonUtil.fromJsonString(nullJson, JsonAdaptedPerson.class).toModelType());
+    }
+
+    @Test
+    public void toModelType_invalidAttendance_throwsIllegalValueException() {
+        List<JsonAdaptedAttendanceRecord> invalidDate = List.of(
+                new JsonAdaptedAttendanceRecord("2026-02-30", "Tutorial 1"));
+        JsonAdaptedPerson invalidDatePerson = new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID, VALID_EMAIL,
+                List.of(), "", invalidDate);
+        assertThrows(IllegalValueException.class, JsonAdaptedAttendanceRecord.MESSAGE_INVALID_DATE,
+                invalidDatePerson::toModelType);
+
+        List<JsonAdaptedAttendanceRecord> invalidGroup = List.of(
+                new JsonAdaptedAttendanceRecord("2026-10-20", "Tutorial/1"));
+        JsonAdaptedPerson invalidGroupPerson = new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID, VALID_EMAIL,
+                List.of(), "", invalidGroup);
+        assertThrows(IllegalValueException.class, Label.MESSAGE_CONSTRAINTS, invalidGroupPerson::toModelType);
+    }
+
+    @Test
+    public void toModelType_duplicateAttendanceIgnoringCase_throwsIllegalValueException() {
+        List<JsonAdaptedAttendanceRecord> records = List.of(
+                new JsonAdaptedAttendanceRecord("2026-10-20", "İstanbul"),
+                new JsonAdaptedAttendanceRecord("2026-10-20", "i\u0307stanbul"));
+        JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID, VALID_EMAIL,
+                List.of(), "", records);
+
+        assertThrows(IllegalValueException.class, MESSAGE_DUPLICATE_ATTENDANCE, person::toModelType);
+    }
+
+    @Test
+    public void toModelType_nullAttendanceEntry_throwsIllegalValueException() {
+        List<JsonAdaptedAttendanceRecord> records = new ArrayList<>();
+        records.add(null);
+        JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, VALID_STUDENT_ID, VALID_EMAIL,
+                List.of(), "", records);
+
+        assertThrows(IllegalValueException.class, MISSING_ATTENDANCE_MESSAGE, person::toModelType);
     }
 
     @Test

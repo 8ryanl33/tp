@@ -3,6 +3,7 @@ package seedu.address.testutil;
 import java.util.HashSet;
 import java.util.Set;
 
+import seedu.address.model.attendance.AttendanceRecord;
 import seedu.address.model.label.Label;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
@@ -25,6 +26,7 @@ public class PersonBuilder {
     private Email email;
     private Remark remark;
     private Set<Label> labels;
+    private Set<AttendanceRecord> attendance;
 
     /**
      * Creates a {@code PersonBuilder} with the default details.
@@ -35,6 +37,7 @@ public class PersonBuilder {
         email = new Email(DEFAULT_EMAIL);
         remark = new Remark(DEFAULT_REMARK);
         labels = new HashSet<>();
+        attendance = new HashSet<>();
     }
 
     /**
@@ -46,6 +49,7 @@ public class PersonBuilder {
         email = personToCopy.getEmail();
         remark = personToCopy.getRemark();
         labels = new HashSet<>(personToCopy.getLabels());
+        attendance = new HashSet<>(personToCopy.getAttendance());
     }
 
     /**
@@ -92,10 +96,18 @@ public class PersonBuilder {
     }
 
     /**
+     * Sets the attendance records of the person being built.
+     */
+    public PersonBuilder withAttendance(AttendanceRecord... records) {
+        attendance = new HashSet<>(Set.of(records));
+        return this;
+    }
+
+    /**
      * Builds a {@code Person} with the configured details.
      */
     public Person build() {
-        return new Person(name, studentId, email, labels, remark);
+        return new Person(name, studentId, email, labels, remark, attendance);
     }
 
 }
