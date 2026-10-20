@@ -360,6 +360,10 @@ JAR file location is read-only, the application displays `Unable to create data 
 
 TeachAssist data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
 
+The application also keeps `preferences.json` and `addressbook.log.*` files in the JAR’s folder, even when you launch it
+from another directory. Use a folder where you have write permission. Existing files in the launch directory are not
+imported automatically; to reuse old records, close TeachAssist and copy the existing `data` folder beside the JAR.
+
 <box type="warning" seamless>
 
 **Caution:**
