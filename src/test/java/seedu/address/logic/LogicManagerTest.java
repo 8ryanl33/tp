@@ -22,6 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
 import seedu.address.commons.exceptions.DataLoadingException;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -105,11 +106,36 @@ public class LogicManagerTest {
     }
 
     @Test
-    public void execute_label_successPersistsLabel() throws Exception {
+    public void execute_addWithLabel_persistsAndFiltersAfterReload() throws Exception {
         model.addPerson(ALICE);
-        logic.execute("label l/Tutorial 1 i/" + ALICE.getStudentId());
-
+        logic.execute("add n/Samuel i/A0101010A e/samuel@example.com l/Tutorial 1");
+        Person expectedStudent = new PersonBuilder().withName("Samuel")
+                .withStudentId("A0101010A").withEmail("samuel@example.com").withLabels("Tutorial 1").build();
         assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+        model = new ModelManager(storage.readAddressBook().orElseThrow(), new UserPrefs());
+        logic = new LogicManager(model, storage);
+
+        CommandResult result = logic.execute("filter l/tutorial 1");
+        assertEquals("1 students found with label \"tutorial 1\".", result.getFeedbackToUser());
+        assertEquals(List.of(expectedStudent), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_editUnicodeEquivalentLabel_keepsSavedDataReadable() throws Exception {
+        String studentId = "A0123456B";
+        String storedLabel = "\u0130stanbul";
+        String equivalentLabel = "i\u0307stanbul";
+        logic.execute("add n/Alex i/" + studentId + " e/alex@example.com l/" + storedLabel);
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+
+        assertCommandException("edit i/" + studentId + " l/" + equivalentLabel,
+                String.format(EditCommand.MESSAGE_DUPLICATE_LABEL, studentId, equivalentLabel));
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
+        assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+
+        logic.execute("edit i/" + studentId + " dl/" + equivalentLabel);
+        assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+        assertEquals(0, model.getAddressBook().getPersonList().getFirst().getLabels().size());
     }
 
     @Test
@@ -140,7 +166,7 @@ public class LogicManagerTest {
         assertThrows(DataLoadingException.class, storage::readAddressBook);
         logic = new LogicManager(model, storage, false, "");
         for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "clear", "delete i/B1234567C",
-                "edit 1 n/Samuel", "label l/Tutorial 1 i/A0123456B")) {
+                "edit i/A0123456B n/Samuel")) {
             assertCommandException(command, LogicManager.MESSAGE_DATA_UNAVAILABLE);
         }
         logic.execute("list");
@@ -165,7 +191,7 @@ public class LogicManagerTest {
         logic = new LogicManager(model, new StorageManager(failingStorage,
                 new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
         for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "delete i/B1234567C", "clear",
-                "edit 1 n/Updated Name")) {
+                "edit i/A1234567B n/Updated Name", "edit i/A1234567B l/Tutorial A")) {
             assertThrows(CommandException.class, LogicManager.MESSAGE_SAVE_FAILURE, () -> logic.execute(command));
             assertEquals(previousRecords, model.getAddressBook());
             assertEquals(List.of(BENSON), model.getFilteredPersonList());
@@ -216,47 +242,17 @@ public class LogicManagerTest {
     }
 
     @Test
-    public void execute_labelCommand_success() throws Exception {
-        Person samuel = new PersonBuilder().withName("Samuel Tan")
-                .withStudentId("A0101010A")
-                .withEmail("samuel@example.com")
-                .build();
-        model.addPerson(samuel);
-        Person labelledSamuel = new PersonBuilder(samuel).withLabels("Discrete Math Tutorial").build();
-        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
-        expectedModel.setPerson(samuel, labelledSamuel);
+    public void execute_removedLabelCommand_preservesRecordsAndSavedFile() throws Exception {
+        model.addPerson(ALICE);
+        model.updateFilteredPersonList(new NameContainsKeywordsPredicate(List.of("Nobody")));
+        storage.saveAddressBook(model.getAddressBook());
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
 
-        assertCommandSuccess("label l/Discrete Math Tutorial i/A0101010A",
-                "Added label \"Discrete Math Tutorial\" to Samuel Tan (A0101010A).", expectedModel);
-    }
-
-    @Test
-    public void execute_labelCommand_persistsLabel() throws Exception {
-        model.addPerson(new PersonBuilder().withName("Samuel Tan")
-                .withStudentId("A0101010A")
-                .withEmail("samuel@example.com")
-                .build());
-        logic.execute("label l/Discrete Math Tutorial i/A0101010A");
-        assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
-    }
-
-    @Test
-    public void execute_labelCommandDuplicateLabel_throwsCommandException() {
-        Person samuel = new PersonBuilder().withName("Samuel Tan")
-                .withStudentId("A0101010A")
-                .withEmail("samuel@example.com")
-                .withLabels("Discrete Math Tutorial")
-                .build();
-        model.addPerson(samuel);
-
-        assertCommandException("label l/discrete math tutorial i/A0101010A",
-                "Student A0101010A already has label \"Discrete Math Tutorial\".");
-    }
-
-    @Test
-    public void execute_labelCommandNonExistentStudent_throwsCommandException() {
-        assertCommandException("label l/Discrete Math Tutorial i/A0101010A",
-                "Student with ID A0101010A is not in the records. Consider using add to include the student.");
+        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, ()
+            -> logic.execute("label l/Tutorial 1 i/" + ALICE.getStudentId()));
+        assertEquals(List.of(ALICE), model.getAddressBook().getPersonList());
+        assertEquals(List.of(), model.getFilteredPersonList());
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
     }
 
     @Test

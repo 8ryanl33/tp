@@ -160,34 +160,35 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
-### Label command
+### Group labels
 
-The `label` command lets a TA assign a group label to an existing student.
+An optional group label is assigned when creating a student with `add ... l/LABEL_NAME`.
+`Label` validates the value, and `ParserUtil#parseLabel` trims command input before constructing it.
+`JsonAdaptedLabel` and `JsonAdaptedPerson` persist labels under each person's `labels` JSON field.
+`EditCommand` preserves existing labels, and `PersonCard` renders them in its `FlowPane`.
+Existing saved labels remain compatible, including records containing multiple labels.
 
-Format: `label l/LABEL_NAME i/STUDENT_ID`
+### Edit command
 
-The implementation uses the following classes:
+Format: `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/LABEL_NAME]...`
 
-* `Label` is a model value object for group labels.
-* `ParserUtil#parseLabel` trims command input and converts valid label text into a `Label`.
-* `LabelCommandParser` checks command structure, required `l/` and `i/` parameters, empty values, duplicate parameters, label validity, and student ID validity.
-* `LabelCommand` locates the target student by `StudentId`, rejects case-insensitive duplicate labels on the same student, creates an updated `Person`, and calls `Model#setPerson`.
-* `JsonAdaptedLabel` and `JsonAdaptedPerson` persist labels under each person's `labels` JSON field.
+`EditCommandParser` checks command structure and parses the Student ID and requested field changes.
+It collects repeated `l/` and `dl/` values into the `EditPersonDescriptor`. An empty `l/` requests
+clearing all labels and is rejected if combined with another label change. An empty `r/` becomes
+an empty remark.
 
-The sequence diagram below shows how a successful `label l/Tutorial 1 i/A0101010A` command is parsed, executed, and saved.
-
-<puml src="diagrams/LabelSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `label` Command" />
-
-Design notes:
-
-* Duplicate detection is case-insensitive, but the originally stored label capitalization is preserved for display and duplicate error messages.
-* `EditCommand` preserves a person's existing labels when rebuilding a `Person` with edited fields.
-* `PersonCard` renders labels in its `FlowPane`.
+`EditCommand` finds the student by Student ID in the complete address book, so a filtered view
+does not change the target. It builds a replacement `Person`, keeping fields that were not supplied.
+For labels, it copies the student's set, removes each `dl/` label, then adds each `l/` label.
+Matching is case-insensitive. Removing a missing label or adding one already present throws a
+`CommandException`, leaving the record unchanged. An empty `l/` produces an empty label set.
+The command then replaces the student through `Model#setPerson`; `LogicManager` saves the pending
+model before publishing it to the live model.
 
 ### Adding student information
 
 Command format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]`.
-One optional group label can be assigned during add; it follows the same label-name rules as the `label` command.
+One optional group label can be assigned during add; `Label` defines its validation rules.
 The accepted values and exact error messages are documented in the [User Guide](UserGuide.md#adding-a-student-add).
 
 #### Validation and identity
@@ -206,8 +207,9 @@ The accepted values and exact error messages are documented in the [User Guide](
   of 63, and a final label of 2–63 letters. Only the domain is lowercased using `Locale.ROOT`.
 * `Remark` accepts at most 4,000 Unicode code points; command parsing trims only surrounding whitespace.
   Empty or omitted remarks become empty strings. `r/` can appear anywhere and does not consume later parameters.
-* `Label` accepts the same values as the `label` command. Empty labels are rejected, omitted labels become an empty
-  label set, and `l/` can appear anywhere without consuming later parameters.
+* `Label` accepts 1–60 Unicode code points and requires at least one letter or digit. It permits letters,
+  combining marks, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods. Empty labels
+  are rejected, omitted labels become an empty label set, and `l/` can appear anywhere without consuming later parameters.
 
 For example, `add n/  Alex   Tan i/a0123456b e/Alex@EXAMPLE.COM l/Tutorial 1 r/Quiz: 8/10`
 creates a student with name `Alex Tan`, ID `A0123456B`, email `Alex@example.com`, label `Tutorial 1`,
@@ -224,10 +226,11 @@ AddressBookParser → AddCommandParser → AddCommand
 LogicManager → temporary ModelManager → JsonAddressBookStorage → live ModelManager
 ```
 
-1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, `label`, and `clear`
+1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, and `clear`
    return true. Future modifying commands must override this method too.
 2. `LogicManager` copies the live records and current filter into a temporary `ModelManager`, then executes the command
-   against that copy. Copying the filter preserves displayed indices for `edit` and the active view for `delete`.
+   against that copy. Copying the filter preserves the active view if saving fails; `edit` identifies its target by
+   Student ID from the full record list rather than by displayed index.
 3. `JsonAddressBookStorage` writes the proposed records to a temporary file in the destination directory.
    `Files.move` with `ATOMIC_MOVE` and `REPLACE_EXISTING` replaces the old file only after writing completes.
    There is no fallback overwrite when atomic replacement is unsupported. Temporary files are removed after failure.
@@ -363,9 +366,8 @@ whole-record removal from persisted JSON, filter preservation, and save failures
 ### Filter feature
 
 The `filter` command lets the user display only students with a matching label.
-It reuses the label prefix and label validation rules introduced by the `label`
-command, so invalid label names are rejected during parsing before the model is
-updated.
+It uses the `l/` prefix and the shared `Label` validation rules, so invalid label names
+are rejected during parsing before the model is updated.
 
 Given `filter l/Discrete Math Tutorial`, `AddressBookParser` delegates parsing
 to `FilterCommandParser`. The parser returns a `FilterCommand` containing the
@@ -642,7 +644,7 @@ TA refers to a teaching assistant. Story IDs are retained from the project notes
 
 Use case: UC01 - Add a Student
 MSS:
-1. TA enters command to add a student with name, student ID, email, and optional remarks.
+1. TA enters command to add a student with name, student ID, email, and optional remarks and group label.
 2. TeachAssist validates the student details and checks for duplicate student IDs.
 3. TeachAssist saves the student record to the data file.
 4. TeachAssist displays a confirmation message and updates the student list.
@@ -688,34 +690,6 @@ MSS:
 * 2a. No student records match the search query.
 * 2a1. TeachAssist displays a message indicating no matching students were found.
 * 2a2. TeachAssist clears the displayed student list.
-* Use case ends.
-
----
-
-Use case: UC03 - Label Student by Group
-MSS:
-1. TA enters command to assign a group label to a specific student ID.
-2. TeachAssist verifies that the student exists and does not already have the label.
-3. TeachAssist associates the label with the student and saves the updated data file.
-4. TeachAssist displays a success message and updates the student's display card.
-   Use case ends.
-
-**Extensions**
-* 1a. Required parameters are missing, empty, or improperly formatted.
-* 1a1. TeachAssist shows an error message indicating the missing or invalid parameter.
-* Use case ends.
-* 1b. The label name contains disallowed characters (e.g., '/' or ASCII control characters).
-* 1b1. TeachAssist shows an error message indicating that the label name contains disallowed characters.
-* Use case ends.
-* 2a. No student with the specified student ID exists in the records.
-* 2a1. TeachAssist shows an error message stating the student is not in the records.
-* Use case ends.
-* 2b. The student already has the specified group label.
-* 2b1. TeachAssist shows an error message stating that the student already has the label.
-* Use case ends.
-* 3a. Saving data to the file fails.
-* 3a1. TeachAssist shows an error message indicating that it is unable to save student data.
-* 3a2. TeachAssist does not modify the student record.
 * Use case ends.
 
 ---

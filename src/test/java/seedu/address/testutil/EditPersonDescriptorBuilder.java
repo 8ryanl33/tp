@@ -1,7 +1,9 @@
 package seedu.address.testutil;
 
+import java.util.Arrays;
 
 import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
+import seedu.address.model.label.Label;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Person;
@@ -53,6 +55,30 @@ public class EditPersonDescriptorBuilder {
      */
     public EditPersonDescriptorBuilder withRemark(String remark) {
         descriptor.setRemark(new Remark(remark));
+        return this;
+    }
+
+    /**
+     * Adds labels to the descriptor's requested additions.
+     */
+    public EditPersonDescriptorBuilder withLabelsToAdd(String... labelNames) {
+        descriptor.setLabelsToAdd(Arrays.stream(labelNames).map(Label::new).toList());
+        return this;
+    }
+
+    /**
+     * Adds labels to the descriptor's requested removals.
+     */
+    public EditPersonDescriptorBuilder withLabelsToRemove(String... labelNames) {
+        descriptor.setLabelsToRemove(Arrays.stream(labelNames).map(Label::new).toList());
+        return this;
+    }
+
+    /**
+     * Requests removal of every label.
+     */
+    public EditPersonDescriptorBuilder withClearedLabels() {
+        descriptor.setClearingLabels(true);
         return this;
     }
 

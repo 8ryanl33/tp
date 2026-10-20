@@ -40,19 +40,13 @@ Remarks can be used to record information such as learning difficulties, consult
 Add a student:
 
 ```text
-add n/Samuel Tan i/A0123456B e/samuel@example.com r/Struggles with recursion
+add n/Samuel Tan i/A0123456B e/samuel@example.com r/Struggles with recursion l/Tutorial T01
 ```
 
 Find a student:
 
 ```text
 find n/Samuel
-```
-
-Assign a tutorial-group label:
-
-```text
-label l/Tutorial T01 i/A0123456B
 ```
 
 Display students from a tutorial group:
