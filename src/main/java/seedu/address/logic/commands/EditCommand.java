@@ -112,7 +112,7 @@ public class EditCommand extends Command {
         Set<Label> updatedLabels = updateLabels(personToEdit, editPersonDescriptor);
 
         return new Person(updatedName, updatedStudentId, updatedEmail,
-                updatedLabels, updatedRemark);
+                updatedLabels, updatedRemark, personToEdit.getAttendance());
     }
 
     private static Set<Label> updateLabels(Person person, EditPersonDescriptor descriptor) throws CommandException {

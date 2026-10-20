@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import seedu.address.commons.util.ToStringBuilder;
+import seedu.address.model.attendance.AttendanceRecord;
 import seedu.address.model.label.Label;
 
 /**
@@ -24,6 +25,7 @@ public class Person {
     // Data fields
     private final Remark remark;
     private final Set<Label> labels = new HashSet<>();
+    private final Set<AttendanceRecord> attendance = new HashSet<>();
 
     /**
      * Constructs a person with no labels and an empty remark.
@@ -58,12 +60,23 @@ public class Person {
      * @param remark The non-null remark.
      */
     public Person(Name name, StudentId studentId, Email email, Set<Label> labels, Remark remark) {
-        requireAllNonNull(name, studentId, email, labels, remark);
+        this(name, studentId, email, labels, remark, Set.of());
+    }
+
+    /**
+     * Constructs a person with the supplied details and attendance records.
+     *
+     * @param attendance The non-null set of attendance records.
+     */
+    public Person(Name name, StudentId studentId, Email email, Set<Label> labels, Remark remark,
+            Set<AttendanceRecord> attendance) {
+        requireAllNonNull(name, studentId, email, labels, remark, attendance);
         this.name = name;
         this.studentId = studentId;
         this.email = email;
         this.remark = remark;
         this.labels.addAll(labels);
+        this.attendance.addAll(attendance);
     }
 
     public Name getName() {
@@ -88,6 +101,13 @@ public class Person {
      */
     public Set<Label> getLabels() {
         return Collections.unmodifiableSet(labels);
+    }
+
+    /**
+     * Returns an unmodifiable set of this student's attendance records.
+     */
+    public Set<AttendanceRecord> getAttendance() {
+        return Collections.unmodifiableSet(attendance);
     }
 
     /**
@@ -122,13 +142,14 @@ public class Person {
                 && studentId.equals(otherPerson.studentId)
                 && email.equals(otherPerson.email)
                 && remark.equals(otherPerson.remark)
-                && labels.equals(otherPerson.labels);
+                && labels.equals(otherPerson.labels)
+                && attendance.equals(otherPerson.attendance);
     }
 
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, studentId, email, labels, remark);
+        return Objects.hash(name, studentId, email, labels, remark, attendance);
     }
 
     @Override
@@ -139,6 +160,7 @@ public class Person {
                 .add("email", email)
                 .add("labels", labels)
                 .add("remark", remark)
+                .add("attendance", attendance)
                 .toString();
     }
 
