@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,7 @@ import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.attendance.AttendanceRecord;
+import seedu.address.model.attendance.AttendanceReport;
 import seedu.address.model.label.Label;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
@@ -80,6 +82,61 @@ public class LogicManagerTest {
         assertEquals(List.of(expectedStudent), model.getAddressBook().getPersonList());
         assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
         assertEquals(List.of(), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_attendance_showsReportAndRefreshesAfterMark() throws Exception {
+        Person alice = new PersonBuilder(ALICE).withLabels("Tutorial 1").build();
+        Person benson = new PersonBuilder(BENSON).withLabels("Tutorial 1").build();
+        model.addPerson(alice);
+        model.addPerson(benson);
+        LocalDate date = LocalDate.parse("2026-10-20");
+        Label group = new Label("tutorial 1");
+
+        CommandResult shown = logic.execute("attendance d/2026-10-20 l/tutorial 1");
+        assertEquals("Attendance for tutorial 1 on 2026-10-20: 0 present, 2 absent.", shown.getFeedbackToUser());
+        assertEquals(AttendanceReport.of(List.of(alice, benson), date, group),
+                shown.getAttendanceReport().orElseThrow());
+
+        CommandResult marked = logic.execute("mark i/A1234567B d/2026-10-20 l/Tutorial 1");
+        AttendanceReport refreshed = marked.getAttendanceReport().orElseThrow();
+        assertEquals(AttendanceReport.of(model.getAddressBook().getPersonList(), date, group), refreshed);
+        assertEquals(1, refreshed.getPresentCount());
+        assertEquals(1, refreshed.getAbsentCount());
+        assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+
+        AttendanceReport afterOtherDate = logic.execute("mark i/B1234567C d/2026-10-21 l/Tutorial 1")
+                .getAttendanceReport().orElseThrow();
+        assertEquals(date, afterOtherDate.getDate());
+        assertEquals(1, afterOtherDate.getPresentCount());
+        assertEquals(1, afterOtherDate.getAbsentCount());
+
+        assertCommandException("mark i/A1234567B d/2026-10-20 l/Tutorial 1",
+                "Student A1234567B is already marked present for Tutorial 1 on 2026-10-20.");
+        assertEquals(2, logic.execute("mark i/B1234567C d/2026-10-20 l/Tutorial 1")
+                .getAttendanceReport().orElseThrow().getPresentCount());
+
+        assertEquals(Optional.empty(), logic.execute("list").getAttendanceReport());
+        assertEquals(Optional.empty(), logic.execute("mark i/A1234567B d/2026-10-22 l/Tutorial 1")
+                .getAttendanceReport());
+    }
+
+    @Test
+    public void execute_attendanceAfterRestart_showsSavedAttendance() throws Exception {
+        model.addPerson(new PersonBuilder(ALICE).withLabels("Tutorial 1").build());
+        model.addPerson(new PersonBuilder(BENSON).withLabels("Tutorial 1", "Tutorial 2").build());
+        logic.execute("mark i/A1234567B d/2026-10-20 l/Tutorial 1");
+        logic.execute("mark i/B1234567C d/2026-10-20 l/Tutorial 2");
+
+        model = new ModelManager(storage.readAddressBook().orElseThrow(), new UserPrefs());
+        logic = new LogicManager(model, storage);
+
+        assertEquals("Attendance for Tutorial 1 on 2026-10-20: 1 present, 1 absent.",
+                logic.execute("attendance d/2026-10-20 l/Tutorial 1").getFeedbackToUser());
+        assertEquals("Attendance for Tutorial 2 on 2026-10-20: 1 present, 0 absent.",
+                logic.execute("attendance d/2026-10-20 l/Tutorial 2").getFeedbackToUser());
+        assertEquals("Attendance for Tutorial 3 on 2026-10-20: 0 present, 0 absent.",
+                logic.execute("attendance d/2026-10-20 l/Tutorial 3").getFeedbackToUser());
     }
 
     @Test
@@ -211,6 +268,7 @@ public class LogicManagerTest {
         logic.execute("list");
         logic.execute("find n/ Samuel");
         logic.execute("filter l/Discrete Math Tutorial");
+        logic.execute("attendance d/2026-10-20 l/Discrete Math Tutorial");
         logic.execute("help");
         logic.execute("exit");
     }
@@ -225,6 +283,7 @@ public class LogicManagerTest {
             assertCommandException(command, LogicManager.MESSAGE_DATA_UNAVAILABLE);
         }
         logic.execute("list");
+        logic.execute("attendance d/2026-10-20 l/Tutorial 1");
         assertEquals("invalid student data", Files.readString(storage.getAddressBookFilePath()));
     }
 
