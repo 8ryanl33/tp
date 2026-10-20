@@ -156,7 +156,7 @@ Failed commands do not change existing student records or the saved file.
 
 ### Listing all students: `list`
 
-Displays every student stored in TeachAssist. If the displayed list was previously restricted by `find` or `filter`, this command restores the complete student list.
+Displays every student stored in TeachAssist. If the displayed list was previously restricted by `find`, this command restores the complete student list.
 
 Format: `list`
 
@@ -214,21 +214,34 @@ Examples:
 
 If a `dl/` label is absent, an `l/` label already exists, or an empty `l/` is combined with another label change, the edit is rejected and the student remains unchanged.
 
-### Locating persons by name, student ID, or email: `find`
+### Finding students by name, student ID, email, or label: `find`
 
-Finds persons whose name, student ID, or email matches any of the given keywords.
+Shows students matching a name, student ID, email, or complete group-label name.
 
-Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`
+Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]`
+or `find e/KEYWORD [MORE_KEYWORDS]` or `find l/LABEL_NAME`
 
-* The search is case-insensitive; for example, `hans` matches `Hans`.
-* The search accepts exactly one prefix: `n/`, `i/`, or `e/`.
-* Partial words match; for example, `Han` matches `Hans`.
+* Supply exactly one non-empty prefix: `n/`, `i/`, `e/`, or `l/`. Repeated prefixes and mixed search fields are rejected.
+* All searches are case-insensitive and search the complete stored student list, replacing the previous search results.
+* Name, ID, and email searches match any supplied keyword, including partial matches anywhere in the selected field.
+* Label searches match the **complete label name**. For example, `find l/Tutorial` does not match `Tutorial 1`.
+  A multi-word label is one value, not separate keywords. A student with multiple labels appears if any label matches.
+* Label names follow the rules under `add`: 1–60 Unicode code points, at least one letter or digit, and only the
+  permitted characters. Surrounding whitespace is ignored; internal spacing is preserved. Slashes and control
+  characters are rejected.
+* Reports `N person(s) listed!`. If no students match, the displayed list is cleared and reports `0 person(s) listed!`.
+* Student records and the saved data file are unchanged. Use `list` to show all students again.
 
 Examples:
-* `find i/a03 a02` returns students whose student ids start with `a03` or `a02`
-* `find n/John` returns `john` and `John Doe`
-* `find n/tri sam` returns `tristan`, `samuel`<br>
+
+* `find i/a03 a02` matches student IDs containing either `a03` or `a02`.
+* `find n/John` matches `john` and `John Doe`.
+* `find e/example.com` matches students whose email contains `example.com`.
+* `find n/tri sam` matches `tristan` and `samuel`.<br>
   ![result for 'find n/tri sam'](images/findIncompleteResult.png)
+* `find l/Discrete Math Tutorial` matches that complete label, including different capitalisation.
+
+The former `filter` command has been replaced by `find l/LABEL_NAME`.
 
 #### Errors
 
@@ -236,30 +249,16 @@ Examples:
 |---------|---------|
 | Extra words before the search parameter | `Invalid command format!` followed by the correct `find` format |
 | Unknown search parameter | `Unknown parameter: p/.` |
-| Repeated same search parameter | `Parameter n/ must be specified only once.` |
-| Missing search parameter | `Missing required parameter: n/, i/, or e/.` |
-| More than one search parameter type | `Parameter n/, i/, or e/ must be specified only once.` |
-| Empty search parameter | `Parameter n/ cannot be empty.` |
+| Repeated same search parameter | `Parameter n/ must be specified only once.` (or the repeated prefix, such as `l/`) |
+| Missing search parameter | `Missing required parameter: n/, i/, e/, or l/.` |
+| More than one search parameter type | `Parameter n/, i/, e/, or l/ must be specified only once.` |
+| Empty search parameter | `Parameter l/ cannot be empty.` (or the supplied prefix) |
+| Invalid label | `Label names should be 1 to 60 characters long, contain at least one letter or digit, and only contain letters, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods.` |
+| Using the removed command, such as `filter l/Tutorial 1` | `Unknown command.` |
 
-The parser checks for errors in the order of extra words before the first search parameter, unknown parameters,
-repeated parameters, missing parameters, multiple search parameter types, then empty values before searching.
-Failed commands do not change the displayed student records or the saved file.
-
-### Filtering students by label: `filter`
-
-Shows only students who have a label matching the given label name.
-
-Format: `filter l/LABEL_NAME`
-
-Examples:
-
-* `filter l/Discrete Math Tutorial`
-* `filter l/discrete math tutorial`
-
-Notes:
-
-* The match is case-insensitive. For example, `filter l/discrete math tutorial` matches students labelled `Discrete Math Tutorial`.
-* If no students have the given label, the displayed list is cleared and the app reports that no students were found.
+Errors are checked in the order of words before the first prefix, unknown prefixes, repeated prefixes, missing
+prefixes, mixed search fields, empty values, then label validation. Failed commands preserve the displayed list,
+student records, and saved file.
 
 ### Deleting a student: `delete`
 
@@ -341,7 +340,7 @@ If loading fails, TeachAssist starts with an empty student list and leaves the d
 
 * Commands that change student records (`add`, `edit`, `delete`, and `clear`) are blocked with
   `Student data is unavailable because loading failed. Fix the data file and restart.`
-* Commands that do not change student records, such as `list`, `find`, `filter`, `help`, and `exit`, remain available.
+* Commands that do not change student records, such as `list`, `find`, `help`, and `exit`, remain available.
 
 To recover, close TeachAssist, fix or restore the data file, and restart. Deleting the data file makes TeachAssist start
 with an empty student list.
@@ -349,7 +348,7 @@ with an empty student list.
 ### Saving the data
 
 TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, and `clear`).
-You do not need to save manually. Commands such as `find`, `filter`, `list`, `help`, and `exit` do not write student data.
+You do not need to save manually. Commands such as `find`, `list`, `help`, and `exit` do not write student data.
 If saving fails, the proposed change is not applied, and existing records, the displayed filter, and the previous
 saved file remain unchanged. The application displays `Unable to save student data.`
 Storage must support atomic file replacement; unsupported storage produces the same save error.
@@ -401,7 +400,6 @@ Action     | Format, Examples
 **Clear**  | `clear`
 **Delete** | `delete i/STUDENT_ID`<br> e.g., `delete i/A0123456B`
 **Edit**   | `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/LABEL_NAME]...`<br> e.g., `edit i/A0123456B dl/Tutorial 1 l/Tutorial 2`
-**Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
-**Filter** | `filter l/LABEL_NAME`<br> e.g., `filter l/Discrete Math Tutorial`
+**Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]` or `find l/LABEL_NAME`<br> e.g., `find n/James Jake`
 **List**   | `list`
 **Help**   | `help`

@@ -10,19 +10,19 @@ import seedu.address.model.Model;
 import seedu.address.model.person.Person;
 
 /**
- * Finds and lists all persons in the address book whose selected field contains any of the argument keywords.
+ * Finds students whose selected field matches the search predicate, including complete group-label matches.
  * Keyword matching is case insensitive.
  */
 public class FindCommand extends Command {
 
     public static final String COMMAND_WORD = "find";
 
-    public static final String MESSAGE_USAGE = COMMAND_WORD + ": Finds all persons whose name, student ID, "
-            + "or email contains any of the specified keywords (case-insensitive) and displays them as a list "
-            + "with index numbers.\n"
+    public static final String MESSAGE_USAGE = COMMAND_WORD + ": Finds students by name, student ID, email, "
+            + "or group label (case-insensitive). Names, IDs, and emails support partial keyword matches; "
+            + "labels must match the complete label name.\n"
             + "Parameters: n/KEYWORD [MORE_KEYWORDS]... or i/KEYWORD [MORE_KEYWORDS]... "
-            + "or e/KEYWORD [MORE_KEYWORDS]...\n"
-            + "Example: " + COMMAND_WORD + " n/aiken dueet";
+            + "or e/KEYWORD [MORE_KEYWORDS]... or l/LABEL_NAME\n"
+            + "Examples: " + COMMAND_WORD + " n/aiken dueet; " + COMMAND_WORD + " l/Tutorial 1";
 
     private final Predicate<Person> predicate;
 
