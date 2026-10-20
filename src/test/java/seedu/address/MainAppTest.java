@@ -2,18 +2,22 @@ package seedu.address;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import seedu.address.commons.core.GuiSettings;
 import seedu.address.logic.Logic;
 import seedu.address.logic.LogicManager;
 import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.UserPrefs;
 import seedu.address.storage.JsonAddressBookStorage;
@@ -49,6 +53,63 @@ public class MainAppTest {
     }
 
     @Test
+    public void startup_nullStudentData_blocksModificationsAndPreservesFile() throws Exception {
+        assertInvalidStudentDataPreserved("null");
+    }
+
+    @Test
+    public void startup_nullStudentEntry_blocksModificationsAndPreservesFile() throws Exception {
+        assertInvalidStudentDataPreserved("{\"persons\":[null]}");
+    }
+
+    private void assertInvalidStudentDataPreserved(String contents) throws Exception {
+        Storage storage = createStorage();
+        Files.writeString(storage.getAddressBookFilePath(), contents);
+        Logic logic = new TestApp().loadLogic(storage);
+
+        assertEquals(JsonAddressBookStorage.MESSAGE_INVALID_FILE, logic.getStartupMessage());
+        assertEquals(0, logic.getFilteredPersonList().size());
+        for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "clear",
+                "delete i/A0123456B", "edit i/A0123456B n/Samuel")) {
+            assertThrows(CommandException.class, LogicManager.MESSAGE_DATA_UNAVAILABLE, ()
+                -> logic.execute(command));
+        }
+        logic.execute("list");
+        assertEquals(contents, Files.readString(storage.getAddressBookFilePath()));
+    }
+
+    @Test
+    public void startup_nullPreferences_recoversDefaultsAndPreservesStudents() throws Exception {
+        assertPreferencesRecovered("null");
+    }
+
+    @Test
+    public void startup_nullGuiSettings_recoversDefaultsAndPreservesStudents() throws Exception {
+        assertPreferencesRecovered("{\"guiSettings\":null}");
+    }
+
+    private void assertPreferencesRecovered(String contents) throws Exception {
+        Storage storage = createStorage();
+        storage.saveAddressBook(getTypicalAddressBook());
+        String originalStudentData = Files.readString(storage.getAddressBookFilePath());
+        JsonUserPrefsStorage prefsStorage = new JsonUserPrefsStorage(storage.getUserPrefsFilePath());
+        Files.writeString(prefsStorage.getUserPrefsFilePath(), contents);
+        TestApp app = new TestApp();
+
+        UserPrefs recoveredPrefs = app.initPrefs(prefsStorage);
+        Logic logic = app.loadLogic(storage, recoveredPrefs);
+
+        assertEquals(new UserPrefs(), recoveredPrefs);
+        assertEquals(new GuiSettings(), logic.getGuiSettings());
+        assertEquals(new UserPrefs(), prefsStorage.readUserPrefs().orElseThrow());
+        assertEquals(getTypicalAddressBook().getPersonList(), logic.getFilteredPersonList());
+        assertEquals(originalStudentData, Files.readString(storage.getAddressBookFilePath()));
+        logic.execute("add n/Samuel i/A0123456B e/sam@example.com");
+        assertEquals(getTypicalAddressBook().getPersonList().size() + 1,
+                storage.readAddressBook().orElseThrow().getPersonList().size());
+    }
+
+    @Test
     public void startup_validData_reportsNumberOfStudentsLoaded() throws Exception {
         Storage storage = createStorage();
         storage.saveAddressBook(getTypicalAddressBook());
@@ -56,6 +117,24 @@ public class MainAppTest {
         int studentCount = getTypicalAddressBook().getPersonList().size();
         assertEquals(String.format(MainApp.MESSAGE_STUDENTS_LOADED, studentCount), logic.getStartupMessage());
         assertEquals(studentCount, logic.getFilteredPersonList().size());
+    }
+
+    @Test
+    public void startup_oneStudent_reportsSingularStudentLoaded() throws Exception {
+        Storage storage = createStorage();
+        AddressBook addressBook = new AddressBook();
+        addressBook.addPerson(ALICE);
+        storage.saveAddressBook(addressBook);
+        Logic logic = new TestApp().loadLogic(storage);
+        assertEquals("1 student loaded.", logic.getStartupMessage());
+    }
+
+    @Test
+    public void startup_noStudents_reportsZeroStudentsLoaded() throws Exception {
+        Storage storage = createStorage();
+        storage.saveAddressBook(new AddressBook());
+        Logic logic = new TestApp().loadLogic(storage);
+        assertEquals("0 students loaded.", logic.getStartupMessage());
     }
 
     @Test
@@ -75,7 +154,11 @@ public class MainAppTest {
 
     private static class TestApp extends MainApp {
         Logic loadLogic(Storage storage) {
-            Model initialModel = initModelManager(storage, new UserPrefs());
+            return loadLogic(storage, new UserPrefs());
+        }
+
+        Logic loadLogic(Storage storage, UserPrefs prefs) {
+            Model initialModel = initModelManager(storage, prefs);
             return initLogic(initialModel, storage);
         }
     }

@@ -23,6 +23,7 @@ public class ListCommandParserTest {
         String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, ListCommand.MESSAGE_USAGE);
         assertParseFailure(parser, " 1", expectedMessage);
         assertParseFailure(parser, " n/Alex", expectedMessage);
+        assertParseFailure(parser, " n/", expectedMessage);
+        assertParseFailure(parser, " extra", expectedMessage);
     }
 }
-

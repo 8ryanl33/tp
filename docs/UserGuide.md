@@ -6,7 +6,7 @@
 
 # TeachAssist User Guide
 
-TeachAssist is a **desktop application for managing contacts, optimized for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you type quickly, AB3 can help you manage contacts faster than traditional GUI applications.
+TeachAssist is a **desktop application for managing student records, optimized for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you type quickly, TeachAssist can help you manage student information faster than traditional GUI applications.
 
 <!-- * Table of Contents -->
 <page-nav-print />
@@ -18,9 +18,9 @@ TeachAssist is a **desktop application for managing contacts, optimized for use 
 1. Ensure that Java `25` or later is installed on your computer.<br>
    **Mac users:** Ensure you have the precise JDK version prescribed [here](https://se-education.org/guides/tutorials/javaInstallationMac.html).
 
-1. Download the latest `.jar` file from [here](https://github.com/se-edu/addressbook-level3/releases).
+1. Download the latest `.jar` file from [the TeachAssist releases page](https://github.com/AY2627S1-CS2103T-F12-1/tp/releases).
 
-1. Copy the file to the folder you want to use as the _home folder_ for your AddressBook.
+1. Copy the file to the folder you want to use as the _home folder_ for TeachAssist.
 
 1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
    A GUI similar to the one below should appear in a few seconds. With no saved data file, the student list starts empty.<br>
@@ -29,13 +29,13 @@ TeachAssist is a **desktop application for managing contacts, optimized for use 
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
    Some example commands you can try:
 
-   * `list` : Lists all contacts.
+   * `list` : Lists all students.
 
    * `add n/John Doe i/A0123456B e/johnd@example.com r/Needs help with recursion` : Adds a student named `John Doe`.
 
    * `delete i/A0123456B` : Deletes the student whose Student ID is `A0123456B`.
 
-   * `clear` : Deletes all contacts.
+   * `clear` : Deletes all students.
 
    * `exit` : Exits the app.
 
@@ -53,10 +53,7 @@ TeachAssist is a **desktop application for managing contacts, optimized for use 
   For example, in `add n/NAME`, replace `NAME` with a value such as `John Doe`.
 
 * Items in square brackets are optional.<br>
-  For example, `n/NAME [t/TAG]` can be used as `n/John Doe t/friend` or as `n/John Doe`.
-
-* Items followed by `...` can appear zero or more times.<br>
-  For example, `[t/TAG]... ` may be omitted, or written as `t/friend` or `t/friend t/family`.
+  For example, `n/NAME [l/LABEL_NAME]` can be used as `n/John Doe l/Tutorial` or as `n/John Doe`.
 
 * Parameters can be in any order.<br>
   For example, `add e/john@example.com i/A0123456B n/John Doe` is also acceptable.
@@ -69,9 +66,8 @@ TeachAssist is a **desktop application for managing contacts, optimized for use 
 
 ### Viewing help: `help`
 
-Shows a message explaining how to access the help page.
-
-![help message](images/helpMessage.png)
+Shows the Help window with the address of [TeachAssist’s User Guide](https://ay2627s1-cs2103t-f12-1.github.io/tp/UserGuide.html).
+Click **Copy URL** to copy this address, then paste it into your browser to open the guide.
 
 Format: `help`
 
@@ -81,7 +77,7 @@ Format: `help`
 Adds a student to TeachAssist with identifying information and optional free-text remarks.
 Use remarks for observations such as test results, weak topics, and consultation timings.
 
-Format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME] [t/TAG]...`
+Format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]`
 
 #### Parameter rules
 
@@ -98,11 +94,14 @@ Format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME] [t/TAG]...`
 | Student ID | Exactly nine ASCII letters or digits, without internal spaces or punctuation. Stored in uppercase; `a0123456b` and `A0123456B` identify the same student. |
 | Email | At most 254 characters with exactly one `@`. The local part has 1–64 ASCII letters, digits, periods, underscores, plus signs, or hyphens. It cannot start/end with a period or contain consecutive periods. The domain has at least two dot-separated labels of 1–63 ASCII letters, digits, or hyphens, without boundary hyphens. The final label has 2–63 letters. Only the domain is lowercased. Spaces are rejected, and mailbox existence is not checked. |
 | Remark | Optional, at most 4,000 Unicode code points after trimming. Internal spacing and capitalisation are preserved. Omitting `r/` or supplying an empty `r/` stores an empty remark. At most one `r/` is allowed. Dates, grades, and the meaning of the text are not validated. Long remarks wrap on the student card. |
-| Label | Optional. Follows the same label name rules as the `label` command. At most one `l/` is allowed. Omitting `l/` stores no label. |
-| Tags | Optional and repeatable. Existing tag rules apply: non-empty alphanumeric values, with identical tags stored once. |
+| Label | Optional. Contains 1–60 Unicode code points, including at least one letter or digit. Allows letters, combining marks, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods. Surrounding whitespace is trimmed; internal spacing and capitalisation are preserved. At most one `l/` is allowed. Omitting `l/` stores no label. |
+
+Student cards wrap long names and email addresses onto multiple lines so you can read the complete values.
+Resizing the window adjusts the wrapping; use the student list's vertical scrollbar to read taller cards.
+Wrapping only changes the display and does not add spaces or line breaks to stored values.
 
 Unlike numeric text such as `8/10`, a recognised prefix after `r/` starts another parameter.
-For example, `r/Quiz: 8/10 t/friends` stores `Quiz: 8/10` as the remark and `friends` as a tag.
+For example, `r/Quiz: 8/10 l/Tutorial` stores `Quiz: 8/10` as the remark and `Tutorial` as a label.
 
 Examples:
 
@@ -127,78 +126,96 @@ If the normalised Student ID already exists, the entire command is rejected; exi
 
 #### Errors
 
+The rows below follow the order in which errors are checked. If a command has multiple errors, only the first
+applicable message is shown. Prefixes and Student IDs in messages reflect the supplied command.
+
 | Problem | Message |
 |---------|---------|
-| Missing compulsory parameter | `Missing required parameter: i/.` (the message names the missing prefix) |
+| Command spans multiple lines | `Invalid command format!`<br>`help: Shows program usage instructions.`<br>`Example: help` |
+| Incorrect command word or capitalisation, e.g., `Add` | `Unknown command.` |
+| Unknown parameter, e.g., `p/123` | `Unknown parameter: p/.` |
+| Text before the first parameter | `Invalid command format. Usage: add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]` |
+| Repeated parameter, e.g., two `n/` values | `Parameter n/ must be specified only once.` |
+| Missing compulsory parameter | `Missing required parameter: i/.` |
 | Empty compulsory parameter | `Parameter n/ cannot be empty.` |
-| Repeated parameter | `Parameter n/ must be specified only once.` |
-| Unknown parameter | `Unknown parameter: p/.` |
-| Duplicate Student ID | `Student ID A0123456B already exists.` |
+| Empty label | `Parameter l/ cannot be empty.` |
 | Invalid name | `Name must contain 1-100 characters, include a letter, and use only letters, spaces, apostrophes, hyphens, or periods.` |
 | Invalid Student ID | `Student ID must contain exactly 9 letters or digits, with no spaces.` |
 | Invalid email | `Email must have the form name@example.com and meet the supported email format.` |
-| Empty label | `Parameter l/ cannot be empty.` |
 | Invalid label | `Label names should be 1 to 60 characters long, contain at least one letter or digit, and only contain letters, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods.` |
 | Oversized remark | `Remark must not exceed 4000 characters.` |
-| Invalid command structure | `Invalid command format. Usage: add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME] [t/TAG]...` |
+| Student data failed to load at startup | `Student data is unavailable because loading failed. Fix the data file and restart.` |
+| Duplicate Student ID | `Student ID A0123456B already exists.` |
+| Data storage location cannot be created | `Unable to create data storage location.` |
 | Saving fails | `Unable to save student data.` |
 
-Invalid structure, such as text before the first parameter or an embedded line break, displays the add usage.
-If several errors exist, the parser checks line breaks, unknown prefixes, preamble text, repeated parameters,
-missing parameters, then empty compulsory values before validating field values.
-Within repeated/missing/empty checks, `n/`, `i/`, and `e/` are checked in that order; repeated `r/` and `l/`
-are checked after them.
+For example, `add n/ i/123 e/bad p/123` reports `Unknown parameter: p/.` before checking the empty name,
+invalid Student ID, or invalid email. When multiple parameters are repeated or missing, they are checked in
+`n/`, `i/`, `e/`, `r/`, `l/` order where applicable. Field values are validated in name, Student ID, email,
+label, then remark order. A multiline command is rejected by the general command parser before the add parser
+can display add-specific usage. The startup-loading check occurs after parsing; duplicate and saving checks
+occur only after a valid command passes that check.
 Failed commands do not change existing student records or the saved file.
 
 ### Listing all students: `list`
 
-Shows all students in TeachAssist. If the displayed list was previously filtered, this command restores the complete student list.
+Displays every student stored in TeachAssist. If the displayed list was previously restricted by `find` or `filter`, this command restores the complete student list.
 
 Format: `list`
 
-The `list` command does not accept additional arguments. For example, `list 3` is rejected as an invalid command.
+Example:
 
-### Editing a person: `edit`
+```text
+list
+```
 
-Edits an existing person in the address book.
+If at least one student exists, the expected successful output is:
 
-Format: `edit INDEX [n/NAME] [e/EMAIL] [t/TAG]...`
+```text
+Listed all students.
+```
 
-* Edits the person at the specified `INDEX`. The index refers to the index number shown in the displayed person list. The index **must be a positive integer** 1, 2, 3, ...
-* At least one of the optional fields must be provided.
-* Existing values will be updated to the input values.
-* Student ID cannot be edited with this command.
-* Remarks are preserved when editing other fields. Name and email values follow the rules listed under `add`.
-* When editing tags, all of the person's existing tags are removed; adding tags is not cumulative.
-* To remove all of a person's tags, enter `t/` without a tag after it.
+If there are no stored students, the displayed list remains empty and the command reports:
+
+```text
+No students found.
+```
+
+The command does not add, edit, delete, reorder, or save student records. Students remain in the existing master-list
+order.
+
+The `list` command does not accept additional arguments. Leading and trailing whitespace is ignored, but command words
+are case-sensitive.
+
+| Problem | Example | Message |
+|---------|---------|---------|
+| Additional argument | `list 3` | `Invalid command format!` followed by `Usage: list` on the next line |
+| Parameter-like argument | `list n/Samuel` or `list n/` | `Invalid command format!` followed by `Usage: list` on the next line |
+| Misspelled command | `lisst` | `Unknown command.` |
+| Incorrect capitalisation | `List` or `LIST` | `Unknown command.` |
+
+### Editing a student: `edit`
+
+Edits a student identified by Student ID, including a student hidden by the current filter.
+
+Format: `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/LABEL_NAME]...`
+
+* `i/STUDENT_ID` is required and must identify an existing student. Matching is case-insensitive.
+* At least one field to change must be provided. Student ID itself cannot be edited.
+* `n/` and `e/` replace the existing name and email. Their values cannot be empty and follow the rules under `add`.
+* `r/` replaces the existing remark. An empty `r/` clears it.
+* Each `l/LABEL_NAME` adds a label; each `dl/LABEL_NAME` removes one. Both may be repeated, and label matching is case-insensitive. Label names follow the `l/LABEL_NAME` rules in the Add section.
+* An empty `l/` clears **all** labels. It cannot be combined with another `l/` or any `dl/` in the same command.
+* Fields not supplied keep their existing values. A successful edit displays the complete student list.
 
 Examples:
-* `edit 1 e/johndoe@example.com` Changes the first person's email address to `johndoe@example.com`.
-*  `edit 2 n/Betsy Crower t/` Edits the name of the 2nd person to be `Betsy Crower` and clears all existing tags.
 
-### Labelling a student by group: `label`
+* `edit i/A0123456B e/johndoe@example.com` changes that student's email address.
+* `edit i/A0123456B l/Tutorial 1` adds a group label.
+* `edit i/A0123456B dl/Tutorial 1 l/Tutorial 2` replaces one group label while keeping the others.
+* `edit i/A0123456B l/ r/` removes every label and clears the remark.
 
-Adds a group label to an existing student.
-
-Format: `label l/LABEL_NAME i/STUDENT_ID`
-
-* `LABEL_NAME` must not be empty after trimming leading and trailing whitespace.
-* `LABEL_NAME` can contain 1 to 60 characters.
-* `LABEL_NAME` must contain at least one letter or digit.
-* `LABEL_NAME` can contain letters, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods.
-* `LABEL_NAME` cannot contain `/` or ASCII control characters.
-* Internal spacing and capitalization are preserved for display.
-* `STUDENT_ID` must identify an existing student.
-* A student cannot have the same label more than once. Duplicate checks are case-insensitive.
-
-Examples:
-* `label l/Discrete Math Tutorial i/A0101010A`
-* `label i/A0101010A l/Tutorial (Monday)`
-
-Note: Currently, labels and tags are indistinguishable in the UI. Dedicated styling will be implemented soon.
-
-Expected successful output:
-`Added label "Discrete Math Tutorial" to Samuel Tan (A0101010A).`
+If a `dl/` label is absent, an `l/` label already exists, or an empty `l/` is combined with another label change, the edit is rejected and the student remains unchanged.
 
 ### Locating persons by name, student ID, or email: `find`
 
@@ -209,13 +226,27 @@ Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or 
 * The search is case-insensitive; for example, `hans` matches `Hans`.
 * The search accepts exactly one prefix: `n/`, `i/`, or `e/`.
 * Partial words match; for example, `Han` matches `Hans`.
-* Multiple keywords for search; for example `Tristan Alex` matches with `Tristan Tay` and `Alex Tan`
 
 Examples:
-* `find n/John` returns `john` and `John Doe`
 * `find i/a03 a02` returns students whose student ids start with `a03` or `a02`
-* `find n/alex david` returns `Alex Yeoh`, `David Li`<br>
-  ![result for 'find alex david'](images/findAlexDavidResult.png)
+* `find n/John` returns `john` and `John Doe`
+* `find n/tri sam` returns `tristan`, `samuel`<br>
+  ![result for 'find n/tri sam'](images/findIncompleteResult.png)
+
+#### Errors
+
+| Problem | Message |
+|---------|---------|
+| Extra words before the search parameter | `Invalid command format!` followed by the correct `find` format |
+| Unknown search parameter | `Unknown parameter: p/.` |
+| Repeated same search parameter | `Parameter n/ must be specified only once.` |
+| Missing search parameter | `Missing required parameter: n/, i/, or e/.` |
+| More than one search parameter type | `Parameter n/, i/, or e/ must be specified only once.` |
+| Empty search parameter | `Parameter n/ cannot be empty.` |
+
+The parser checks for errors in the order of extra words before the first search parameter, unknown parameters,
+repeated parameters, missing parameters, multiple search parameter types, then empty values before searching.
+Failed commands do not change the displayed student records or the saved file.
 
 ### Filtering students by label: `filter`
 
@@ -235,7 +266,7 @@ Notes:
 
 ### Deleting a student: `delete`
 
-Deletes the student with the specified Student ID, including their name, email, remark, and tags.
+Deletes the student with the specified Student ID, including their name, email, remark, and labels.
 
 Format: `delete i/STUDENT_ID`
 
@@ -251,7 +282,7 @@ Format: `delete i/STUDENT_ID`
 Examples:
 
 * `delete i/A0123456B` deletes the student with that ID.
-* After `find Betsy`, `delete i/A0123456B` still deletes that ID, whether or not the student appears in the results.
+* After `find n/Betsy`, `delete i/A0123456B` still deletes that ID, whether or not the student appears in the results.
 
 Successful output, when the student is Alex Yeoh:
 
@@ -259,19 +290,27 @@ Successful output, when the student is Alex Yeoh:
 Deleted student A0123456B: Alex Yeoh.
 ```
 
+The rows below follow error-checking order. If several errors are present, only the first applicable message
+is shown. Prefixes and Student IDs in messages reflect the supplied command.
+
 | Problem | Message |
 |---------|---------|
+| Command spans multiple lines | `Invalid command format!`<br>`help: Shows program usage instructions.`<br>`Example: help` |
+| Incorrect command word or capitalisation, e.g., `Delete` | `Unknown command.` |
+| Unknown parameter, e.g., `x/123` | `Unknown parameter: x/.` |
+| Text before the `i/` parameter | `Invalid command format. Usage: delete i/STUDENT_ID` |
+| Repeated Student ID | `Parameter i/ must be specified only once.` |
 | Missing Student ID | `Missing required parameter: i/.` |
 | Empty Student ID | `Parameter i/ cannot be empty.` |
-| Repeated Student ID | `Parameter i/ must be specified only once.` |
-| Unknown parameter | `Unknown parameter: x/.` (the message names the supplied prefix) |
 | Invalid Student ID | `Student ID must contain exactly 9 letters or digits, with no spaces.` |
+| Student data failed to load at startup | `Student data is unavailable because loading failed. Fix the data file and restart.` |
 | Student does not exist | `Student with ID A0123456B is not in the records.` |
-| Invalid command structure | `Invalid command format. Usage: delete i/STUDENT_ID` |
+| Data storage location cannot be created | `Unable to create data storage location.` |
 | Saving fails | `Unable to save student data.` |
 
-Malformed commands and unknown IDs leave records, the current filter, and the saved file unchanged.
-If loading failed at startup, deletion is blocked until the data file is fixed and TeachAssist is restarted.
+For example, `delete i/123 x/1` reports `Unknown parameter: x/.` before checking the invalid Student ID.
+The startup-loading check occurs after parsing. Finding the student and saving happen only after a valid command
+passes that check. Failed commands leave records, the current filter, and the saved file unchanged.
 
 ### Clearing all entries: `clear`
 
@@ -285,28 +324,56 @@ Exits the program.
 
 Format: `exit`
 
+### Loading the data
+
+When TeachAssist starts, it loads student data from `[JAR file location]/data/addressbook.json` and shows the outcome
+in the result display.
+
+The rows below follow the order in which loading is checked. Records are checked in the order they appear in the file,
+and only the first problem found is shown.
+
+| Situation | Message |
+|-----------|---------|
+| No data file exists yet | `No existing student data found. Starting with an empty student list.` |
+| The data file cannot be read, e.g., file permissions deny access | `Unable to load student data.` |
+| The data file is not valid JSON, or a record has a missing or invalid value | `Unable to load student data. The data file may be corrupted or invalid.` |
+| Two records share a Student ID, ignoring case | `Unable to load student data: duplicate Student ID A0123456B detected.` |
+| Loading succeeds | `3 students loaded.` (or `1 student loaded.`) |
+
+If loading fails, TeachAssist starts with an empty student list and leaves the data file untouched:
+
+* Commands that change student records (`add`, `edit`, `delete`, and `clear`) are blocked with
+  `Student data is unavailable because loading failed. Fix the data file and restart.`
+* Commands that do not change student records, such as `list`, `find`, `filter`, `help`, and `exit`, remain available.
+
+To recover, close TeachAssist, fix or restore the data file, and restart. Deleting the data file makes TeachAssist start
+with an empty student list.
+
 ### Saving the data
 
 TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, and `clear`).
-You do not need to save manually. Commands such as `find`, `list`, `help`, and `exit` do not write student data.
+You do not need to save manually. Commands such as `find`, `filter`, `list`, `help`, and `exit` do not write student data.
 If saving fails, the proposed change is not applied, and existing records, the displayed filter, and the previous
 saved file remain unchanged. The application displays `Unable to save student data.`
 Storage must support atomic file replacement; unsupported storage produces the same save error.
+If the `data` folder does not exist and cannot be created, e.g., because a file named `data` is in its place or the
+JAR file location is read-only, the application displays `Unable to create data storage location.` instead.
 
 ### Editing the data file
 
-AddressBook data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
+TeachAssist data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
 
 <box type="warning" seamless>
 
 **Caution:**
 If your changes make the data file invalid, TeachAssist starts with an empty student list and preserves the invalid file.
-Commands that modify records are blocked with `Student data is unavailable because loading failed. Fix the data file and restart.`
-Commands such as `list` remain available and do not overwrite the invalid file. Back up the file before editing it.<br>
-Furthermore, certain edits can cause the AddressBook to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
+See [Loading the data](#loading-the-data) for the message shown and the commands that remain available.
+Back up the file before editing it.<br>
+Furthermore, certain edits can cause TeachAssist to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 
 Each person record must include a valid `studentId`. Older data files that do not include `studentId` for every person may fail to load until the missing values are added manually.
 Group labels are saved under each person record as `labels`. Older data files without `labels` still load; those persons simply start with no labels.
+Legacy `tags` fields are ignored when loading and are not saved again.
 </box>
 
 ### Archiving data files `[coming in v2.0]`
@@ -333,12 +400,11 @@ _Details coming soon ..._
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME] [t/TAG]...` <br> e.g., `add n/James Ho i/A0123456B e/jamesho@example.com r/Needs help with recursion l/Discrete Math Tutorial t/friend`
+**Add**    | `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]` <br> e.g., `add n/James Ho i/A0123456B e/jamesho@example.com r/Needs help with recursion l/Discrete Math Tutorial`
 **Clear**  | `clear`
 **Delete** | `delete i/STUDENT_ID`<br> e.g., `delete i/A0123456B`
-**Edit**   | `edit INDEX [n/NAME] [e/EMAIL] [t/TAG]...`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
+**Edit**   | `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/LABEL_NAME]...`<br> e.g., `edit i/A0123456B dl/Tutorial 1 l/Tutorial 2`
 **Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
-**Label**  | `label l/LABEL_NAME i/STUDENT_ID`<br> e.g., `label l/Discrete Math Tutorial i/A0101010A`
 **Filter** | `filter l/LABEL_NAME`<br> e.g., `filter l/Discrete Math Tutorial`
 **List**   | `list`
 **Help**   | `help`
