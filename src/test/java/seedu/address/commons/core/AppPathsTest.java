@@ -6,13 +6,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.management.ManagementFactory;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -35,15 +44,15 @@ public class AppPathsTest {
 
     @Test
     public void runningFromJar_inAnotherDirectory_keepsFilesBesideJar() throws Exception {
-        assertFilesBesideJar("installation");
+        assertFilesBesideJar("installation", false);
     }
 
     @Test
     public void runningFromJar_withSpacesUnicodeAndPercentSigns_keepsFilesBesideJar() throws Exception {
-        assertFilesBesideJar("Teach Assist Ω 100% %h %t %g %u %%");
+        assertFilesBesideJar("Teach Assist Ω 100% %h %t %g %u %%", true);
     }
 
-    private void assertFilesBesideJar(String installationFolderName) throws Exception {
+    private void assertFilesBesideJar(String installationFolderName, boolean useUriLauncher) throws Exception {
         Path installationFolder = Files.createDirectory(temporaryFolder.resolve(installationFolderName));
         Path jar = createProbeJar(installationFolder.resolve("Teach Assist.jar"));
         Path launchFolder = Files.createDirectory(temporaryFolder.resolve("launch-folder"));
@@ -51,9 +60,9 @@ public class AppPathsTest {
         Files.writeString(launchFolder.resolve("data/addressbook.json"), "Unrelated student data.");
         Files.writeString(launchFolder.resolve("preferences.json"), "Unrelated preferences.");
 
-        runProbe(jar, launchFolder);
+        runProbe(jar, launchFolder, useUriLauncher);
         Path secondLaunchFolder = Files.createDirectory(temporaryFolder.resolve("second-launch-folder"));
-        runProbe(jar, secondLaunchFolder);
+        runProbe(jar, secondLaunchFolder, useUriLauncher);
 
         assertEquals(STUDENT_DATA, Files.readString(installationFolder.resolve("data/addressbook.json")));
         assertEquals(PREFERENCES, Files.readString(installationFolder.resolve("preferences.json")));
@@ -84,10 +93,25 @@ public class AppPathsTest {
         return jar;
     }
 
-    private void runProbe(Path jar, Path launchFolder) throws Exception {
+    private void runProbe(Path jar, Path launchFolder, boolean useUriLauncher) throws Exception {
         Path javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java");
         Path outputFile = temporaryFolder.resolve("probe-output.txt");
-        Process process = new ProcessBuilder(javaExecutable.toString(), "-jar", jar.toString())
+        List<String> command = new ArrayList<>();
+        command.add(javaExecutable.toString());
+        for (String argument : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+            if (argument.startsWith("-javaagent:") && argument.contains("jacoco")) {
+                command.add(withAbsoluteCoverageDestination(argument));
+            }
+        }
+        if (useUriLauncher) {
+            // Avoid the Windows Java launcher's native encoding of non-ASCII command-line paths.
+            String launcherClassPath = Path.of(AppPathsTest.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI()).toString();
+            command.addAll(List.of("-cp", launcherClassPath, JarLauncher.class.getName(), jar.toUri().toASCIIString()));
+        } else {
+            command.addAll(List.of("-jar", jar.toString()));
+        }
+        Process process = new ProcessBuilder(command)
                 .directory(launchFolder.toFile()).redirectErrorStream(true)
                 .redirectOutput(outputFile.toFile()).start();
         try {
@@ -95,6 +119,42 @@ public class AppPathsTest {
             assertEquals(0, process.exitValue(), Files.readString(outputFile));
         } finally {
             process.destroyForcibly();
+        }
+    }
+
+    /**
+     * Records child-process coverage in the parent report rather than the temporary launch directory.
+     */
+    private String withAbsoluteCoverageDestination(String agentArgument) {
+        Matcher destination = Pattern.compile("destfile=([^,]+)").matcher(agentArgument);
+        if (!destination.find()) {
+            return agentArgument;
+        }
+        String absoluteDestination = "destfile=" + Path.of(destination.group(1)).toAbsolutePath().normalize();
+        return destination.replaceFirst(Matcher.quoteReplacement(absoluteDestination));
+    }
+
+    /**
+     * Loads the packaged probe through an ASCII URI so tests do not depend on the Windows native code page.
+     */
+    public static class JarLauncher {
+        /**
+         * Invokes the JAR's declared entry point in an isolated class loader, preserving its code-source location.
+         *
+         * @param args The ASCII URI of the probe JAR.
+         * @throws Exception if the JAR cannot be loaded or its entry point fails.
+         */
+        public static void main(String[] args) throws Exception {
+            URI jarUri = URI.create(args[0]);
+            String mainClass;
+            try (JarFile jar = new JarFile(Path.of(jarUri).toFile())) {
+                mainClass = jar.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
+            }
+            try (URLClassLoader loader = new URLClassLoader(new URL[] {jarUri.toURL()},
+                    ClassLoader.getPlatformClassLoader())) {
+                Class<?> entryPoint = Class.forName(mainClass, true, loader);
+                entryPoint.getMethod("main", String[].class).invoke(null, (Object) new String[0]);
+            }
         }
     }
 
