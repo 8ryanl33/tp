@@ -97,6 +97,10 @@ Format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]`
 | Remark | Optional, at most 4,000 Unicode code points after trimming. Internal spacing and capitalisation are preserved. Omitting `r/` or supplying an empty `r/` stores an empty remark. At most one `r/` is allowed. Dates, grades, and the meaning of the text are not validated. Long remarks wrap on the student card. |
 | Label | Optional. Contains 1–60 Unicode code points, including at least one letter or digit. Allows letters, combining marks, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods. Surrounding whitespace is trimmed; internal spacing and capitalisation are preserved. At most one `l/` is allowed. Omitting `l/` stores no label. |
 
+Student cards wrap long names and email addresses onto multiple lines so you can read the complete values.
+Resizing the window adjusts the wrapping; use the student list's vertical scrollbar to read taller cards.
+Wrapping only changes the display and does not add spaces or line breaks to stored values.
+
 Unlike numeric text such as `8/10`, a recognised prefix after `r/` starts another parameter.
 For example, `r/Quiz: 8/10 l/Tutorial` stores `Quiz: 8/10` as the remark and `Tutorial` as a label.
 
