@@ -162,6 +162,17 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAddressBook_nullJson_throwsInvalidFileMessageAndPreservesFile() throws Exception {
+        Path file = testFolder.resolve("nullAddressBook.json");
+        String originalContents = "  null\n";
+        Files.writeString(file, originalContents);
+
+        assertThrows(DataLoadingException.class, JsonAddressBookStorage.MESSAGE_INVALID_FILE, ()
+            -> new JsonAddressBookStorage(file).readAddressBook());
+        assertEquals(originalContents, Files.readString(file));
+    }
+
+    @Test
     public void readAddressBook_wrongJsonStructure_throwsInvalidFileMessage() throws Exception {
         Path file = testFolder.resolve("wrongStructure.json");
         Files.writeString(file, "{ \"persons\": \"not a list\" }");
