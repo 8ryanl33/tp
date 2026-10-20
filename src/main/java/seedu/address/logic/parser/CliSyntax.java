@@ -12,5 +12,6 @@ public class CliSyntax {
     public static final Prefix PREFIX_REMARK = new Prefix("r/");
     public static final Prefix PREFIX_LABEL = new Prefix("l/");
     public static final Prefix PREFIX_DELETE_LABEL = new Prefix("dl/");
+    public static final Prefix PREFIX_DATE = new Prefix("d/");
 
 }

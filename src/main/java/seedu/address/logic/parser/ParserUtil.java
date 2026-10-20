@@ -2,6 +2,9 @@ package seedu.address.logic.parser;
 
 import static java.util.Objects.requireNonNull;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -17,6 +20,7 @@ import seedu.address.model.person.StudentId;
 public class ParserUtil {
 
     public static final String MESSAGE_INVALID_INDEX = "Index must be a positive integer.";
+    public static final String MESSAGE_INVALID_DATE = "Date must use a valid YYYY-MM-DD date.";
 
     /**
      * Parses {@code oneBasedIndex} into an {@code Index} and returns it. Leading and trailing whitespaces will be
@@ -123,5 +127,25 @@ public class ParserUtil {
             throw new ParseException(Remark.MESSAGE_CONSTRAINTS);
         }
         return new Remark(trimmedRemark);
+    }
+
+    /**
+     * Parses a calendar date in strict {@code YYYY-MM-DD} format.
+     *
+     * @param date The non-null date text.
+     * @return The parsed date.
+     * @throws ParseException if the date is malformed or does not exist.
+     */
+    public static LocalDate parseDate(String date) throws ParseException {
+        requireNonNull(date);
+        String trimmedDate = date.trim();
+        if (!trimmedDate.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}")) {
+            throw new ParseException(MESSAGE_INVALID_DATE);
+        }
+        try {
+            return LocalDate.parse(trimmedDate);
+        } catch (DateTimeParseException e) {
+            throw new ParseException(MESSAGE_INVALID_DATE);
+        }
     }
 }
