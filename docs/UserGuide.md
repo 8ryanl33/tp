@@ -66,9 +66,8 @@ TeachAssist is a **desktop application for managing student records, optimized f
 
 ### Viewing help: `help`
 
-Shows a message explaining how to access the help page.
-
-![help message](images/helpMessage.png)
+Shows the Help window with the address of [TeachAssist’s User Guide](https://ay2627s1-cs2103t-f12-1.github.io/tp/UserGuide.html).
+Click **Copy URL** to copy this address, then paste it into your browser to open the guide.
 
 Format: `help`
 
