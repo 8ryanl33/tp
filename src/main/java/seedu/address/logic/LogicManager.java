@@ -26,6 +26,8 @@ import seedu.address.storage.Storage;
  * The main LogicManager of the app.
  */
 public class LogicManager implements Logic {
+    static final int MAX_UNDO_HISTORY_SIZE = 100;
+
     public static final String MESSAGE_SAVE_FAILURE = "Unable to save student data.";
     public static final String MESSAGE_STORAGE_LOCATION_FAILURE = "Unable to create data storage location.";
     public static final String MESSAGE_DATA_UNAVAILABLE =

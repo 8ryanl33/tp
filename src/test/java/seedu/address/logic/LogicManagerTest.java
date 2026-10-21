@@ -142,6 +142,55 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_consecutiveUndo_discardsEachReversedState() throws Exception {
+        logic.execute("add n/First Student i/A0000001B e/first@example.com");
+        Person firstStudent = model.getAddressBook().getPersonList().getFirst();
+        logic.execute("add n/Second Student i/A0000002B e/second@example.com");
+        Person secondStudent = model.getAddressBook().getPersonList().getLast();
+        logic.execute("add n/Third Student i/A0000003B e/third@example.com");
+
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(firstStudent, secondStudent), model.getAddressBook().getPersonList());
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(firstStudent), model.getAddressBook().getPersonList());
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(), model.getAddressBook().getPersonList());
+        assertEquals(UndoCommand.MESSAGE_NOTHING_TO_UNDO, logic.execute("undo").getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_changeAfterUndo_createsOnlyANewPredecessor() throws Exception {
+        logic.execute("add n/First Student i/A0000001B e/first@example.com");
+        Person firstStudent = model.getAddressBook().getPersonList().getFirst();
+        logic.execute("add n/Second Student i/A0000002B e/second@example.com");
+        Person secondStudent = model.getAddressBook().getPersonList().getLast();
+        logic.execute("add n/Third Student i/A0000003B e/third@example.com");
+
+        logic.execute("undo");
+        logic.execute("add n/Fourth Student i/A0000004B e/fourth@example.com");
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(firstStudent, secondStudent), model.getAddressBook().getPersonList());
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(firstStudent), model.getAddressBook().getPersonList());
+    }
+
+    @Test
+    public void execute_undoHistoryRetainsOnlyOneHundredPriorStates() throws Exception {
+        int historyLimit = LogicManager.MAX_UNDO_HISTORY_SIZE;
+        int numberOfChanges = historyLimit + 1;
+        for (int changeNumber = 1; changeNumber <= numberOfChanges; changeNumber++) {
+            logic.execute(String.format("add n/Student i/A%07dB e/student%d@example.com",
+                    changeNumber, changeNumber));
+        }
+
+        for (int undoCount = 0; undoCount < historyLimit; undoCount++) {
+            assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        }
+        assertEquals(1, model.getAddressBook().getPersonList().size());
+        assertEquals(UndoCommand.MESSAGE_NOTHING_TO_UNDO, logic.execute("undo").getFeedbackToUser());
+    }
+
+    @Test
     public void execute_unmarkFailure_preservesSavedDataAndFilter() throws Exception {
         AttendanceRecord record = new AttendanceRecord(LocalDate.parse("2026-10-20"), new Label("Tutorial 1"));
         Person student = new PersonBuilder(ALICE).withAttendance(record).build();
