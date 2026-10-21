@@ -55,6 +55,80 @@ public class LogicManagerTest {
     private StorageManager storage;
 
     @Test
+    public void execute_unmark_persistsRemovalAndPreservesFilter() throws Exception {
+        AttendanceRecord record = new AttendanceRecord(LocalDate.parse("2026-10-20"), new Label("Tutorial 1"));
+        AttendanceRecord retained = new AttendanceRecord(LocalDate.parse("2026-10-21"), new Label("Tutorial 1"));
+        Person student = new PersonBuilder(ALICE).withLabels().withAttendance(record, retained).build();
+        model.addPerson(student);
+        model.addPerson(BENSON);
+        logic.execute("find n/Benson");
+
+        CommandResult result = logic.execute("unmark i/a1234567b d/2026-10-20 l/tutorial 1");
+
+        assertEquals("Unmarked student A1234567B for Tutorial 1 on 2026-10-20.", result.getFeedbackToUser());
+        Person expectedStudent = new PersonBuilder(student).withAttendance(retained).build();
+        assertEquals(List.of(expectedStudent, BENSON), model.getAddressBook().getPersonList());
+        assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+        assertEquals(List.of(BENSON), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_markThenUnmark_restoresAndReloadsOriginalAttendance() throws Exception {
+        Person student = new PersonBuilder(ALICE).withLabels("Tutorial 1").build();
+        model.addPerson(student);
+
+        logic.execute("mark i/A1234567B d/2026-10-20 l/Tutorial 1");
+        logic.execute("unmark i/A1234567B d/2026-10-20 l/Tutorial 1");
+
+        assertEquals(List.of(student), model.getAddressBook().getPersonList());
+        assertEquals(List.of(student), storage.readAddressBook().orElseThrow().getPersonList());
+    }
+
+    @Test
+    public void execute_unmarkFailure_preservesSavedDataAndFilter() throws Exception {
+        AttendanceRecord record = new AttendanceRecord(LocalDate.parse("2026-10-20"), new Label("Tutorial 1"));
+        Person student = new PersonBuilder(ALICE).withAttendance(record).build();
+        model.addPerson(student);
+        logic.execute("find n/Benson");
+        storage.saveAddressBook(model.getAddressBook());
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+
+        assertThrows(ParseException.class, ParserUtil.MESSAGE_INVALID_DATE, () ->
+                logic.execute("unmark i/A1234567B d/2026-02-30 l/Tutorial 1"));
+        String expectedMessage = "Student A1234567B is not marked present for Tutorial 1 on 2026-10-21.";
+        assertThrows(CommandException.class, expectedMessage, () ->
+                logic.execute("unmark i/A1234567B d/2026-10-21 l/Tutorial 1"));
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
+        assertEquals(List.of(student), model.getAddressBook().getPersonList());
+        assertEquals(List.of(), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_unmarkSaveFailure_keepsLiveModelFileAndFilter() throws Exception {
+        AttendanceRecord record = new AttendanceRecord(LocalDate.parse("2026-10-20"), new Label("Tutorial 1"));
+        Person student = new PersonBuilder(ALICE).withAttendance(record).build();
+        model.addPerson(student);
+        model.addPerson(BENSON);
+        logic.execute("find n/Benson");
+        storage.saveAddressBook(model.getAddressBook());
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+        JsonAddressBookStorage failingStorage = new JsonAddressBookStorage(storage.getAddressBookFilePath()) {
+            @Override
+            protected void replaceDataFile(Path temporaryFile, Path targetFile) throws IOException {
+                throw new IOException("Simulated replacement failure");
+            }
+        };
+        logic = new LogicManager(model, new StorageManager(failingStorage,
+                new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
+
+        assertThrows(CommandException.class, LogicManager.MESSAGE_SAVE_FAILURE, () ->
+                logic.execute("unmark i/A1234567B d/2026-10-20 l/Tutorial 1"));
+        assertEquals(List.of(student, BENSON), model.getAddressBook().getPersonList());
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
+        assertEquals(List.of(BENSON), model.getFilteredPersonList());
+    }
+
+    @Test
     public void execute_deleteHiddenStudent_preservesFilterAndPersists() throws Exception {
         model.addPerson(ALICE);
         model.addPerson(BENSON);
@@ -222,7 +296,7 @@ public class LogicManagerTest {
         assertThrows(DataLoadingException.class, storage::readAddressBook);
         logic = new LogicManager(model, storage, false, "");
         for (String command : List.of("add n/Samuel i/A0123456B e/sam@example.com", "clear", "delete i/B1234567C",
-                "edit i/A0123456B n/Samuel")) {
+                "edit i/A0123456B n/Samuel", "unmark i/A0123456B d/2026-10-20 l/Tutorial 1")) {
             assertCommandException(command, LogicManager.MESSAGE_DATA_UNAVAILABLE);
         }
         logic.execute("list");
@@ -385,6 +459,39 @@ public class LogicManagerTest {
         logic.execute("find l/ı");
         assertEquals(List.of(dotlessI), model.getFilteredPersonList());
         assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+    }
+
+    @Test
+    public void execute_findRemarksAndLabelsSequentially_preservesBothSearchModesAndSavedData() throws Exception {
+        Person alex = new PersonBuilder().withStudentId("A0101010A").withLabels("Tutorial 1")
+                .withRemark("Needs help with recursion").build();
+        Person samuel = new PersonBuilder().withStudentId("A0101011A").withLabels("Tutorial 2")
+                .withRemark("Practise loops").build();
+        model.addPerson(alex);
+        model.addPerson(samuel);
+        storage.saveAddressBook(model.getAddressBook());
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+
+        logic.execute("find l/tutorial 1");
+        assertEquals(List.of(alex), model.getFilteredPersonList());
+        logic.execute("find r/LOOPS");
+        assertEquals(List.of(samuel), model.getFilteredPersonList());
+        logic.execute("find l/tutorial 1");
+        assertEquals(List.of(alex), model.getFilteredPersonList());
+        logic.execute("find r/curs");
+        assertEquals(List.of(alex), model.getFilteredPersonList());
+        logic.execute("find r/NoSuchRemark");
+        assertEquals(List.of(), model.getFilteredPersonList());
+        logic.execute("find l/tutorial 2");
+        assertEquals(List.of(samuel), model.getFilteredPersonList());
+
+        assertThrows(ParseException.class, "Parameter n/, i/, e/, r/, or l/ must be specified only once.", ()
+            -> logic.execute("find l/Tutorial 1 r/loops"));
+        assertEquals(List.of(samuel), model.getFilteredPersonList());
+        logic.execute("list");
+        assertEquals(List.of(alex, samuel), model.getFilteredPersonList());
+        assertEquals(List.of(alex, samuel), model.getAddressBook().getPersonList());
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
     }
 
     @Test

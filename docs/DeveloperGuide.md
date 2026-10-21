@@ -185,6 +185,71 @@ Matching is case-insensitive. Removing a missing label or adding one already pre
 The command then replaces the student through `Model#setPerson`; `LogicManager` saves the pending
 model before publishing it to the live model.
 
+### Mark and unmark attendance
+
+Command formats:
+
+```text
+mark i/STUDENT_ID d/YYYY-MM-DD l/GROUP
+unmark i/STUDENT_ID d/YYYY-MM-DD l/GROUP
+```
+
+The accepted inputs, examples, and feedback are documented under
+[Recording attendance](UserGuide.md#recording-attendance-mark) and
+[Removing attendance](UserGuide.md#removing-attendance-unmark) in the User Guide.
+
+#### Parsing and validation
+
+`AddressBookParser` routes each command to `MarkCommandParser` or `UnmarkCommandParser`.
+Both tokenise `i/`, `d/`, and `l/`, accepting any parameter order and exactly one non-empty value for each.
+Their structure checks follow the same order: internal line breaks, unknown prefixes, preamble text, repeated
+prefixes, then missing or empty values. Repeated and missing/empty checks use `i/`, `d/`, `l/` order.
+The general command parser rejects multiline input before command-specific parsing.
+
+Both parsers reuse `ParserUtil#parseStudentId`, `ParserUtil#parseDate`, and `ParserUtil#parseLabel`, in that order.
+The date parser requires a valid calendar date in the strict `YYYY-MM-DD` format. The parsers then construct
+`MarkCommand` or `UnmarkCommand` with the validated values.
+
+#### Matching and updating records
+
+Both commands search `Model#getAddressBook().getPersonList()` by normalised Student ID, so a student hidden by
+the active filter can still be updated. A missing student throws `CommandException` before any change.
+
+* `MarkCommand` first finds a current group label using case-insensitive matching. It creates an
+  `AttendanceRecord(date, matchedGroup)` and rejects an existing entry for that date and group.
+  Otherwise, it adds the record to a copy of the student's attendance set.
+* `UnmarkCommand` searches the existing attendance set using `AttendanceRecord#equals`, which compares dates
+  exactly and group names case-insensitively using `Locale.ROOT`. A missing record throws `CommandException`.
+  Otherwise, it removes the matched record from a copy of the set. Current group membership is not required:
+  `EditCommand` retains attendance when labels change, and historical records must remain removable.
+  Success feedback uses the matched record's stored group spelling.
+
+Each command constructs a replacement `Person`, retaining every other field, and calls `Model#setPerson`.
+Other attendance entries and the active filter remain unchanged. `unmark` removes the specified attendance entry;
+it does not use the proposed general undo/redo mechanism described later in this guide.
+
+#### Saving and sequence diagrams
+
+Both commands return `true` from `Command#isModifyingData`. `LogicManager` blocks them after a startup loading
+failure, executes them on a pending model, saves that model, and only then publishes it to the live model.
+Parsing, command, or save failures preserve the live records, filter, and previous saved file.
+The existing attendance JSON representation is reused; no storage format change is needed.
+
+The following diagrams show valid commands with an existing student and attendance state appropriate to the
+operation, including the save-before-publish path and save-failure protection.
+
+<puml src="diagrams/MarkSequenceDiagram.puml" alt="Parsing, recording, and saving student attendance" />
+
+<puml src="diagrams/UnmarkSequenceDiagram.puml" alt="Parsing, removing, and saving student attendance" />
+
+#### Tests
+
+`MarkCommandTest` and `UnmarkCommandTest` cover record updates and command errors. `UnmarkCommandTest` also
+checks that other dates and groups remain, hidden students can be updated, removed group labels do not block
+removal, and marking followed by unmarking restores the original student.
+The command parser tests cover parameter validation, and `AddressBookParserTest` checks unmark routing.
+`LogicManagerTest` covers persistence and reload, failed saves, filter preservation, and startup failure protection.
+
 ### Adding student information
 
 Command format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]`.
@@ -226,7 +291,7 @@ AddressBookParser → AddCommandParser → AddCommand
 LogicManager → temporary ModelManager → JsonAddressBookStorage → live ModelManager
 ```
 
-1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, and `clear`
+1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, `mark`, `unmark`, and `clear`
    return true. Future modifying commands must override this method too.
 2. `LogicManager` copies the live records and current filter into a temporary `ModelManager`, then executes the command
    against that copy. Copying the filter preserves the active view if saving fails; `edit` identifies its target by
@@ -272,18 +337,21 @@ records, and active filter remain unchanged. They also check temporary-file clea
 ### Find command
 
 Command format: `find n/KEYWORD [MORE_KEYWORDS]...`, `find i/KEYWORD [MORE_KEYWORDS]...`,
-`find e/KEYWORD [MORE_KEYWORDS]...`, or `find l/LABEL_NAME`.
+`find e/KEYWORD [MORE_KEYWORDS]...`, `find r/KEYWORD [MORE_KEYWORDS]...`, or `find l/LABEL_NAME`.
 Supply exactly one search field. Label searches replace the former standalone filter command.
-See the [User Guide](UserGuide.md#finding-students-by-name-student-id-email-or-label-find) for examples and errors.
+See the [User Guide](UserGuide.md#finding-students-by-name-student-id-email-remark-or-label-find) for examples and errors.
 
 #### Validation and matching
 
-* `ArgumentTokenizer` recognises `n/`, `i/`, `e/`, and `l/`.
+* `ArgumentTokenizer` recognises `n/`, `i/`, `e/`, `r/`, and `l/`.
 * `FindCommandParser` checks words before the first prefix, unknown prefixes, repeated prefixes, missing prefixes,
   multiple search-field types, empty values, and then label validity, in that order.
-* Name, ID, and email values are split into whitespace-separated keywords. `NameContainsKeywordsPredicate`,
-  `StudentIdContainsKeywordsPredicate`, and `EmailContainsKeywordsPredicate` match any keyword using
+* Name, ID, email, and remark values are split into whitespace-separated keywords. `NameContainsKeywordsPredicate`,
+  `StudentIdContainsKeywordsPredicate`, `EmailContainsKeywordsPredicate`, and `RemarkContainsKeywordsPredicate`
+  match any keyword using
   `StringUtil#containsIgnoreCase`, including partial matches.
+* `RemarkContainsKeywordsPredicate` searches `Person#getRemark().value` only. Empty remarks do not match
+  non-empty keywords. Numeric slash text such as `8/10` is accepted under the existing prefix rules.
 * A label value is kept whole, validated by `ParserUtil#parseLabel`, and passed to `LabelMatchesPredicate`.
   This predicate lowercases both the requested and stored label names with `Locale.ROOT`, then compares the complete
   values, using the same rule as `EditCommand` and `JsonAdaptedPerson`. Internal spaces are preserved.
@@ -292,6 +360,8 @@ See the [User Guide](UserGuide.md#finding-students-by-name-student-id-email-or-l
 
 For example, `find n/alex david` finds names containing either keyword, while `find l/Discrete Math Tutorial`
 finds students with that complete group label. `find l/Tutorial` does not match `Discrete Math Tutorial`.
+`find r/recursion loops` searches remarks for either keyword, and `find r/curs` also matches `recursion`.
+Empty `r/`, repeated `r/`, and combinations such as `find r/recursion l/Tutorial 1` are rejected before execution.
 
 #### Execution, persistence, and startup behaviour
 
@@ -307,7 +377,10 @@ previous result set. `FindCommand` returns the standard `N person(s) listed!` fe
 `FindCommand` remains read-only. `LogicManager` executes it without saving, including when startup data loading
 failed. Student records and the saved JSON file remain unchanged.
 
-The name-search sequence is shown below; label searches follow the same command path with a label predicate.
+Tests in `RemarkContainsKeywordsPredicateTest`, `FindCommandParserTest`, and `FindCommandTest` cover remark
+matching, invalid remark search inputs, result counts, and searching students hidden by a previous filter.
+
+The name-search sequence is shown below; remark and label searches use their corresponding predicates.
 
 <puml src="diagrams/FindCommandSequenceDiagram.puml" alt="Interactions for a name search" />
 
@@ -319,7 +392,7 @@ The following diagrams show label searching through the integrated command:
 
 #### Verification
 
-Tests cover all four prefixes, malformed and repeated parameters, mixed search fields, multi-word and boundary-length
+Tests cover all five prefixes, malformed and repeated parameters, mixed search fields, multi-word and boundary-length
 labels, invalid labels, exact and case-insensitive matching, multiple student labels, empty and zero-result lists,
 searches after other searches, restoration with `list`, saved-data preservation, and rejection of the removed command.
 
@@ -653,7 +726,7 @@ MSS:
 
 Use case: UC02 - Find a Student
 MSS:
-1. TA enters a search command specifying a name, student ID, or email query.
+1. TA enters a search command specifying a name, student ID, email, remark, or label query.
 2. TeachAssist searches existing records for matches.
 3. TeachAssist displays the list of matching student records and the count of results.
    Use case ends.

@@ -6,6 +6,7 @@ import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.testutil.Assert.assertThrows;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,7 @@ import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.UnmarkCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.label.Label;
 import seedu.address.model.person.LabelMatchesPredicate;
@@ -34,6 +36,21 @@ import seedu.address.testutil.PersonUtil;
 public class AddressBookParserTest {
 
     private final AddressBookParser parser = new AddressBookParser();
+
+    @Test
+    public void parseCommand_unmark_returnsUnmarkCommand() throws Exception {
+        UnmarkCommand expected = new UnmarkCommand(new StudentId("A0123456B"),
+                LocalDate.parse("2026-10-20"), new Label("Tutorial 1"));
+        assertEquals(expected, parser.parseCommand("unmark\ti/a0123456b d/2026-10-20 l/Tutorial 1"));
+    }
+
+    @Test
+    public void parseCommand_unmarkInvalidParameters_reportsSpecificErrors() {
+        assertThrows(ParseException.class, "Missing required parameter: i/.", () -> parser.parseCommand("unmark"));
+        assertThrows(ParseException.class, UnmarkCommand.MESSAGE_INVALID_FORMAT, () -> parser.parseCommand("unmark 1"));
+        assertThrows(ParseException.class, ParserUtil.MESSAGE_INVALID_DATE, () ->
+                parser.parseCommand("unmark i/A0123456B d/2026-02-30 l/Tutorial 1"));
+    }
 
     @Test
     public void parseCommand_addWithTabs_success() throws Exception {

@@ -4,6 +4,7 @@ import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_LABEL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_REMARK;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_STUDENT_ID;
 
 import java.util.List;
@@ -19,6 +20,7 @@ import seedu.address.model.person.EmailContainsKeywordsPredicate;
 import seedu.address.model.person.LabelMatchesPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
+import seedu.address.model.person.RemarkContainsKeywordsPredicate;
 import seedu.address.model.person.StudentIdContainsKeywordsPredicate;
 
 /**
@@ -27,9 +29,10 @@ import seedu.address.model.person.StudentIdContainsKeywordsPredicate;
 public class FindCommandParser implements Parser<FindCommand> {
     private static final Pattern PARAMETER_PREFIX = Pattern.compile("(?:^|\\p{javaWhitespace})([A-Za-z]+/)");
     private static final Set<Prefix> SUPPORTED_PREFIXES =
-            Set.of(PREFIX_NAME, PREFIX_STUDENT_ID, PREFIX_EMAIL, PREFIX_LABEL);
+            Set.of(PREFIX_NAME, PREFIX_STUDENT_ID, PREFIX_EMAIL, PREFIX_REMARK, PREFIX_LABEL);
     private static final String SEARCH_PARAMETER =
-            PREFIX_NAME + ", " + PREFIX_STUDENT_ID + ", " + PREFIX_EMAIL + ", or " + PREFIX_LABEL;
+            PREFIX_NAME + ", " + PREFIX_STUDENT_ID + ", " + PREFIX_EMAIL
+                    + ", " + PREFIX_REMARK + ", or " + PREFIX_LABEL;
     private static final String MESSAGE_UNKNOWN_PARAMETER = "Unknown parameter: %s.";
     private static final String MESSAGE_REPEATED_PARAMETER = "Parameter %s must be specified only once.";
     private static final String MESSAGE_MISSING_PARAMETER = "Missing required parameter: %s.";
@@ -43,7 +46,8 @@ public class FindCommandParser implements Parser<FindCommand> {
     public FindCommand parse(String args) throws ParseException {
         String trimmedArgs = args.trim();
         ArgumentMultimap argMultimap =
-                ArgumentTokenizer.tokenize(trimmedArgs, PREFIX_NAME, PREFIX_STUDENT_ID, PREFIX_EMAIL, PREFIX_LABEL);
+                ArgumentTokenizer.tokenize(trimmedArgs, PREFIX_NAME, PREFIX_STUDENT_ID,
+                        PREFIX_EMAIL, PREFIX_REMARK, PREFIX_LABEL);
         validateStructure(trimmedArgs, argMultimap);
 
         Predicate<Person> predicate;
@@ -53,6 +57,8 @@ public class FindCommandParser implements Parser<FindCommand> {
             predicate = new StudentIdContainsKeywordsPredicate(parseKeywords(argMultimap, PREFIX_STUDENT_ID));
         } else if (argMultimap.getValue(PREFIX_EMAIL).isPresent()) {
             predicate = new EmailContainsKeywordsPredicate(parseKeywords(argMultimap, PREFIX_EMAIL));
+        } else if (argMultimap.getValue(PREFIX_REMARK).isPresent()) {
+            predicate = new RemarkContainsKeywordsPredicate(parseKeywords(argMultimap, PREFIX_REMARK));
         } else {
             predicate = new LabelMatchesPredicate(ParserUtil.parseLabel(parseSearchValue(argMultimap, PREFIX_LABEL)));
         }
