@@ -14,7 +14,7 @@ import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.StudentIdContainsKeywordsPredicate;
 
 public class FindCommandParserTest {
-    private static final String SEARCH_PARAMETER = "n/, i/, or e/";
+    private static final String SEARCH_PARAMETER = "n/, i/, e/, or r/";
     private static final String MESSAGE_UNKNOWN_PARAMETER = "Unknown parameter: %s.";
     private static final String MESSAGE_REPEATED_PARAMETER = "Parameter %s must be specified only once.";
     private static final String MESSAGE_MISSING_PARAMETER = "Missing required parameter: %s.";
