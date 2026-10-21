@@ -185,6 +185,11 @@ Matching is case-insensitive. Removing a missing label or adding one already pre
 The command then replaces the student through `Model#setPerson`; `LogicManager` saves the pending
 model before publishing it to the live model.
 
+The sequence diagram below shows an edit that removes one label and adds another. It also shows that
+a save failure leaves the live student data unchanged.
+
+<puml src="diagrams/EditLabelSequenceDiagram.puml" alt="Editing student labels and saving before publishing" />
+
 ### Mark and unmark attendance
 
 Command formats:
