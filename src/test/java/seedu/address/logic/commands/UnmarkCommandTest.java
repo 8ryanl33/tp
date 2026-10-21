@@ -121,4 +121,12 @@ public class UnmarkCommandTest {
         assertThrows(NullPointerException.class, () -> new UnmarkCommand(ALICE.getStudentId(), null, GROUP));
         assertThrows(NullPointerException.class, () -> new UnmarkCommand(ALICE.getStudentId(), DATE, null));
     }
+
+    @Test
+    public void toStringMethod() {
+        UnmarkCommand command = new UnmarkCommand(ALICE.getStudentId(), DATE, GROUP);
+        String expected = UnmarkCommand.class.getCanonicalName()
+                + "{studentId=A1234567B, date=2026-10-20, group=[Tutorial 1]}";
+        assertEquals(expected, command.toString());
+    }
 }
