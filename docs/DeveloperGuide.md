@@ -285,7 +285,10 @@ See the [User Guide](UserGuide.md#finding-students-by-name-student-id-email-or-l
   `StudentIdContainsKeywordsPredicate`, and `EmailContainsKeywordsPredicate` match any keyword using
   `StringUtil#containsIgnoreCase`, including partial matches.
 * A label value is kept whole, validated by `ParserUtil#parseLabel`, and passed to `LabelMatchesPredicate`.
-  This predicate checks every label on a student for a complete, case-insensitive match. Internal spaces are preserved.
+  This predicate lowercases both the requested and stored label names with `Locale.ROOT`, then compares the complete
+  values, using the same rule as `EditCommand` and `JsonAdaptedPerson`. Internal spaces are preserved.
+  This also handles Unicode lowercase expansions, such as `İ` becoming `i` followed by a combining dot,
+  while keeping `I` and the dotless `ı` distinct.
 
 For example, `find n/alex david` finds names containing either keyword, while `find l/Discrete Math Tutorial`
 finds students with that complete group label. `find l/Tutorial` does not match `Discrete Math Tutorial`.

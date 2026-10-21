@@ -5,6 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 
+import java.util.List;
+import java.util.Locale;
+
 import org.junit.jupiter.api.Test;
 
 import seedu.address.model.label.Label;
@@ -22,6 +25,40 @@ public class LabelMatchesPredicateTest {
         assertTrue(predicate.test(new PersonBuilder().withLabels("Discrete Math Tutorial").build()));
         assertTrue(predicate.test(new PersonBuilder().withLabels("discrete math tutorial").build()));
         assertTrue(predicate.test(new PersonBuilder().withLabels("Other Group", "DISCRETE MATH TUTORIAL").build()));
+    }
+
+    @Test
+    public void test_unicodeLettersWithDifferentRootLowercaseForms_doNotMatch() {
+        LabelMatchesPredicate latinI = new LabelMatchesPredicate(new Label("I"));
+        assertFalse(latinI.test(new PersonBuilder().withLabels("ı").build()));
+        assertFalse(latinI.test(new PersonBuilder().withLabels("İ").build()));
+
+        LabelMatchesPredicate greekSigma = new LabelMatchesPredicate(new Label("ΟΣ"));
+        assertTrue(greekSigma.test(new PersonBuilder().withLabels("ος").build()));
+        assertFalse(greekSigma.test(new PersonBuilder().withLabels("οσ").build()));
+    }
+
+    @Test
+    public void test_uppercaseDottedI_matchesItsExpandedRootLowercaseForm() {
+        LabelMatchesPredicate uppercase = new LabelMatchesPredicate(new Label("İ"));
+        assertTrue(uppercase.test(new PersonBuilder().withLabels("i\u0307").build()));
+        LabelMatchesPredicate lowercase = new LabelMatchesPredicate(new Label("i\u0307"));
+        assertTrue(lowercase.test(new PersonBuilder().withLabels("İ").build()));
+    }
+
+    @Test
+    public void test_defaultLocaleDoesNotChangeLabelMatching() {
+        Locale originalLocale = Locale.getDefault();
+        try {
+            for (Locale locale : List.of(Locale.ENGLISH, Locale.forLanguageTag("tr-TR"))) {
+                Locale.setDefault(locale);
+                LabelMatchesPredicate predicate = new LabelMatchesPredicate(new Label("I"));
+                assertTrue(predicate.test(new PersonBuilder().withLabels("i").build()));
+                assertFalse(predicate.test(new PersonBuilder().withLabels("ı").build()));
+            }
+        } finally {
+            Locale.setDefault(originalLocale);
+        }
     }
 
     @Test

@@ -66,9 +66,8 @@ TeachAssist is a **desktop application for managing student records, optimized f
 
 ### Viewing help: `help`
 
-Shows a message explaining how to access the help page.
-
-![help message](images/helpMessage.png)
+Shows the Help window with the address of [TeachAssist’s User Guide](https://ay2627s1-cs2103t-f12-1.github.io/tp/UserGuide.html).
+Click **Copy URL** to copy this address, then paste it into your browser to open the guide.
 
 Format: `help`
 
@@ -96,6 +95,10 @@ Format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]`
 | Email | At most 254 characters with exactly one `@`. The local part has 1–64 ASCII letters, digits, periods, underscores, plus signs, or hyphens. It cannot start/end with a period or contain consecutive periods. The domain has at least two dot-separated labels of 1–63 ASCII letters, digits, or hyphens, without boundary hyphens. The final label has 2–63 letters. Only the domain is lowercased. Spaces are rejected, and mailbox existence is not checked. |
 | Remark | Optional, at most 4,000 Unicode code points after trimming. Internal spacing and capitalisation are preserved. Omitting `r/` or supplying an empty `r/` stores an empty remark. At most one `r/` is allowed. Dates, grades, and the meaning of the text are not validated. Long remarks wrap on the student card. |
 | Label | Optional. Contains 1–60 Unicode code points, including at least one letter or digit. Allows letters, combining marks, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods. Surrounding whitespace is trimmed; internal spacing and capitalisation are preserved. At most one `l/` is allowed. Omitting `l/` stores no label. |
+
+Student cards wrap long names and email addresses onto multiple lines so you can read the complete values.
+Resizing the window adjusts the wrapping; use the student list's vertical scrollbar to read taller cards.
+Wrapping only changes the display and does not add spaces or line breaks to stored values.
 
 Unlike numeric text such as `8/10`, a recognised prefix after `r/` starts another parameter.
 For example, `r/Quiz: 8/10 l/Tutorial` stores `Quiz: 8/10` as the remark and `Tutorial` as a label.
@@ -226,6 +229,8 @@ or `find e/KEYWORD [MORE_KEYWORDS]` or `find l/LABEL_NAME`
 * Name, ID, and email searches match any supplied keyword, including partial matches anywhere in the selected field.
 * Label searches match the **complete label name**. For example, `find l/Tutorial` does not match `Tutorial 1`.
   A multi-word label is one value, not separate keywords. A student with multiple labels appears if any label matches.
+  Unicode label matching follows the same case rules as editing and loading labels: `I` matches `i`,
+  while the dotless `ı` is a different label.
 * Label names follow the rules under `add`: 1–60 Unicode code points, at least one letter or digit, and only the
   permitted characters. Surrounding whitespace is ignored; internal spacing is preserved. Slashes and control
   characters are rejected.

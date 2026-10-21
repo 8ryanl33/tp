@@ -17,6 +17,8 @@ import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.BENSON;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
+import java.time.LocalDate;
+
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.index.Index;
@@ -26,6 +28,8 @@ import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.attendance.AttendanceRecord;
+import seedu.address.model.label.Label;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.StudentId;
 import seedu.address.testutil.EditPersonDescriptorBuilder;
@@ -74,6 +78,23 @@ public class EditCommandTest {
 
         assertCommandSuccess(editCommand, model, expectedMessage, expectedModel);
         assertEquals(personWithLabel.getLabels(), model.getFilteredPersonList().get(0).getLabels());
+    }
+
+    @Test
+    public void execute_otherFieldsEdited_preservesAttendance() {
+        Person original = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        AttendanceRecord record = new AttendanceRecord(LocalDate.parse("2026-10-20"), new Label("Tutorial 1"));
+        Person student = new PersonBuilder(original).withAttendance(record).build();
+        model.setPerson(original, student);
+        Person editedStudent = new PersonBuilder(student).withEmail(VALID_EMAIL_BOB).build();
+        EditCommand command = new EditCommand(student.getStudentId(),
+                new EditPersonDescriptorBuilder().withEmail(VALID_EMAIL_BOB).build());
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(student, editedStudent);
+
+        assertCommandSuccess(command, model,
+                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedStudent)), expectedModel);
+        assertEquals(student.getAttendance(), model.getFilteredPersonList().get(0).getAttendance());
     }
 
     @Test

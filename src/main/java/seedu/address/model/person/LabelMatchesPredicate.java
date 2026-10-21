@@ -2,13 +2,14 @@ package seedu.address.model.person;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.Locale;
 import java.util.function.Predicate;
 
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.model.label.Label;
 
 /**
- * Tests whether a student has the complete group label, ignoring case.
+ * Tests complete label names after Locale.ROOT lowercasing, consistently with editing and storage.
  */
 public class LabelMatchesPredicate implements Predicate<Person> {
     private final Label label;
@@ -24,8 +25,9 @@ public class LabelMatchesPredicate implements Predicate<Person> {
 
     @Override
     public boolean test(Person person) {
+        String normalizedLabelName = label.labelName.toLowerCase(Locale.ROOT);
         return person.getLabels().stream()
-                .anyMatch(existingLabel -> existingLabel.labelName.equalsIgnoreCase(label.labelName));
+                .anyMatch(existing -> existing.labelName.toLowerCase(Locale.ROOT).equals(normalizedLabelName));
     }
 
     @Override
