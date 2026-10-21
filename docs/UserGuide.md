@@ -264,9 +264,102 @@ Notes:
 * The match is case-insensitive. For example, `filter l/discrete math tutorial` matches students labelled `Discrete Math Tutorial`.
 * If no students have the given label, the displayed list is cleared and the app reports that no students were found.
 
+### Marking attendance: `mark`
+
+Records that a student was present at a tutorial group on a date.
+
+Format: `mark i/STUDENT_ID d/YYYY-MM-DD l/GROUP`
+
+* All three parameters are required, each exactly once, in any order.
+* `STUDENT_ID` follows the same rules as `add`, and matching ignores case.
+* `YYYY-MM-DD` must be a real calendar date, e.g., `2026-02-29` is rejected because 2026 is not a leap year.
+* `GROUP` follows the label rules of `add`. The student must currently have that label. Matching ignores case,
+  so `l/tutorial 1` matches a student labelled `Tutorial 1`.
+* The student is found in the complete record list, even when hidden by `find` or `filter`.
+* A student can be marked for several groups on the same date, but only once for each date and group.
+* Attendance becomes visible only after saving succeeds. A save failure leaves the records and the data file unchanged.
+* If the [attendance view](#viewing-attendance-attendance) is open, it is refreshed after a successful `mark`.
+
+Examples:
+
+* `mark i/A0123456B d/2026-10-20 l/Tutorial 1`
+* `mark l/tutorial 1 d/2026-10-20 i/a0123456b` marks the same student, date, and group.
+
+Successful output:
+
+```text
+Marked student A0123456B present for Tutorial 1 on 2026-10-20.
+```
+
+The group name in the message is the student's label as stored, not as typed.
+
+The rows below follow error-checking order. If several errors are present, only the first applicable message
+is shown.
+
+| Problem | Message |
+|---------|---------|
+| Command spans multiple lines | `Invalid command format!`<br>`help: Shows program usage instructions.`<br>`Example: help` |
+| Unknown parameter, e.g., `x/value` | `Unknown parameter: x/.` |
+| Text before the first parameter | `Invalid command format. Usage: mark i/STUDENT_ID d/YYYY-MM-DD l/GROUP` |
+| Repeated parameter, e.g., two `d/` | `Parameter d/ must be specified only once.` |
+| Missing parameter | `Missing required parameter: d/.` |
+| Empty parameter | `Parameter d/ cannot be empty.` |
+| Invalid Student ID | `Student ID must contain exactly 9 letters or digits, with no spaces.` |
+| Invalid date, e.g., `2026-02-30` or `20/10/2026` | `Date must use a valid YYYY-MM-DD date.` |
+| Invalid group name | The label rules described under [`add`](#adding-a-student-add). |
+| Student data failed to load at startup | `Student data is unavailable because loading failed. Fix the data file and restart.` |
+| Student does not exist | `Student with ID A0123456B is not in the records.` |
+| Student does not have the group label | `Student A0123456B does not have group label "Tutorial 2".` |
+| Already marked for that date and group | `Student A0123456B is already marked present for Tutorial 1 on 2026-10-20.` |
+| Data storage location cannot be created | `Unable to create data storage location.` |
+| Saving fails | `Unable to save student data.` |
+
+Failed commands leave the records, the current view, and the saved file unchanged.
+Marking cannot be undone in this version.
+
+### Viewing attendance: `attendance`
+
+Shows which members of a tutorial group were present on a date.
+
+Format: `attendance d/YYYY-MM-DD l/GROUP`
+
+* Both parameters are required, each exactly once, in any order. They follow the same rules as in `mark`.
+* The view lists every student who **currently** has the group label, in the same order as the student list,
+  including students hidden by `find` or `filter`.
+* Each student is shown as **Present** if they were marked for that date and group, and **Absent** otherwise.
+  There is no separate way to record an absence.
+* The totals of present and absent students are shown above the list and in the result message.
+* Group membership is based on current labels. A student marked present who has since lost the label is not shown,
+  but their attendance record is kept.
+* If no student has the group label, an empty view with zero totals is shown.
+* This command does not change any data.
+
+The attendance view replaces the student list:
+
+* A successful `mark` refreshes it immediately, so you can mark students one by one and watch the totals change.
+* A failed command leaves it open and unchanged.
+* Any other successful command, such as `list`, returns to the student list.
+
+Examples:
+
+* `attendance d/2026-10-20 l/Tutorial 1`
+* `attendance l/tutorial 1 d/2026-10-20` shows the same view.
+
+Successful output, when one of three group members was marked:
+
+```text
+Attendance for Tutorial 1 on 2026-10-20: 1 present, 2 absent.
+```
+
+The group name in the message is shown as typed.
+Errors use the same messages as `mark`, with the usage line
+`Invalid command format. Usage: attendance d/YYYY-MM-DD l/GROUP`.
+An `i/` parameter is rejected as `Unknown parameter: i/.`
+Because `attendance` only reads data, it remains available when student data fails to load.
+
 ### Deleting a student: `delete`
 
-Deletes the student with the specified Student ID, including their name, email, remark, and labels.
+Deletes the student with the specified Student ID, including their name, email, remark, labels, and attendance records.
 
 Format: `delete i/STUDENT_ID`
 
@@ -342,17 +435,19 @@ and only the first problem found is shown.
 
 If loading fails, TeachAssist starts with an empty student list and leaves the data file untouched:
 
-* Commands that change student records (`add`, `edit`, `delete`, and `clear`) are blocked with
+* Commands that change student records (`add`, `edit`, `mark`, `delete`, and `clear`) are blocked with
   `Student data is unavailable because loading failed. Fix the data file and restart.`
-* Commands that do not change student records, such as `list`, `find`, `filter`, `help`, and `exit`, remain available.
+* Commands that do not change student records, such as `list`, `find`, `filter`, `attendance`, `help`, and `exit`,
+  remain available.
 
 To recover, close TeachAssist, fix or restore the data file, and restart. Deleting the data file makes TeachAssist start
 with an empty student list.
 
 ### Saving the data
 
-TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, and `clear`).
-You do not need to save manually. Commands such as `find`, `filter`, `list`, `help`, and `exit` do not write student data.
+TeachAssist automatically saves after commands that change student records (`add`, `edit`, `mark`, `delete`, and
+`clear`). You do not need to save manually. Commands such as `find`, `filter`, `list`, `attendance`, `help`, and `exit`
+do not write student data.
 If saving fails, the proposed change is not applied, and existing records, the displayed filter, and the previous
 saved file remain unchanged. The application displays `Unable to save student data.`
 Storage must support atomic file replacement; unsupported storage produces the same save error.
@@ -374,6 +469,9 @@ Furthermore, certain edits can cause TeachAssist to behave in unexpected ways (e
 Each person record must include a valid `studentId`. Older data files that do not include `studentId` for every person may fail to load until the missing values are added manually.
 Group labels are saved under each person record as `labels`. Older data files without `labels` still load; those persons simply start with no labels.
 Legacy `tags` fields are ignored when loading and are not saved again.
+Attendance is saved under each person record as `attendance`, a list of `{"date": "2026-10-20", "group": "Tutorial 1"}`
+entries. Each date and group pair may appear only once per person, ignoring the case of the group. Older data files
+without `attendance` still load; those persons simply start with no attendance records.
 </box>
 
 ### Archiving data files `[coming in v2.0]`
@@ -401,10 +499,12 @@ _Details coming soon ..._
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]` <br> e.g., `add n/James Ho i/A0123456B e/jamesho@example.com r/Needs help with recursion l/Discrete Math Tutorial`
+**Attendance** | `attendance d/YYYY-MM-DD l/GROUP`<br> e.g., `attendance d/2026-10-20 l/Tutorial 1`
 **Clear**  | `clear`
 **Delete** | `delete i/STUDENT_ID`<br> e.g., `delete i/A0123456B`
 **Edit**   | `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/LABEL_NAME]...`<br> e.g., `edit i/A0123456B dl/Tutorial 1 l/Tutorial 2`
 **Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
 **Filter** | `filter l/LABEL_NAME`<br> e.g., `filter l/Discrete Math Tutorial`
 **List**   | `list`
+**Mark**   | `mark i/STUDENT_ID d/YYYY-MM-DD l/GROUP`<br> e.g., `mark i/A0123456B d/2026-10-20 l/Tutorial 1`
 **Help**   | `help`
