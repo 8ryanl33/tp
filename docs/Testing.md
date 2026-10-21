@@ -63,15 +63,15 @@ For each setting:
 
 1. Launch the application with fresh preferences. Check that the entire window, including its title bar and
    bottom status bar, fits inside the usable desktop.
-1. Add enough students to require scrolling. Confirm that the command box, command feedback, menu bar, and
+2. Add enough students to require scrolling. Confirm that the command box, command feedback, menu bar, and
    bottom status bar stay visible while the student list scrolls to the last student.
-1. Run `add n/Display Check i/Z9999999Z e/display@example.com`, `find n/Display`, and `list`.
+3. Run `add n/Display Check i/Z9999999Z e/display@example.com`, `find n/Display`, and `list`.
    Check that typing and pressing Enter work, feedback is readable, and the list updates.
-1. Open Help using `help` and F1 while the command box is focused. Check that the message and Copy URL button
+4. Open Help using `help` and F1 while the command box is focused. Check that the message and Copy URL button
    fit on screen, and that copying the URL works.
-1. Resize to the minimum 450 × 400 window. Confirm that the command box and feedback remain visible and at least
+5. Resize to the minimum 450 × 400 window. Confirm that the command box and feedback remain visible and at least
    one ordinary student card fits in the scrollable list. Resize larger and repeat the commands.
-1. Save a larger window on a larger display, exit, switch to 1280 × 720 at 150%, and relaunch. Confirm that both
+6. Save a larger window on a larger display, exit, switch to 1280 × 720 at 150%, and relaunch. Confirm that both
    the restored size and position fit the usable desktop. Repeat after disconnecting a secondary monitor.
 
 A rendered layout at the equivalent logical viewport is useful during development. Native release testing is
