@@ -96,6 +96,9 @@ public class LogicManager implements Logic {
         pendingModel.updateFilteredPersonList(model.getFilteredPersonListPredicate()::test);
         CommandResult result = command.execute(pendingModel);
         saveStudentData(pendingModel.getAddressBook());
+        if (undoHistory.size() == MAX_UNDO_HISTORY_SIZE) {
+            undoHistory.removeFirst();
+        }
         undoHistory.addLast(previousAddressBook);
         model.setAddressBook(pendingModel.getAddressBook());
         model.updateFilteredPersonList(pendingModel.getFilteredPersonListPredicate()::test);
