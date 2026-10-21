@@ -185,6 +185,71 @@ Matching is case-insensitive. Removing a missing label or adding one already pre
 The command then replaces the student through `Model#setPerson`; `LogicManager` saves the pending
 model before publishing it to the live model.
 
+### Mark and unmark attendance
+
+Command formats:
+
+```text
+mark i/STUDENT_ID d/YYYY-MM-DD l/GROUP
+unmark i/STUDENT_ID d/YYYY-MM-DD l/GROUP
+```
+
+The accepted inputs, examples, and feedback are documented under
+[Recording attendance](UserGuide.md#recording-attendance-mark) and
+[Removing attendance](UserGuide.md#removing-attendance-unmark) in the User Guide.
+
+#### Parsing and validation
+
+`AddressBookParser` routes each command to `MarkCommandParser` or `UnmarkCommandParser`.
+Both tokenise `i/`, `d/`, and `l/`, accepting any parameter order and exactly one non-empty value for each.
+Their structure checks follow the same order: internal line breaks, unknown prefixes, preamble text, repeated
+prefixes, then missing or empty values. Repeated and missing/empty checks use `i/`, `d/`, `l/` order.
+The general command parser rejects multiline input before command-specific parsing.
+
+Both parsers reuse `ParserUtil#parseStudentId`, `ParserUtil#parseDate`, and `ParserUtil#parseLabel`, in that order.
+The date parser requires a valid calendar date in the strict `YYYY-MM-DD` format. The parsers then construct
+`MarkCommand` or `UnmarkCommand` with the validated values.
+
+#### Matching and updating records
+
+Both commands search `Model#getAddressBook().getPersonList()` by normalised Student ID, so a student hidden by
+the active filter can still be updated. A missing student throws `CommandException` before any change.
+
+* `MarkCommand` first finds a current group label using case-insensitive matching. It creates an
+  `AttendanceRecord(date, matchedGroup)` and rejects an existing entry for that date and group.
+  Otherwise, it adds the record to a copy of the student's attendance set.
+* `UnmarkCommand` searches the existing attendance set using `AttendanceRecord#equals`, which compares dates
+  exactly and group names case-insensitively using `Locale.ROOT`. A missing record throws `CommandException`.
+  Otherwise, it removes the matched record from a copy of the set. Current group membership is not required:
+  `EditCommand` retains attendance when labels change, and historical records must remain removable.
+  Success feedback uses the matched record's stored group spelling.
+
+Each command constructs a replacement `Person`, retaining every other field, and calls `Model#setPerson`.
+Other attendance entries and the active filter remain unchanged. `unmark` removes the specified attendance entry;
+it does not use the proposed general undo/redo mechanism described later in this guide.
+
+#### Saving and sequence diagrams
+
+Both commands return `true` from `Command#isModifyingData`. `LogicManager` blocks them after a startup loading
+failure, executes them on a pending model, saves that model, and only then publishes it to the live model.
+Parsing, command, or save failures preserve the live records, filter, and previous saved file.
+The existing attendance JSON representation is reused; no storage format change is needed.
+
+The following diagrams show valid commands with an existing student and attendance state appropriate to the
+operation, including the save-before-publish path and save-failure protection.
+
+<puml src="diagrams/MarkSequenceDiagram.puml" alt="Parsing, recording, and saving student attendance" />
+
+<puml src="diagrams/UnmarkSequenceDiagram.puml" alt="Parsing, removing, and saving student attendance" />
+
+#### Tests
+
+`MarkCommandTest` and `UnmarkCommandTest` cover record updates and command errors. `UnmarkCommandTest` also
+checks that other dates and groups remain, hidden students can be updated, removed group labels do not block
+removal, and marking followed by unmarking restores the original student.
+The command parser tests cover parameter validation, and `AddressBookParserTest` checks unmark routing.
+`LogicManagerTest` covers persistence and reload, failed saves, filter preservation, and startup failure protection.
+
 ### Adding student information
 
 Command format: `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]`.
@@ -226,7 +291,7 @@ AddressBookParser → AddCommandParser → AddCommand
 LogicManager → temporary ModelManager → JsonAddressBookStorage → live ModelManager
 ```
 
-1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, and `clear`
+1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, `mark`, `unmark`, and `clear`
    return true. Future modifying commands must override this method too.
 2. `LogicManager` copies the live records and current filter into a temporary `ModelManager`, then executes the command
    against that copy. Copying the filter preserves the active view if saving fails; `edit` identifies its target by
