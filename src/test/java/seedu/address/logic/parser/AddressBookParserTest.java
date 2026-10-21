@@ -22,6 +22,7 @@ import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.UndoCommand;
 import seedu.address.logic.commands.UnmarkCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.label.Label;
@@ -149,6 +150,12 @@ public class AddressBookParserTest {
     }
 
     @Test
+    public void parseCommand_undo_returnsUndoCommand() throws Exception {
+        assertEquals(new UndoCommand(), parser.parseCommand("undo"));
+        assertEquals(new UndoCommand(), parser.parseCommand("  undo  "));
+    }
+
+    @Test
     public void parseCommand_removedLabelCommand_throwsUnknownCommand() {
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("label"));
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, ()
@@ -167,5 +174,7 @@ public class AddressBookParserTest {
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("lisst"));
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("List"));
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("LIST"));
+        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("Undo"));
+        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("UNDO"));
     }
 }
