@@ -272,26 +272,30 @@ records, and active filter remain unchanged. They also check temporary-file clea
 ### Find command
 
 Command format: `find n/KEYWORD [MORE_KEYWORDS]...` or `find i/KEYWORD [MORE_KEYWORDS]...`
-or `find e/KEYWORD [MORE_KEYWORDS]...`.
-Exactly one supported search field must be supplied: name, student ID, or email.
+or `find e/KEYWORD [MORE_KEYWORDS]...` or `find r/KEYWORD [MORE_KEYWORDS]...`.
+Exactly one supported search field must be supplied: name, student ID, email, or remark.
 The accepted format and user-facing examples are documented in the
-[User Guide](UserGuide.md#locating-persons-by-name-student-id-or-email-find).
+[User Guide](UserGuide.md#locating-persons-by-name-student-id-email-or-remark-find).
 
 #### Validation and matching
 
-* `ArgumentTokenizer` recognises the supported prefixes `n/`, `i/`, and `e/`.
+* `ArgumentTokenizer` recognises the supported prefixes `n/`, `i/`, `e/`, and `r/`.
 * `FindCommandParser` validates malformed input in this order: words before the first parameter prefix, unknown
   parameter prefixes, repeated search prefixes, missing search prefixes, more than one search prefix type, and empty
   keyword values.
 * Search keywords are split on whitespace. Multiple spaces, tabs, and line breaks between keywords are collapsed.
 * `FindCommandParser` creates a field-specific predicate: `NameContainsKeywordsPredicate`,
-  `StudentIdContainsKeywordsPredicate`, or `EmailContainsKeywordsPredicate`.
+  `StudentIdContainsKeywordsPredicate`, `EmailContainsKeywordsPredicate`, or `RemarkContainsKeywordsPredicate`.
 * Each predicate checks whether the selected field contains any keyword using `StringUtil#containsIgnoreCase`.
   Matching is therefore case-insensitive and supports partial matches.
+* `RemarkContainsKeywordsPredicate` searches `Person#getRemark().value` only. An empty remark does not match
+  any non-empty keyword. Numeric slash text such as `8/10` is accepted as a keyword under the existing prefix rules.
 
 For example, `find n/alex david` creates a `NameContainsKeywordsPredicate` with keywords `alex` and `david`.
 Any student whose name contains either keyword is shown.
 `find i/a012` searches student IDs, while `find e/example.com` searches email addresses.
+`find r/recursion loops` searches remarks for either keyword, and `find r/curs` also matches `recursion`.
+Empty `r/`, repeated `r/`, and combinations such as `find n/Alex r/recursion` are rejected before execution.
 
 #### Execution and displayed list
 
@@ -309,6 +313,9 @@ The underlying student records are not modified.
 The command returns the standard listed-students feedback containing the number of matching records.
 When no records match, the filtered list becomes empty and the feedback reports zero listed students.
 The previous filter is replaced by the new search predicate.
+
+Tests in `RemarkContainsKeywordsPredicateTest`, `FindCommandParserTest`, and `FindCommandTest` cover remark
+matching, invalid remark search inputs, result counts, and searching students hidden by a previous filter.
 
 The sequence diagram below shows how a successful `find n/Alex` command is parsed and executed.
 <puml src="diagrams/FindCommandSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `find` Command" />
@@ -675,7 +682,7 @@ MSS:
 
 Use case: UC02 - Find a Student
 MSS:
-1. TA enters a search command specifying a name, student ID, or email query.
+1. TA enters a search command specifying a name, student ID, email, or remark query.
 2. TeachAssist searches existing records for matches.
 3. TeachAssist displays the list of matching student records and the count of results.
    Use case ends.

@@ -217,19 +217,25 @@ Examples:
 
 If a `dl/` label is absent, an `l/` label already exists, or an empty `l/` is combined with another label change, the edit is rejected and the student remains unchanged.
 
-### Locating persons by name, student ID, or email: `find`
+### Locating persons by name, student ID, email, or remark: `find`
 
-Finds persons whose name, student ID, or email matches any of the given keywords.
+Finds persons whose selected field (name, student ID, email, or remark) contains any of the given keywords.
 
-Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`
+Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]` or `find r/KEYWORD [MORE_KEYWORDS]`
 
 * The search is case-insensitive; for example, `hans` matches `Hans`.
-* The search accepts exactly one prefix: `n/`, `i/`, or `e/`.
+* The search accepts exactly one prefix: `n/`, `i/`, `e/`, or `r/`. Prefixes are lowercase and case-sensitive.
 * Partial words match; for example, `Han` matches `Hans`.
+* Keywords are separated by whitespace. A student matches if the selected field contains at least one keyword.
+* `r/` searches remarks only. Students with empty remarks do not match a remark search.
+* Each search replaces the previous filter and searches all students.
 
 Examples:
 * `find i/a03 a02` returns students whose student ids start with `a03` or `a02`
 * `find n/John` returns `john` and `John Doe`
+* `find r/recursion loops` returns students whose remarks contain either `recursion` or `loops`, ignoring case.
+* `find r/curs` matches a remark such as `Needs help with recursion`.
+* `find r/8/10` matches a remark such as `Quiz 1: 8/10`.
 * `find n/tri sam` returns `tristan`, `samuel`<br>
   ![result for 'find n/tri sam'](images/findIncompleteResult.png)
 
@@ -240,9 +246,11 @@ Examples:
 | Extra words before the search parameter | `Invalid command format!` followed by the correct `find` format |
 | Unknown search parameter | `Unknown parameter: p/.` |
 | Repeated same search parameter | `Parameter n/ must be specified only once.` |
-| Missing search parameter | `Missing required parameter: n/, i/, or e/.` |
-| More than one search parameter type | `Parameter n/, i/, or e/ must be specified only once.` |
+| Missing search parameter | `Missing required parameter: n/, i/, e/, or r/.` |
+| More than one search parameter type, e.g., `find n/Alex r/recursion` | `Parameter n/, i/, e/, or r/ must be specified only once.` |
 | Empty search parameter | `Parameter n/ cannot be empty.` |
+| Repeated remark parameter, e.g., `find r/recursion r/loops` | `Parameter r/ must be specified only once.` |
+| Empty remark parameter, e.g., `find r/` | `Parameter r/ cannot be empty.` |
 
 The parser checks for errors in the order of extra words before the first search parameter, unknown parameters,
 repeated parameters, missing parameters, multiple search parameter types, then empty values before searching.
@@ -404,7 +412,7 @@ Action     | Format, Examples
 **Clear**  | `clear`
 **Delete** | `delete i/STUDENT_ID`<br> e.g., `delete i/A0123456B`
 **Edit**   | `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/LABEL_NAME]...`<br> e.g., `edit i/A0123456B dl/Tutorial 1 l/Tutorial 2`
-**Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
+**Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]` or `find r/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake` or `find r/recursion loops`
 **Filter** | `filter l/LABEL_NAME`<br> e.g., `filter l/Discrete Math Tutorial`
 **List**   | `list`
 **Help**   | `help`

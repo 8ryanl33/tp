@@ -18,10 +18,10 @@ public class FindCommand extends Command {
     public static final String COMMAND_WORD = "find";
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Finds all persons whose name, student ID, "
-            + "or email contains any of the specified keywords (case-insensitive) and displays them as a list "
+            + "email, or remark contains any of the specified keywords (case-insensitive) and displays them as a list "
             + "with index numbers.\n"
             + "Parameters: n/KEYWORD [MORE_KEYWORDS]... or i/KEYWORD [MORE_KEYWORDS]... "
-            + "or e/KEYWORD [MORE_KEYWORDS]...\n"
+            + "or e/KEYWORD [MORE_KEYWORDS]... or r/KEYWORD [MORE_KEYWORDS]...\n"
             + "Example: " + COMMAND_WORD + " n/aiken dueet";
 
     private final Predicate<Person> predicate;
