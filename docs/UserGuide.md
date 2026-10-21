@@ -41,6 +41,10 @@ TeachAssist is a **desktop application for managing student records, optimized f
 
 1. Refer to the [Features](#features) section below for details of each command.
 
+TeachAssist fits its startup window within the available screen area, accounting for display scaling and the taskbar.
+You can resize the window down to 450 × 400 logical pixels. At higher scaling, fewer student cards fit at once;
+scroll the student list to reach the remaining students.
+
 --------------------------------------------------------------------------------------------------------------------
 
 ## Features
