@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.model.person.EmailContainsKeywordsPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.person.RemarkContainsKeywordsPredicate;
 import seedu.address.model.person.StudentIdContainsKeywordsPredicate;
 
 public class FindCommandParserTest {
@@ -96,6 +97,66 @@ public class FindCommandParserTest {
         FindCommand expectedFindCommand =
                 new FindCommand(new EmailContainsKeywordsPredicate(List.of("alice@example.com")));
         assertParseSuccess(parser, " e/alice@example.com", expectedFindCommand);
+    }
+
+    @Test
+    public void parse_validRemarkArgs_returnsFindCommand() {
+        FindCommand expectedFindCommand =
+                new FindCommand(new RemarkContainsKeywordsPredicate(List.of("recursion")));
+        assertParseSuccess(parser, " r/recursion", expectedFindCommand);
+        assertParseSuccess(parser, "r/recursion", expectedFindCommand);
+    }
+
+    @Test
+    public void parse_multipleRemarkKeywords_returnsFindCommand() {
+        FindCommand expectedFindCommand =
+                new FindCommand(new RemarkContainsKeywordsPredicate(List.of("recursion", "loops")));
+        assertParseSuccess(parser, " r/recursion loops", expectedFindCommand);
+        assertParseSuccess(parser, " \n r/recursion \n \t loops  \t", expectedFindCommand);
+    }
+
+    @Test
+    public void parse_numericSlashInRemarkKeyword_returnsFindCommand() {
+        FindCommand expectedFindCommand =
+                new FindCommand(new RemarkContainsKeywordsPredicate(List.of("8/10")));
+        assertParseSuccess(parser, " r/8/10", expectedFindCommand);
+    }
+
+    @Test
+    public void parse_emptyRemark_throwsParseException() {
+        assertParseFailure(parser, " r/", String.format(MESSAGE_EMPTY_PARAMETER, CliSyntax.PREFIX_REMARK));
+        assertParseFailure(parser, " r/ \n \t ",
+                String.format(MESSAGE_EMPTY_PARAMETER, CliSyntax.PREFIX_REMARK));
+    }
+
+    @Test
+    public void parse_duplicateRemarkPrefix_throwsParseException() {
+        assertParseFailure(parser, " r/recursion r/loops",
+                String.format(MESSAGE_REPEATED_PARAMETER, CliSyntax.PREFIX_REMARK));
+    }
+
+    @Test
+    public void parse_remarkWithOtherSearchPrefix_throwsParseException() {
+        for (String otherParameter : List.of("n/Alice", "i/A1234567B", "e/alice@example.com")) {
+            assertParseFailure(parser, " r/recursion " + otherParameter,
+                    String.format(MESSAGE_REPEATED_PARAMETER, SEARCH_PARAMETER));
+            assertParseFailure(parser, " " + otherParameter + " r/recursion",
+                    String.format(MESSAGE_REPEATED_PARAMETER, SEARCH_PARAMETER));
+        }
+    }
+
+    @Test
+    public void parse_wordsBeforeRemarkPrefix_throwsParseException() {
+        assertParseFailure(parser, "Alice r/recursion",
+                String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
+    }
+
+    @Test
+    public void parse_unknownPrefixWithRemark_throwsParseException() {
+        assertParseFailure(parser, " r/recursion p/123",
+                String.format(MESSAGE_UNKNOWN_PARAMETER, new Prefix("p/")));
+        assertParseFailure(parser, " R/recursion",
+                String.format(MESSAGE_UNKNOWN_PARAMETER, new Prefix("R/")));
     }
 
 }
