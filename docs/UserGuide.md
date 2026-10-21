@@ -312,6 +312,94 @@ For example, `delete i/123 x/1` reports `Unknown parameter: x/.` before checking
 The startup-loading check occurs after parsing. Finding the student and saving happen only after a valid command
 passes that check. Failed commands leave records, the current filter, and the saved file unchanged.
 
+### Recording attendance: `mark`
+
+Records that a student attended a group on a particular date.
+
+Format: `mark i/STUDENT_ID d/YYYY-MM-DD l/GROUP`
+
+* Exactly one non-empty `i/`, `d/`, and `l/` is required, in any order. Prefixes are lowercase and case-sensitive.
+* Student IDs and group names follow the rules under `add`. Matching ignores case, but internal group spacing matters.
+* The date must be a valid calendar date in `YYYY-MM-DD` format, including zero-padded months and days.
+* The student must exist and currently have the specified group label.
+* Attendance is identified by date and group. Marking the same date and group again is rejected.
+* The student can be hidden by the current filter. The command preserves that filter and all other student details.
+
+Example, for a student with the `Tutorial 1` label:
+
+```text
+mark i/A0123456B d/2026-10-20 l/tutorial 1
+```
+
+Successful output uses the stored group label's capitalisation:
+
+```text
+Marked student A0123456B present for Tutorial 1 on 2026-10-20.
+```
+
+| Problem | Message |
+|---------|---------|
+| Student does not exist | `Student with ID A0123456B is not in the records.` |
+| Student does not have the group label | `Student A0123456B does not have group label "Tutorial 1".` |
+| Attendance already exists | `Student A0123456B is already marked present for Tutorial 1 on 2026-10-20.` |
+
+For input and saving errors shared with `unmark`, see [Attendance command errors](#attendance-command-errors).
+
+### Removing attendance: `unmark`
+
+Removes one previously recorded attendance entry for a student, date, and group.
+
+Format: `unmark i/STUDENT_ID d/YYYY-MM-DD l/GROUP`
+
+* The parameter rules are the same as for `mark`: exactly one non-empty `i/`, `d/`, and `l/`, in any order.
+* Student ID and group matching ignore case. The date must match exactly.
+* The student and attendance entry must exist. Repeating a successful `unmark` reports that attendance is not marked.
+* Attendance can be removed even if the student no longer has that group label.
+* Other attendance entries, student details, group labels, and the current filter are preserved.
+* The student can be hidden by the current filter. The removal is saved before it is applied to the live records.
+
+Example, to remove the attendance recorded above:
+
+```text
+unmark i/a0123456b d/2026-10-20 l/tutorial 1
+```
+
+Successful output uses the attendance entry's stored group spelling:
+
+```text
+Unmarked student A0123456B for Tutorial 1 on 2026-10-20.
+```
+
+| Problem | Message |
+|---------|---------|
+| Student does not exist | `Student with ID A0123456B is not in the records.` |
+| No attendance entry for the date and group | `Student A0123456B is not marked present for Tutorial 1 on 2026-10-20.` |
+
+#### Attendance command errors
+
+Both commands must occupy one line. Input is checked for unknown prefixes, text before the first parameter,
+repeated parameters, then missing or empty parameters. Repeated and missing/empty checks follow `i/`, `d/`, `l/`
+order. Field values are then validated in Student ID, date, and group order. Only the first error is reported.
+
+| Problem | Example message |
+|---------|-----------------|
+| Command spans multiple lines | `Invalid command format!` followed by the `help` usage |
+| Incorrect command word or capitalisation, e.g., `Unmark` | `Unknown command.` |
+| Unknown parameter | `Unknown parameter: x/.` |
+| Text before the first parameter | `Invalid command format. Usage: unmark i/STUDENT_ID d/YYYY-MM-DD l/GROUP` (or the corresponding `mark` usage) |
+| Repeated parameter | `Parameter d/ must be specified only once.` |
+| Missing parameter | `Missing required parameter: d/.` |
+| Empty parameter | `Parameter l/ cannot be empty.` |
+| Invalid Student ID | `Student ID must contain exactly 9 letters or digits, with no spaces.` |
+| Invalid date, e.g., `2026-02-30` or `2026-2-03` | `Date must use a valid YYYY-MM-DD date.` |
+| Invalid group name | See the label constraints under [Adding a student](#adding-a-student-add). |
+| Student data failed to load at startup | `Student data is unavailable because loading failed. Fix the data file and restart.` |
+| Data storage location cannot be created | `Unable to create data storage location.` |
+| Saving fails | `Unable to save student data.` |
+
+The startup-loading check occurs after parsing. Student and attendance checks follow it, and saving occurs last.
+Failed commands preserve the records, active filter, and saved file.
+
 ### Clearing all entries: `clear`
 
 Clears all entries from the address book.
@@ -342,7 +430,7 @@ and only the first problem found is shown.
 
 If loading fails, TeachAssist starts with an empty student list and leaves the data file untouched:
 
-* Commands that change student records (`add`, `edit`, `delete`, and `clear`) are blocked with
+* Commands that change student records (`add`, `edit`, `delete`, `mark`, `unmark`, and `clear`) are blocked with
   `Student data is unavailable because loading failed. Fix the data file and restart.`
 * Commands that do not change student records, such as `list`, `find`, `filter`, `help`, and `exit`, remain available.
 
@@ -351,7 +439,7 @@ with an empty student list.
 
 ### Saving the data
 
-TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, and `clear`).
+TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, `mark`, `unmark`, and `clear`).
 You do not need to save manually. Commands such as `find`, `filter`, `list`, `help`, and `exit` do not write student data.
 If saving fails, the proposed change is not applied, and existing records, the displayed filter, and the previous
 saved file remain unchanged. The application displays `Unable to save student data.`
@@ -407,4 +495,6 @@ Action     | Format, Examples
 **Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
 **Filter** | `filter l/LABEL_NAME`<br> e.g., `filter l/Discrete Math Tutorial`
 **List**   | `list`
+**Mark**   | `mark i/STUDENT_ID d/YYYY-MM-DD l/GROUP`<br> e.g., `mark i/A0123456B d/2026-10-20 l/Tutorial 1`
+**Unmark** | `unmark i/STUDENT_ID d/YYYY-MM-DD l/GROUP`<br> e.g., `unmark i/A0123456B d/2026-10-20 l/Tutorial 1`
 **Help**   | `help`
