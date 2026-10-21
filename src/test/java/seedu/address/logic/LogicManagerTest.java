@@ -1,6 +1,7 @@
 package seedu.address.logic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static seedu.address.logic.Messages.MESSAGE_PERSONS_LISTED_OVERVIEW;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.logic.commands.CommandTestUtil.EMAIL_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.NAME_DESC_AMY;
@@ -292,7 +293,7 @@ public class LogicManagerTest {
     }
 
     @Test
-    public void execute_addWithLabel_persistsAndFiltersAfterReload() throws Exception {
+    public void execute_addWithLabel_persistsAndFindsAfterReload() throws Exception {
         model.addPerson(ALICE);
         logic.execute("add n/Samuel i/A0101010A e/samuel@example.com l/Tutorial 1");
         Person expectedStudent = new PersonBuilder().withName("Samuel")
@@ -301,8 +302,8 @@ public class LogicManagerTest {
         model = new ModelManager(storage.readAddressBook().orElseThrow(), new UserPrefs());
         logic = new LogicManager(model, storage);
 
-        CommandResult result = logic.execute("filter l/tutorial 1");
-        assertEquals("1 students found with label \"tutorial 1\".", result.getFeedbackToUser());
+        CommandResult result = logic.execute("find l/tutorial 1");
+        assertEquals(String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 1), result.getFeedbackToUser());
         assertEquals(List.of(expectedStudent), model.getFilteredPersonList());
     }
 
@@ -341,7 +342,7 @@ public class LogicManagerTest {
                 new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
         logic.execute("list");
         logic.execute("find n/ Samuel");
-        logic.execute("filter l/Discrete Math Tutorial");
+        logic.execute("find l/Discrete Math Tutorial");
         logic.execute("help");
         logic.execute("exit");
     }
@@ -442,7 +443,7 @@ public class LogicManagerTest {
     }
 
     @Test
-    public void execute_filterCommandExactCase_success() throws Exception {
+    public void execute_findLabelExactCase_success() throws Exception {
         Person samuel = new PersonBuilder().withName("Samuel Tan")
                 .withStudentId("A0101010A")
                 .withEmail("samuel@example.com")
@@ -459,14 +460,14 @@ public class LogicManagerTest {
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
         expectedModel.updateFilteredPersonList(person -> person.equals(samuel));
 
-        assertCommandSuccess("filter l/Discrete Math Tutorial",
-                "1 students found with label \"Discrete Math Tutorial\".", expectedModel);
+        assertCommandSuccess("find l/Discrete Math Tutorial",
+                String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 1), expectedModel);
         assertEquals(List.of(samuel), model.getFilteredPersonList());
         assertEquals(originalAddressBook, model.getAddressBook());
     }
 
     @Test
-    public void execute_filterCommandDifferentCase_success() throws Exception {
+    public void execute_findLabelDifferentCase_success() throws Exception {
         Person samuel = new PersonBuilder().withName("Samuel Tan")
                 .withStudentId("A0101010A")
                 .withEmail("samuel@example.com")
@@ -483,14 +484,75 @@ public class LogicManagerTest {
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
         expectedModel.updateFilteredPersonList(person -> person.equals(samuel));
 
-        assertCommandSuccess("filter l/discrete math tutorial",
-                "1 students found with label \"discrete math tutorial\".", expectedModel);
+        assertCommandSuccess("find l/discrete math tutorial",
+                String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 1), expectedModel);
         assertEquals(List.of(samuel), model.getFilteredPersonList());
         assertEquals(originalAddressBook, model.getAddressBook());
     }
 
     @Test
-    public void execute_filterCommandNoMatches_clearsDisplayedList() throws Exception {
+    public void execute_findUnicodeLabels_agreesWithStorageAndEdit() throws Exception {
+        Person latinI = new PersonBuilder().withStudentId("A0101010A").withLabels("I").build();
+        Person dotlessI = new PersonBuilder().withStudentId("A0101011A").withLabels("ı").build();
+        Person dottedI = new PersonBuilder().withStudentId("A0101012A").withLabels("İ").build();
+        model.addPerson(latinI);
+        model.addPerson(dotlessI);
+        model.addPerson(dottedI);
+        storage.saveAddressBook(model.getAddressBook());
+        model.setAddressBook(storage.readAddressBook().orElseThrow());
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+
+        logic.execute("find l/i");
+        assertEquals(List.of(latinI), model.getFilteredPersonList());
+        logic.execute("find l/ı");
+        assertEquals(List.of(dotlessI), model.getFilteredPersonList());
+        logic.execute("find l/i\u0307");
+        assertEquals(List.of(dottedI), model.getFilteredPersonList());
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
+
+        logic.execute("edit i/A0101010A dl/i");
+        logic.execute("find l/i");
+        assertEquals(List.of(), model.getFilteredPersonList());
+        logic.execute("find l/ı");
+        assertEquals(List.of(dotlessI), model.getFilteredPersonList());
+        assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+    }
+
+    @Test
+    public void execute_findRemarksAndLabelsSequentially_preservesBothSearchModesAndSavedData() throws Exception {
+        Person alex = new PersonBuilder().withStudentId("A0101010A").withLabels("Tutorial 1")
+                .withRemark("Needs help with recursion").build();
+        Person samuel = new PersonBuilder().withStudentId("A0101011A").withLabels("Tutorial 2")
+                .withRemark("Practise loops").build();
+        model.addPerson(alex);
+        model.addPerson(samuel);
+        storage.saveAddressBook(model.getAddressBook());
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+
+        logic.execute("find l/tutorial 1");
+        assertEquals(List.of(alex), model.getFilteredPersonList());
+        logic.execute("find r/LOOPS");
+        assertEquals(List.of(samuel), model.getFilteredPersonList());
+        logic.execute("find l/tutorial 1");
+        assertEquals(List.of(alex), model.getFilteredPersonList());
+        logic.execute("find r/curs");
+        assertEquals(List.of(alex), model.getFilteredPersonList());
+        logic.execute("find r/NoSuchRemark");
+        assertEquals(List.of(), model.getFilteredPersonList());
+        logic.execute("find l/tutorial 2");
+        assertEquals(List.of(samuel), model.getFilteredPersonList());
+
+        assertThrows(ParseException.class, "Parameter n/, i/, e/, r/, or l/ must be specified only once.", ()
+            -> logic.execute("find l/Tutorial 1 r/loops"));
+        assertEquals(List.of(samuel), model.getFilteredPersonList());
+        logic.execute("list");
+        assertEquals(List.of(alex, samuel), model.getFilteredPersonList());
+        assertEquals(List.of(alex, samuel), model.getAddressBook().getPersonList());
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
+    }
+
+    @Test
+    public void execute_findLabelNoMatches_clearsDisplayedList() throws Exception {
         Person samuel = new PersonBuilder().withName("Samuel Tan")
                 .withStudentId("A0101010A")
                 .withEmail("samuel@example.com")
@@ -507,10 +569,52 @@ public class LogicManagerTest {
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
         expectedModel.updateFilteredPersonList(person -> false);
 
-        assertCommandSuccess("filter l/NonExistent",
-                "No students found with label \"NonExistent\".", expectedModel);
+        assertCommandSuccess("find l/NonExistent",
+                String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 0), expectedModel);
         assertEquals(List.of(), model.getFilteredPersonList());
         assertEquals(originalAddressBook, model.getAddressBook());
+    }
+
+    @Test
+    public void execute_findLabelAfterOtherSearches_searchesAllStudentsAndListRestoresAll() throws Exception {
+        Person labelledAlice = new PersonBuilder(ALICE).withLabels("Tutorial 1", "Consultation").build();
+        model.addPerson(labelledAlice);
+        model.addPerson(BENSON);
+        storage.saveAddressBook(model.getAddressBook());
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+
+        logic.execute("find n/Benson");
+        assertEquals(List.of(BENSON), model.getFilteredPersonList());
+        logic.execute("find l/tutorial 1");
+        assertEquals(List.of(labelledAlice), model.getFilteredPersonList());
+        logic.execute("find e/" + BENSON.getEmail().value);
+        assertEquals(List.of(BENSON), model.getFilteredPersonList());
+        logic.execute("find i/" + labelledAlice.getStudentId());
+        assertEquals(List.of(labelledAlice), model.getFilteredPersonList());
+        logic.execute("find l/No Such Label");
+        assertEquals(List.of(), model.getFilteredPersonList());
+        logic.execute("find l/Consultation");
+        assertEquals(List.of(labelledAlice), model.getFilteredPersonList());
+        logic.execute("list");
+        assertEquals(List.of(labelledAlice, BENSON), model.getFilteredPersonList());
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
+    }
+
+    @Test
+    public void execute_invalidLabelSearch_preservesActiveViewAndSavedFile() throws Exception {
+        model.addPerson(ALICE);
+        model.addPerson(BENSON);
+        logic.execute("find n/Benson");
+        storage.saveAddressBook(model.getAddressBook());
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+
+        for (String command : List.of("find l/", "find l/One l/Two", "find n/Alice l/Tutorial",
+                "find l/Tutorial/1", "filter l/Tutorial")) {
+            assertThrows(ParseException.class, () -> logic.execute(command));
+            assertEquals(List.of(BENSON), model.getFilteredPersonList());
+            assertEquals(List.of(ALICE, BENSON), model.getAddressBook().getPersonList());
+            assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
+        }
     }
 
     @Test
