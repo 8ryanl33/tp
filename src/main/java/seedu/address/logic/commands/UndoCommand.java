@@ -1,6 +1,7 @@
 package seedu.address.logic.commands;
 
-import seedu.address.logic.commands.exceptions.CommandException;
+import static java.util.Objects.requireNonNull;
+
 import seedu.address.model.Model;
 
 /**
@@ -20,7 +21,18 @@ public class UndoCommand extends Command {
     }
 
     @Override
-    public CommandResult execute(Model model) throws CommandException {
-        throw new UnsupportedOperationException("Undo has not been implemented.");
+    public CommandResult execute(Model model) {
+        requireNonNull(model);
+        return new CommandResult(MESSAGE_NOTHING_TO_UNDO);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof UndoCommand;
+    }
+
+    @Override
+    public int hashCode() {
+        return UndoCommand.class.hashCode();
     }
 }
