@@ -19,13 +19,13 @@ import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
 import seedu.address.logic.commands.ExitCommand;
-import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.UnmarkCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.label.Label;
+import seedu.address.model.person.LabelMatchesPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.StudentId;
@@ -112,16 +112,16 @@ public class AddressBookParserTest {
     }
 
     @Test
-    public void parseCommand_filter() throws Exception {
-        FilterCommand command = (FilterCommand) parser.parseCommand(
-                FilterCommand.COMMAND_WORD + " l/Discrete Math Tutorial");
-        assertEquals(new FilterCommand(new Label("Discrete Math Tutorial")), command);
+    public void parseCommand_findLabel() throws Exception {
+        assertEquals(new FindCommand(new LabelMatchesPredicate(new Label("Discrete Math Tutorial"))),
+                parser.parseCommand("find l/Discrete Math Tutorial"));
     }
 
     @Test
-    public void parseCommand_filterInvalidArgs_throwsParseException() {
-        assertThrows(ParseException.class, FilterCommandParser.MESSAGE_MISSING_LABEL, ()
-            -> parser.parseCommand(FilterCommand.COMMAND_WORD));
+    public void parseCommand_removedFilter_throwsUnknownCommand() {
+        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("filter"));
+        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, ()
+            -> parser.parseCommand("filter l/Discrete Math Tutorial"));
     }
 
     @Test
