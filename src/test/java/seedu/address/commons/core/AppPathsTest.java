@@ -52,6 +52,27 @@ public class AppPathsTest {
         assertFilesBesideJar("Teach Assist Ω 100% %h %t %g %u %%", true);
     }
 
+    @Test
+    public void runningFromJar_blockedLogFile_continuesWithConsoleLogging() throws Exception {
+        Path installationFolder = Files.createDirectory(temporaryFolder.resolve("installation"));
+        Path jar = createProbeJar(installationFolder.resolve("Teach Assist.jar"));
+        Path launchFolder = Files.createDirectory(temporaryFolder.resolve("launch-folder"));
+        Path blockedLogFile = Files.createDirectory(installationFolder.resolve("addressbook.log.0"));
+        Path existingFile = Files.writeString(blockedLogFile.resolve("existing.txt"), "Keep this file.");
+
+        String output = runProbe(jar, launchFolder, false);
+
+        assertTrue(output.contains("Continuing with console logging."), output);
+        assertTrue(output.contains(LOG_MESSAGE), output);
+        assertTrue(Files.isDirectory(blockedLogFile));
+        assertEquals("Keep this file.", Files.readString(existingFile));
+        assertEquals(STUDENT_DATA, Files.readString(installationFolder.resolve("data/addressbook.json")));
+        assertEquals(PREFERENCES, Files.readString(installationFolder.resolve("preferences.json")));
+        try (var files = Files.list(launchFolder)) {
+            assertEquals(0, files.count());
+        }
+    }
+
     private void assertFilesBesideJar(String installationFolderName, boolean useUriLauncher) throws Exception {
         Path installationFolder = Files.createDirectory(temporaryFolder.resolve(installationFolderName));
         Path jar = createProbeJar(installationFolder.resolve("Teach Assist.jar"));
@@ -93,7 +114,7 @@ public class AppPathsTest {
         return jar;
     }
 
-    private void runProbe(Path jar, Path launchFolder, boolean useUriLauncher) throws Exception {
+    private String runProbe(Path jar, Path launchFolder, boolean useUriLauncher) throws Exception {
         Path javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java");
         Path outputFile = temporaryFolder.resolve("probe-output.txt");
         List<String> command = new ArrayList<>();
@@ -116,7 +137,9 @@ public class AppPathsTest {
                 .redirectOutput(outputFile.toFile()).start();
         try {
             assertTrue(process.waitFor(20, TimeUnit.SECONDS), "File-location probe timed out.");
-            assertEquals(0, process.exitValue(), Files.readString(outputFile));
+            String output = Files.readString(outputFile);
+            assertEquals(0, process.exitValue(), output);
+            return output;
         } finally {
             process.destroyForcibly();
         }
