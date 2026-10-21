@@ -14,10 +14,14 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import seedu.address.logic.parser.FindCommandParser;
+import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.person.Person;
+import seedu.address.testutil.PersonBuilder;
 
 /**
  * Contains integration tests (interaction with the Model) for {@code FindCommand}.
@@ -71,6 +75,35 @@ public class FindCommandTest {
         expectedModel.updateFilteredPersonList(predicate);
         assertCommandSuccess(command, model, expectedMessage, expectedModel);
         assertEquals(List.of(CARL, ELLE, FIONA), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_remarkKeywords_findsMatchesAcrossCompleteList() throws ParseException {
+        Person recursionStudent = new PersonBuilder(CARL).withRemark("Needs help with Recursion").build();
+        Person loopsStudent = new PersonBuilder(ELLE).withRemark("Practising loops").build();
+        Person noRemarkStudent = new PersonBuilder(FIONA).withRemark("").build();
+        for (Model currentModel : List.of(model, expectedModel)) {
+            currentModel.setPerson(CARL, recursionStudent);
+            currentModel.setPerson(ELLE, loopsStudent);
+            currentModel.setPerson(FIONA, noRemarkStudent);
+        }
+        model.updateFilteredPersonList(person -> person.equals(noRemarkStudent));
+
+        FindCommand command = new FindCommandParser().parse(" r/CURS loops");
+        expectedModel.updateFilteredPersonList(person ->
+                person.equals(recursionStudent) || person.equals(loopsStudent));
+
+        assertCommandSuccess(command, model, String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 2), expectedModel);
+        assertEquals(List.of(recursionStudent, loopsStudent), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_nonMatchingRemarkKeyword_noPersonFound() throws ParseException {
+        FindCommand command = new FindCommandParser().parse(" r/nonexistentremarkkeyword");
+        expectedModel.updateFilteredPersonList(person -> false);
+
+        assertCommandSuccess(command, model, String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 0), expectedModel);
+        assertEquals(List.of(), model.getFilteredPersonList());
     }
 
     @Test
