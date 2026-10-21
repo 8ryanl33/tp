@@ -416,6 +416,37 @@ Clears all entries from the address book.
 
 Format: `clear`
 
+### Undoing the latest data change: `undo`
+
+Restores the student records to the state before the latest successfully saved data-changing command.
+
+Format: `undo`
+
+Successful output:
+
+```text
+Undid last change.
+```
+
+* TeachAssist retains at most 100 earlier student-data snapshots for the current session. The snapshots contain the
+  complete student records, including remarks, labels, and attendance.
+* A successful undo is destructive: it discards the state being reversed. There is no redo command or forward history.
+  A later successful data change records the then-current state as a new predecessor.
+* Undo resets the displayed list to all students. It does not restore a previous `find` or `filter` result, window
+  settings, or other GUI state.
+* The restored student data is saved before it replaces the live records. If saving fails, the records, displayed list,
+  saved file, and undo history remain unchanged.
+* Undo history is in memory only and is cleared when TeachAssist restarts.
+* Leading and trailing whitespace is ignored. The command word is case-sensitive and it accepts no arguments.
+
+| Situation | Exact message |
+|-----------|---------------|
+| No earlier state is available | `Nothing to undo.` |
+| Additional or parameter-like input, e.g. `undo 1` or `undo n/Samuel` | `Invalid command format!` followed by `Usage: undo` |
+| Incorrect capitalization, e.g. `Undo` | `Unknown command.` |
+| Data storage location cannot be created | `Unable to create data storage location.` |
+| Saving the restored state fails | `Unable to save student data.` |
+
 ### Exiting the program: `exit`
 
 Exits the program.
@@ -440,7 +471,7 @@ and only the first problem found is shown.
 
 If loading fails, TeachAssist starts with an empty student list and leaves the data file untouched:
 
-* Commands that change student records (`add`, `edit`, `delete`, `mark`, `unmark`, and `clear`) are blocked with
+* Commands that change student records (`add`, `edit`, `delete`, `mark`, `unmark`, `clear`, and `undo`) are blocked with
   `Student data is unavailable because loading failed. Fix the data file and restart.`
 * Commands that do not change student records, such as `list`, `find`, `help`, and `exit`, remain available.
 
@@ -449,7 +480,8 @@ with an empty student list.
 
 ### Saving the data
 
-TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, `mark`, `unmark`, and `clear`).
+TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, `mark`, `unmark`,
+`clear`, and successful `undo`).
 You do not need to save manually. Commands such as `find`, `list`, `help`, and `exit` do not write student data.
 If saving fails, the proposed change is not applied, and existing records, the displayed filter, and the previous
 saved file remain unchanged. The application displays `Unable to save student data.`
@@ -510,4 +542,5 @@ Action     | Format, Examples
 **List**   | `list`
 **Mark**   | `mark i/STUDENT_ID d/YYYY-MM-DD l/GROUP`<br> e.g., `mark i/A0123456B d/2026-10-20 l/Tutorial 1`
 **Unmark** | `unmark i/STUDENT_ID d/YYYY-MM-DD l/GROUP`<br> e.g., `unmark i/A0123456B d/2026-10-20 l/Tutorial 1`
+**Undo**   | `undo`
 **Help**   | `help`

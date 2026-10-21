@@ -40,6 +40,20 @@ This project has three types of tests:
 1. *Hybrid tests* combine unit and integration testing. These tests check both the individual units and how they work together.<br>
    For example: `seedu.address.logic.LogicManagerTest`
 
+<!-- TODO: Move this snippet into DG test appendix -->
+## Manual undo scenario
+
+1. Add or edit a student, then run `undo`. Confirm that the previous student data is restored and the feedback is
+   `Undid last change.`
+2. Make two more data changes and run `undo` twice. Confirm that each command restores the next earlier state.
+3. Run `find` or `filter`, then make a data change and run `undo`. Confirm that undo shows the complete student list,
+   not the earlier filtered result.
+4. Continue running `undo` until every earlier state has been restored, then run `undo` once more. Confirm the
+   feedback is `Nothing to undo.` and the records do not change.
+5. Make a data change, restart TeachAssist, then run `undo`. Confirm the feedback is `Nothing to undo.`
+
+The automated unit and logic tests cover the 100-state history boundary.
+<!-- TODO: Move this snippet into DG test appendix -->
 
 --------------------------------------------------------------------------------------------------------------------
 
