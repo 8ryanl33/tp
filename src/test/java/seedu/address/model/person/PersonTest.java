@@ -10,8 +10,12 @@ import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.BOB;
 
+import java.time.LocalDate;
+
 import org.junit.jupiter.api.Test;
 
+import seedu.address.model.attendance.AttendanceRecord;
+import seedu.address.model.label.Label;
 import seedu.address.testutil.PersonBuilder;
 
 public class PersonTest {
@@ -23,6 +27,12 @@ public class PersonTest {
     public void getLabels_modifySet_throwsUnsupportedOperationException() {
         Person person = new PersonBuilder().build();
         assertThrows(UnsupportedOperationException.class, () -> person.getLabels().clear());
+    }
+
+    @Test
+    public void getAttendance_modifySet_throwsUnsupportedOperationException() {
+        Person person = new PersonBuilder().build();
+        assertThrows(UnsupportedOperationException.class, () -> person.getAttendance().clear());
     }
 
     @Test
@@ -87,6 +97,10 @@ public class PersonTest {
         // different labels -> returns false
         editedAlice = new PersonBuilder(ALICE).withLabels(VALID_LABEL_TUTORIAL).build();
         assertFalse(ALICE.equals(editedAlice));
+
+        AttendanceRecord record = new AttendanceRecord(LocalDate.parse("2026-10-20"), new Label("Tutorial 1"));
+        editedAlice = new PersonBuilder(ALICE).withAttendance(record).build();
+        assertFalse(ALICE.equals(editedAlice));
     }
 
     @Test
@@ -95,6 +109,7 @@ public class PersonTest {
 
         assertEquals(ALICE.getStudentId(), person.getStudentId());
         assertEquals(new Remark(""), person.getRemark());
+        assertTrue(person.getAttendance().isEmpty());
     }
 
     @Test
@@ -124,7 +139,8 @@ public class PersonTest {
         String expected = Person.class.getCanonicalName() + "{name=" + ALICE.getName()
                 + ", studentId=" + ALICE.getStudentId() + ", email=" + ALICE.getEmail()
                 + ", labels=" + ALICE.getLabels()
-                + ", remark=" + ALICE.getRemark() + "}";
+                + ", remark=" + ALICE.getRemark()
+                + ", attendance=" + ALICE.getAttendance() + "}";
         assertEquals(expected, ALICE.toString());
     }
 }

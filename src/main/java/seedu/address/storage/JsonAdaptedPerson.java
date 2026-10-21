@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import seedu.address.commons.exceptions.IllegalValueException;
+import seedu.address.model.attendance.AttendanceRecord;
 import seedu.address.model.label.Label;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
@@ -26,12 +27,15 @@ class JsonAdaptedPerson {
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Person's %s field is missing!";
     public static final String MISSING_LABEL_MESSAGE = "Person's label field is missing!";
     public static final String MESSAGE_DUPLICATE_LABEL = "Person's labels contain duplicate label(s).";
+    public static final String MESSAGE_DUPLICATE_ATTENDANCE = "Person's attendance contains duplicate record(s).";
+    public static final String MISSING_ATTENDANCE_MESSAGE = "Person's attendance record is missing!";
 
     private final String name;
     private final String studentId;
     private final String email;
     private final String remark;
     private final List<JsonAdaptedLabel> labels = new ArrayList<>();
+    private final List<JsonAdaptedAttendanceRecord> attendance = new ArrayList<>();
 
     /**
      * Constructs a {@code JsonAdaptedPerson} with the given person details.
@@ -41,6 +45,14 @@ class JsonAdaptedPerson {
     public JsonAdaptedPerson(@JsonProperty("name") String name, @JsonProperty("studentId") String studentId,
             @JsonProperty("email") String email, @JsonProperty("labels") List<JsonAdaptedLabel> labels,
             @JsonProperty("remark") String remark) {
+        this(name, studentId, email, labels, remark, null);
+    }
+
+    /**
+     * Constructs an adapted person, defaulting missing attendance to an empty set.
+     */
+    public JsonAdaptedPerson(String name, String studentId, String email, List<JsonAdaptedLabel> labels,
+            String remark, List<JsonAdaptedAttendanceRecord> attendance) {
         this.name = name;
         this.studentId = studentId;
         this.email = email;
@@ -48,6 +60,7 @@ class JsonAdaptedPerson {
         if (labels != null) {
             this.labels.addAll(labels);
         }
+        setAttendance(attendance);
     }
 
     /**
@@ -61,6 +74,20 @@ class JsonAdaptedPerson {
         labels.addAll(source.getLabels().stream()
                 .map(JsonAdaptedLabel::new)
                 .collect(Collectors.toList()));
+        attendance.addAll(source.getAttendance().stream()
+                .map(JsonAdaptedAttendanceRecord::new)
+                .collect(Collectors.toList()));
+    }
+
+    /**
+     * Loads attendance records, treating a missing or null value as empty.
+     */
+    @JsonProperty("attendance")
+    public void setAttendance(List<JsonAdaptedAttendanceRecord> attendance) {
+        this.attendance.clear();
+        if (attendance != null) {
+            this.attendance.addAll(attendance);
+        }
     }
 
     /**
@@ -112,7 +139,16 @@ class JsonAdaptedPerson {
             throw new IllegalValueException(Remark.MESSAGE_CONSTRAINTS);
         }
         final Remark modelRemark = new Remark(remark);
-        return new Person(modelName, modelStudentId, modelEmail, modelLabels, modelRemark);
+        final Set<AttendanceRecord> modelAttendance = new HashSet<>();
+        for (JsonAdaptedAttendanceRecord record : attendance) {
+            if (record == null) {
+                throw new IllegalValueException(MISSING_ATTENDANCE_MESSAGE);
+            }
+            if (!modelAttendance.add(record.toModelType())) {
+                throw new IllegalValueException(MESSAGE_DUPLICATE_ATTENDANCE);
+            }
+        }
+        return new Person(modelName, modelStudentId, modelEmail, modelLabels, modelRemark, modelAttendance);
     }
 
 }
