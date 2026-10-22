@@ -6,6 +6,7 @@ import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.testutil.Assert.assertThrows;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,17 +14,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
 import seedu.address.logic.commands.AddCommand;
+import seedu.address.logic.commands.AttendanceCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
 import seedu.address.logic.commands.ExitCommand;
-import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.UndoCommand;
+import seedu.address.logic.commands.UnmarkCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.label.Label;
+import seedu.address.model.person.LabelMatchesPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.StudentId;
@@ -34,6 +38,21 @@ import seedu.address.testutil.PersonUtil;
 public class AddressBookParserTest {
 
     private final AddressBookParser parser = new AddressBookParser();
+
+    @Test
+    public void parseCommand_unmark_returnsUnmarkCommand() throws Exception {
+        UnmarkCommand expected = new UnmarkCommand(new StudentId("A0123456B"),
+                LocalDate.parse("2026-10-20"), new Label("Tutorial 1"));
+        assertEquals(expected, parser.parseCommand("unmark\ti/a0123456b d/2026-10-20 l/Tutorial 1"));
+    }
+
+    @Test
+    public void parseCommand_unmarkInvalidParameters_reportsSpecificErrors() {
+        assertThrows(ParseException.class, "Missing required parameter: i/.", () -> parser.parseCommand("unmark"));
+        assertThrows(ParseException.class, UnmarkCommand.MESSAGE_INVALID_FORMAT, () -> parser.parseCommand("unmark 1"));
+        assertThrows(ParseException.class, ParserUtil.MESSAGE_INVALID_DATE, () ->
+                parser.parseCommand("unmark i/A0123456B d/2026-02-30 l/Tutorial 1"));
+    }
 
     @Test
     public void parseCommand_addWithTabs_success() throws Exception {
@@ -89,22 +108,29 @@ public class AddressBookParserTest {
     }
 
     @Test
+    public void parseCommand_attendance() throws Exception {
+        AttendanceCommand command = (AttendanceCommand) parser.parseCommand(
+                AttendanceCommand.COMMAND_WORD + " d/2026-10-20 l/Tutorial 1");
+        assertEquals(new AttendanceCommand(LocalDate.parse("2026-10-20"), new Label("Tutorial 1")), command);
+    }
+
+    @Test
     public void parseCommand_exit() throws Exception {
         assertTrue(parser.parseCommand(ExitCommand.COMMAND_WORD) instanceof ExitCommand);
         assertTrue(parser.parseCommand(ExitCommand.COMMAND_WORD + " 3") instanceof ExitCommand);
     }
 
     @Test
-    public void parseCommand_filter() throws Exception {
-        FilterCommand command = (FilterCommand) parser.parseCommand(
-                FilterCommand.COMMAND_WORD + " l/Discrete Math Tutorial");
-        assertEquals(new FilterCommand(new Label("Discrete Math Tutorial")), command);
+    public void parseCommand_findLabel() throws Exception {
+        assertEquals(new FindCommand(new LabelMatchesPredicate(new Label("Discrete Math Tutorial"))),
+                parser.parseCommand("find l/Discrete Math Tutorial"));
     }
 
     @Test
-    public void parseCommand_filterInvalidArgs_throwsParseException() {
-        assertThrows(ParseException.class, FilterCommandParser.MESSAGE_MISSING_LABEL, ()
-            -> parser.parseCommand(FilterCommand.COMMAND_WORD));
+    public void parseCommand_removedFilter_throwsUnknownCommand() {
+        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("filter"));
+        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, ()
+            -> parser.parseCommand("filter l/Discrete Math Tutorial"));
     }
 
     @Test
@@ -132,6 +158,12 @@ public class AddressBookParserTest {
     }
 
     @Test
+    public void parseCommand_undo_returnsUndoCommand() throws Exception {
+        assertEquals(new UndoCommand(), parser.parseCommand("undo"));
+        assertEquals(new UndoCommand(), parser.parseCommand("  undo  "));
+    }
+
+    @Test
     public void parseCommand_removedLabelCommand_throwsUnknownCommand() {
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("label"));
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, ()
@@ -150,5 +182,7 @@ public class AddressBookParserTest {
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("lisst"));
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("List"));
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("LIST"));
+        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("Undo"));
+        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("UNDO"));
     }
 }

@@ -22,7 +22,7 @@ TeachAssist is a **desktop application for managing student records, optimized f
 
 1. Copy the file to the folder you want to use as the _home folder_ for TeachAssist.
 
-1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
+1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar teach-assist-v1.3.jar`.<br>
    A GUI similar to the one below should appear in a few seconds. With no saved data file, the student list starts empty.<br>
    ![Ui](images/Ui.png)
 
@@ -40,6 +40,10 @@ TeachAssist is a **desktop application for managing student records, optimized f
    * `exit` : Exits the app.
 
 1. Refer to the [Features](#features) section below for details of each command.
+
+TeachAssist fits its startup window within the available screen area, accounting for display scaling and the taskbar.
+You can resize the window down to 450 × 400 logical pixels. At higher scaling, fewer student cards fit at once;
+scroll the student list to reach the remaining students.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -159,7 +163,7 @@ Failed commands do not change existing student records or the saved file.
 
 ### Listing all students: `list`
 
-Displays every student stored in TeachAssist. If the displayed list was previously restricted by `find` or `filter`, this command restores the complete student list.
+Displays every student stored in TeachAssist. If the displayed list was previously restricted by `find`, this command restores the complete student list.
 
 Format: `list`
 
@@ -217,21 +221,39 @@ Examples:
 
 If a `dl/` label is absent, an `l/` label already exists, or an empty `l/` is combined with another label change, the edit is rejected and the student remains unchanged.
 
-### Locating persons by name, student ID, or email: `find`
+### Finding students by name, student ID, email, remark, or label: `find`
 
-Finds persons whose name, student ID, or email matches any of the given keywords.
+Shows students matching a name, student ID, email, remark, or complete group-label name.
 
-Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`
+Format: `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]`
+or `find e/KEYWORD [MORE_KEYWORDS]` or `find r/KEYWORD [MORE_KEYWORDS]` or `find l/LABEL_NAME`
 
-* The search is case-insensitive; for example, `hans` matches `Hans`.
-* The search accepts exactly one prefix: `n/`, `i/`, or `e/`.
-* Partial words match; for example, `Han` matches `Hans`.
+* Supply exactly one non-empty prefix: `n/`, `i/`, `e/`, `r/`, or `l/`. Repeated prefixes and mixed search fields are rejected.
+* All searches are case-insensitive and search the complete stored student list, replacing the previous search results.
+* Name, ID, email, and remark searches match any supplied keyword, including partial matches anywhere in the selected field.
+* Label searches match the **complete label name**. For example, `find l/Tutorial` does not match `Tutorial 1`.
+  A multi-word label is one value, not separate keywords. A student with multiple labels appears if any label matches.
+  Unicode label matching follows the same case rules as editing and loading labels: `I` matches `i`,
+  while the dotless `ı` is a different label.
+* Label names follow the rules under `add`: 1–60 Unicode code points, at least one letter or digit, and only the
+  permitted characters. Surrounding whitespace is ignored; internal spacing is preserved. Slashes and control
+  characters are rejected.
+* Reports `N students listed.`, or `1 student listed.` for one match. If no students match, the displayed list is cleared and reports `0 students listed.`
+* Student records and the saved data file are unchanged. Use `list` to show all students again.
 
 Examples:
-* `find i/a03 a02` returns students whose student ids start with `a03` or `a02`
-* `find n/John` returns `john` and `John Doe`
-* `find n/tri sam` returns `tristan`, `samuel`<br>
+
+* `find i/a03 a02` matches student IDs containing either `a03` or `a02`.
+* `find n/John` matches `john` and `John Doe`.
+* `find e/example.com` matches students whose email contains `example.com`.
+* `find r/recursion loops` matches remarks containing either `recursion` or `loops`.
+* `find r/curs` matches a remark such as `Needs help with recursion`.
+* `find r/8/10` matches a remark such as `Quiz 1: 8/10`.
+* `find n/tri sam` matches `tristan` and `samuel`.<br>
   ![result for 'find n/tri sam'](images/findIncompleteResult.png)
+* `find l/Discrete Math Tutorial` matches that complete label, including different capitalisation.
+
+The former `filter` command has been replaced by `find l/LABEL_NAME`.
 
 #### Errors
 
@@ -239,34 +261,22 @@ Examples:
 |---------|---------|
 | Extra words before the search parameter | `Invalid command format!` followed by the correct `find` format |
 | Unknown search parameter | `Unknown parameter: p/.` |
-| Repeated same search parameter | `Parameter n/ must be specified only once.` |
-| Missing search parameter | `Missing required parameter: n/, i/, or e/.` |
-| More than one search parameter type | `Parameter n/, i/, or e/ must be specified only once.` |
-| Empty search parameter | `Parameter n/ cannot be empty.` |
+| Repeated same search parameter | `Parameter n/ must be specified only once.` (or the repeated prefix, such as `l/`) |
+| Missing search parameter | `Missing required parameter: n/, i/, e/, r/, or l/.` |
+| More than one search parameter type | `Parameter n/, i/, e/, r/, or l/ must be specified only once.` |
+| Repeated remark parameter, e.g., `find r/recursion r/loops` | `Parameter r/ must be specified only once.` |
+| Empty remark parameter, e.g., `find r/` | `Parameter r/ cannot be empty.` |
+| Empty search parameter | `Parameter l/ cannot be empty.` (or the supplied prefix) |
+| Invalid label | `Label names should be 1 to 60 characters long, contain at least one letter or digit, and only contain letters, digits, spaces, hyphens, underscores, apostrophes, parentheses, and periods.` |
+| Using the removed command, such as `filter l/Tutorial 1` | `Unknown command.` |
 
-The parser checks for errors in the order of extra words before the first search parameter, unknown parameters,
-repeated parameters, missing parameters, multiple search parameter types, then empty values before searching.
-Failed commands do not change the displayed student records or the saved file.
-
-### Filtering students by label: `filter`
-
-Shows only students who have a label matching the given label name.
-
-Format: `filter l/LABEL_NAME`
-
-Examples:
-
-* `filter l/Discrete Math Tutorial`
-* `filter l/discrete math tutorial`
-
-Notes:
-
-* The match is case-insensitive. For example, `filter l/discrete math tutorial` matches students labelled `Discrete Math Tutorial`.
-* If no students have the given label, the displayed list is cleared and the app reports that no students were found.
+Errors are checked in the order of words before the first prefix, unknown prefixes, repeated prefixes, missing
+prefixes, mixed search fields, empty values, then label validation. Failed commands preserve the displayed list,
+student records, and saved file.
 
 ### Deleting a student: `delete`
 
-Deletes the student with the specified Student ID, including their name, email, remark, and labels.
+Deletes the student with the specified Student ID, including their name, email, remark, labels, and attendance records.
 
 Format: `delete i/STUDENT_ID`
 
@@ -312,11 +322,172 @@ For example, `delete i/123 x/1` reports `Unknown parameter: x/.` before checking
 The startup-loading check occurs after parsing. Finding the student and saving happen only after a valid command
 passes that check. Failed commands leave records, the current filter, and the saved file unchanged.
 
+### Recording attendance: `mark`
+
+Records that a student attended a group on a particular date.
+
+Format: `mark i/STUDENT_ID d/YYYY-MM-DD l/GROUP`
+
+* Exactly one non-empty `i/`, `d/`, and `l/` is required, in any order. Prefixes are lowercase and case-sensitive.
+* Student IDs and group names follow the rules under `add`. Matching ignores case, but internal group spacing matters.
+* The date must be a valid calendar date in `YYYY-MM-DD` format, including zero-padded months and days.
+* The student must exist and currently have the specified group label.
+* Attendance is identified by date and group. Marking the same date and group again is rejected.
+* The student can be hidden by the current filter. The command preserves that filter and all other student details.
+
+Example, for a student with the `Tutorial 1` label:
+
+```text
+mark i/A0123456B d/2026-10-20 l/tutorial 1
+```
+
+Successful output uses the stored group label's capitalisation:
+
+```text
+Marked student A0123456B present for Tutorial 1 on 2026-10-20.
+```
+
+| Problem | Message |
+|---------|---------|
+| Student does not exist | `Student with ID A0123456B is not in the records.` |
+| Student does not have the group label | `Student A0123456B does not have group label "Tutorial 1".` |
+| Attendance already exists | `Student A0123456B is already marked present for Tutorial 1 on 2026-10-20.` |
+
+For input and saving errors shared with `unmark`, see [Attendance command errors](#attendance-command-errors).
+
+### Removing attendance: `unmark`
+
+Removes one previously recorded attendance entry for a student, date, and group.
+
+Format: `unmark i/STUDENT_ID d/YYYY-MM-DD l/GROUP`
+
+* The parameter rules are the same as for `mark`: exactly one non-empty `i/`, `d/`, and `l/`, in any order.
+* Student ID and group matching ignore case. The date must match exactly.
+* The student and attendance entry must exist. Repeating a successful `unmark` reports that attendance is not marked.
+* Attendance can be removed even if the student no longer has that group label.
+* Other attendance entries, student details, group labels, and the current filter are preserved.
+* The student can be hidden by the current filter. The removal is saved before it is applied to the live records.
+
+Example, to remove the attendance recorded above:
+
+```text
+unmark i/a0123456b d/2026-10-20 l/tutorial 1
+```
+
+Successful output uses the attendance entry's stored group spelling:
+
+```text
+Unmarked student A0123456B for Tutorial 1 on 2026-10-20.
+```
+
+| Problem | Message |
+|---------|---------|
+| Student does not exist | `Student with ID A0123456B is not in the records.` |
+| No attendance entry for the date and group | `Student A0123456B is not marked present for Tutorial 1 on 2026-10-20.` |
+
+#### Attendance command errors
+
+Both commands must occupy one line. Input is checked for unknown prefixes, text before the first parameter,
+repeated parameters, then missing or empty parameters. Repeated and missing/empty checks follow `i/`, `d/`, `l/`
+order. Field values are then validated in Student ID, date, and group order. Only the first error is reported.
+
+| Problem | Example message |
+|---------|-----------------|
+| Command spans multiple lines | `Invalid command format!` followed by the `help` usage |
+| Incorrect command word or capitalisation, e.g., `Unmark` | `Unknown command.` |
+| Unknown parameter | `Unknown parameter: x/.` |
+| Text before the first parameter | `Invalid command format. Usage: unmark i/STUDENT_ID d/YYYY-MM-DD l/GROUP` (or the corresponding `mark` usage) |
+| Repeated parameter | `Parameter d/ must be specified only once.` |
+| Missing parameter | `Missing required parameter: d/.` |
+| Empty parameter | `Parameter l/ cannot be empty.` |
+| Invalid Student ID | `Student ID must contain exactly 9 letters or digits, with no spaces.` |
+| Invalid date, e.g., `2026-02-30` or `2026-2-03` | `Date must use a valid YYYY-MM-DD date.` |
+| Invalid group name | See the label constraints under [Adding a student](#adding-a-student-add). |
+| Student data failed to load at startup | `Student data is unavailable because loading failed. Fix the data file and restart.` |
+| Data storage location cannot be created | `Unable to create data storage location.` |
+| Saving fails | `Unable to save student data.` |
+
+The startup-loading check occurs after parsing. Student and attendance checks follow it, and saving occurs last.
+Failed commands preserve the records, active filter, and saved file.
+
+### Viewing attendance: `attendance`
+
+Shows which members of a tutorial group were present on a date.
+
+Format: `attendance d/YYYY-MM-DD l/GROUP`
+
+* Exactly one non-empty `d/` and `l/` is required, in any order. They follow the same rules as in
+  [`mark`](#recording-attendance-mark).
+* The view lists every student who **currently** has the group label, in the same order as the student list,
+  including students hidden by `find`.
+* Each student is shown as **Present** if they were marked for that date and group, and **Absent** otherwise.
+  There is no separate way to record an absence.
+* The totals of present and absent students are shown above the list and in the result message.
+* Group membership is based on current labels. A student marked present who has since lost the label is not shown,
+  but their attendance record is kept.
+* If no student has the group label, an empty view with zero totals is shown.
+* This command does not change any data.
+
+The attendance view replaces the student list:
+
+* A successful `mark` or `unmark` refreshes it immediately, so you can mark students one by one and watch the totals
+  change.
+* A failed command leaves it open and unchanged.
+* Any other successful command, such as `list` or `undo`, returns to the student list.
+
+Examples:
+
+* `attendance d/2026-10-20 l/Tutorial 1`
+* `attendance l/tutorial 1 d/2026-10-20` shows the same view.
+
+Successful output, when one of three group members was marked:
+
+```text
+Attendance for Tutorial 1 on 2026-10-20: 1 present, 2 absent.
+```
+
+The group name in the message is shown as typed.
+Input errors use the same messages and order as [Attendance command errors](#attendance-command-errors), without the
+Student ID, with the usage line `Invalid command format. Usage: attendance d/YYYY-MM-DD l/GROUP`.
+An `i/` parameter is rejected as `Unknown parameter: i/.`
+Because `attendance` only reads data, it remains available when student data fails to load.
+
 ### Clearing all entries: `clear`
 
-Clears all entries from the address book.
+Clears all student records from TeachAssist.
 
 Format: `clear`
+
+### Undoing the latest data change: `undo`
+
+Restores the student records to the state before the latest successfully saved data-changing command.
+
+Format: `undo`
+
+Successful output:
+
+```text
+Undid last change.
+```
+
+* TeachAssist retains at most 100 earlier student-data snapshots for the current session. The snapshots contain the
+  complete student records, including remarks, labels, and attendance.
+* A successful undo is destructive: it discards the state being reversed. There is no redo command or forward history.
+  A later successful data change records the then-current state as a new predecessor.
+* Undo resets the displayed list to all students. It does not restore a previous `find` or `filter` result, window
+  settings, or other GUI state.
+* The restored student data is saved before it replaces the live records. If saving fails, the records, displayed list,
+  saved file, and undo history remain unchanged.
+* Undo history is in memory only and is cleared when TeachAssist restarts.
+* Leading and trailing whitespace is ignored. The command word is case-sensitive and it accepts no arguments.
+
+| Situation | Exact message |
+|-----------|---------------|
+| No earlier state is available | `Nothing to undo.` |
+| Additional or parameter-like input, e.g. `undo 1` or `undo n/Samuel` | `Invalid command format!` followed by `Usage: undo` |
+| Incorrect capitalization, e.g. `Undo` | `Unknown command.` |
+| Data storage location cannot be created | `Unable to create data storage location.` |
+| Saving the restored state fails | `Unable to save student data.` |
 
 ### Exiting the program: `exit`
 
@@ -342,17 +513,20 @@ and only the first problem found is shown.
 
 If loading fails, TeachAssist starts with an empty student list and leaves the data file untouched:
 
-* Commands that change student records (`add`, `edit`, `delete`, and `clear`) are blocked with
+* Commands that change student records (`add`, `edit`, `delete`, `mark`, `unmark`, `clear`, and `undo`) are blocked with
   `Student data is unavailable because loading failed. Fix the data file and restart.`
-* Commands that do not change student records, such as `list`, `find`, `filter`, `help`, and `exit`, remain available.
+* Commands that do not change student records, such as `list`, `find`, `attendance`, `help`, and `exit`, remain
+  available.
 
 To recover, close TeachAssist, fix or restore the data file, and restart. Deleting the data file makes TeachAssist start
 with an empty student list.
 
 ### Saving the data
 
-TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, and `clear`).
-You do not need to save manually. Commands such as `find`, `filter`, `list`, `help`, and `exit` do not write student data.
+TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, `mark`, `unmark`,
+`clear`, and successful `undo`).
+You do not need to save manually. Commands such as `find`, `list`, `attendance`, `help`, and `exit` do not write
+student data.
 If saving fails, the proposed change is not applied, and existing records, the displayed filter, and the previous
 saved file remain unchanged. The application displays `Unable to save student data.`
 Storage must support atomic file replacement; unsupported storage produces the same save error.
@@ -363,6 +537,10 @@ JAR file location is read-only, the application displays `Unable to create data 
 
 TeachAssist data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
 
+The application also keeps `preferences.json` and `addressbook.log.*` files in the JAR’s folder, even when you launch it
+from another directory. Use a folder where you have write permission. Existing files in the launch directory are not
+imported automatically; to reuse old records, close TeachAssist and copy the existing `data` folder beside the JAR.
+
 <box type="warning" seamless>
 
 **Caution:**
@@ -371,21 +549,20 @@ See [Loading the data](#loading-the-data) for the message shown and the commands
 Back up the file before editing it.<br>
 Furthermore, certain edits can cause TeachAssist to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 
-Each person record must include a valid `studentId`. Older data files that do not include `studentId` for every person may fail to load until the missing values are added manually.
-Group labels are saved under each person record as `labels`. Older data files without `labels` still load; those persons simply start with no labels.
+Each student record must include a valid `studentId`. Older data files that do not include `studentId` for every student may fail to load until the missing values are added manually.
+Group labels are saved under each student record as `labels`. Older data files without `labels` still load; those students simply start with no labels.
 Legacy `tags` fields are ignored when loading and are not saved again.
+Attendance is saved under each person record as `attendance`, a list of `{"date": "2026-10-20", "group": "Tutorial 1"}`
+entries. Each date and group pair may appear only once per person, ignoring the case of the group. Older data files
+without `attendance` still load; those persons simply start with no attendance records.
 </box>
-
-### Archiving data files `[coming in v2.0]`
-
-_Details coming soon ..._
 
 --------------------------------------------------------------------------------------------------------------------
 
 ## FAQ
 
 **Q**: How do I transfer my data to another computer?<br>
-**A**: Install the app on the other computer and overwrite the data file it creates with the data file from your previous AddressBook home folder.
+**A**: Install the app on the other computer and overwrite the data file it creates with the data file from your previous TeachAssist home folder.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -401,10 +578,13 @@ _Details coming soon ..._
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]` <br> e.g., `add n/James Ho i/A0123456B e/jamesho@example.com r/Needs help with recursion l/Discrete Math Tutorial`
+**Attendance** | `attendance d/YYYY-MM-DD l/GROUP`<br> e.g., `attendance d/2026-10-20 l/Tutorial 1`
 **Clear**  | `clear`
 **Delete** | `delete i/STUDENT_ID`<br> e.g., `delete i/A0123456B`
 **Edit**   | `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/LABEL_NAME]...`<br> e.g., `edit i/A0123456B dl/Tutorial 1 l/Tutorial 2`
-**Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]`<br> e.g., `find n/James Jake`
-**Filter** | `filter l/LABEL_NAME`<br> e.g., `filter l/Discrete Math Tutorial`
+**Find**   | `find n/KEYWORD [MORE_KEYWORDS]` or `find i/KEYWORD [MORE_KEYWORDS]` or `find e/KEYWORD [MORE_KEYWORDS]` or `find r/KEYWORD [MORE_KEYWORDS]` or `find l/LABEL_NAME`<br> e.g., `find n/James Jake`
 **List**   | `list`
+**Mark**   | `mark i/STUDENT_ID d/YYYY-MM-DD l/GROUP`<br> e.g., `mark i/A0123456B d/2026-10-20 l/Tutorial 1`
+**Unmark** | `unmark i/STUDENT_ID d/YYYY-MM-DD l/GROUP`<br> e.g., `unmark i/A0123456B d/2026-10-20 l/Tutorial 1`
+**Undo**   | `undo`
 **Help**   | `help`

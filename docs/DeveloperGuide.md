@@ -13,7 +13,10 @@
 
 ## **Acknowledgements**
 
-* _{List the sources of reused or adapted ideas, code, documentation, and third-party libraries here, with links to the originals.}_
+* TeachAssist's initial codebase, architecture and documentation structure are adapted from [AddressBook Level 3](https://github.com/se-edu/addressbook-level3), created by the [SE-EDU initiative](https://se-education.org).
+* Application libraries: [JavaFX](https://openjfx.io/) for the graphical interface and [Jackson](https://github.com/FasterXML/jackson) for JSON persistence.
+* Testing and build tools: [JUnit 5](https://junit.org/junit5/), [Gradle](https://gradle.org/), [Shadow](https://gradleup.com/shadow/), [Checkstyle](https://checkstyle.org/) and [JaCoCo](https://www.jacoco.org/jacoco/).
+* Documentation tools: [MarkBind](https://markbind.org/) for the website and [PlantUML](https://plantuml.com/) for UML diagrams.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -35,7 +38,7 @@ The following provides a quick overview of the main components and their interac
 
 **Main components of the architecture**
 
-**`Main`** (consisting of classes [`Main`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/Main.java) and [`MainApp`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/MainApp.java)) is in charge of the app launch and shut down.
+**`Main`** (consisting of classes [`Main`](https://github.com/AY2627S1-CS2103T-F12-1/tp/blob/master/src/main/java/seedu/address/Main.java) and [`MainApp`](https://github.com/AY2627S1-CS2103T-F12-1/tp/blob/master/src/main/java/seedu/address/MainApp.java)) is in charge of the app launch and shut down.
 * At app launch, it initializes the other components in the correct sequence, and connects them up with each other.
 * At shut down, it shuts down the other components and invokes cleanup methods where necessary.
 
@@ -67,24 +70,25 @@ The sections below give more details of each component.
 
 ### UI component
 
-The **API** of this component is specified in [`Ui.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/Ui.java)
+The **API** of this component is specified in [`Ui.java`](https://github.com/AY2627S1-CS2103T-F12-1/tp/blob/master/src/main/java/seedu/address/ui/Ui.java)
 
 <puml src="diagrams/UiClassDiagram.puml" alt="Structure of the UI Component"/>
 
-The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
+The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, `AttendanceListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
 
-The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
+The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/AY2627S1-CS2103T-F12-1/tp/blob/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/AY2627S1-CS2103T-F12-1/tp/blob/master/src/main/java/seedu/address/ui/MainWindow.java).
 
 The `UI` component,
 
 * executes user commands using the `Logic` component.
 * listens for changes to `Model` data so that the UI can be updated with the modified data.
 * keeps a reference to the `Logic` component, because the `UI` relies on the `Logic` to execute commands.
-* depends on some classes in the `Model` component because it displays `Person` objects from the model.
+* depends on some classes in the `Model` component because it displays `Person` objects and `AttendanceReport` objects from the model.
+* shows an `AttendanceListPanel` in place of the `PersonListPanel` while a command result carries an attendance report. See [Viewing attendance](#viewing-attendance).
 
 ### Logic component
 
-**API** : [`Logic.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/logic/Logic.java)
+**API** : [`Logic.java`](https://github.com/AY2627S1-CS2103T-F12-1/tp/blob/master/src/main/java/seedu/address/logic/Logic.java)
 
 Here's a (partial) class diagram of the `Logic` component:
 
@@ -98,7 +102,7 @@ How the `Logic` component works:
 
 1. When `Logic` is called upon to execute a command, the command is passed to an `AddressBookParser` object, which in turn creates a parser that matches the command (e.g., `DeleteCommandParser`) and uses it to parse the command.
 1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`) which is executed by the `LogicManager`.
-1. The command can communicate with the `Model` when it is executed (e.g. to delete a person).<br>
+1. The command can communicate with the `Model` when it is executed (e.g. to delete a student).<br>
    Note that although this is shown as a single step in the diagram above for simplicity, the code can require several interactions between the command object and the `Model` to complete the operation.
 1. The result of the command execution is encapsulated as a `CommandResult` object which is returned from `Logic`.
 
@@ -111,16 +115,17 @@ How the parsing works:
 * All `XYZCommandParser` classes, such as `AddCommandParser` and `DeleteCommandParser`, implement the `Parser` interface so they can be treated similarly where appropriate, for example during testing.
 
 ### Model component
-**API** : [`Model.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/model/Model.java)
+**API** : [`Model.java`](https://github.com/AY2627S1-CS2103T-F12-1/tp/blob/master/src/main/java/seedu/address/model/Model.java)
 
 <puml src="diagrams/ModelClassDiagram.puml" width="450" />
 
 
 The `Model` component,
 
-* stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object).
+* stores the student data i.e., all `Person` objects (which are contained in a `UniquePersonList` object).
 * uses `studentId` as the domain identifier for `Person` duplicate checks. The JavaFX `id` label in `PersonListCard.fxml` is only the displayed list index, not the student's identifier.
 * stores group labels as `Label` objects inside each `Person`.
+* stores attendance as `AttendanceRecord` objects (a date and a group) inside each `Person`, and builds `AttendanceReport` objects from the student list on request.
 * stores the `Person` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Person>` that the UI can observe and bind to, so the UI updates when the list changes.
 * stores a `UserPrefs` object that represents the user's preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
@@ -136,12 +141,12 @@ The `Model` component,
 
 ### Storage component
 
-**API** : [`Storage.java`](https://github.com/AY2627S1-CS2103T-F12-1/tp/tree/master/src/main/java/seedu/address/storage/Storage.java)
+**API** : [`Storage.java`](https://github.com/AY2627S1-CS2103T-F12-1/tp/blob/master/src/main/java/seedu/address/storage/Storage.java)
 
 <puml src="diagrams/StorageClassDiagram.puml" width="550" />
 
 The `Storage` component,
-* can save both address book data and user preference data in JSON format, and read them back into corresponding objects.
+* can save both student data and user preference data in JSON format, and read them back into corresponding objects.
 * expects each stored `Person` JSON object to contain a valid `studentId`. There is currently no migration or default-value strategy for old data files missing this field.
 * stores group labels through `JsonAdaptedLabel`. Missing or null `labels` fields are treated as empty label sets for compatibility with older data files.
 * ignores legacy `tags` fields when loading older data files and omits them when saving.
@@ -164,7 +169,7 @@ This section describes some noteworthy details on how certain features are imple
 
 An optional group label is assigned when creating a student with `add ... l/LABEL_NAME`.
 `Label` validates the value, and `ParserUtil#parseLabel` trims command input before constructing it.
-`JsonAdaptedLabel` and `JsonAdaptedPerson` persist labels under each person's `labels` JSON field.
+`JsonAdaptedLabel` and `JsonAdaptedPerson` persist labels under each student's `labels` JSON field.
 `EditCommand` preserves existing labels, and `PersonCard` renders them in its `FlowPane`.
 Existing saved labels remain compatible, including records containing multiple labels.
 
@@ -177,13 +182,83 @@ It collects repeated `l/` and `dl/` values into the `EditPersonDescriptor`. An e
 clearing all labels and is rejected if combined with another label change. An empty `r/` becomes
 an empty remark.
 
-`EditCommand` finds the student by Student ID in the complete address book, so a filtered view
+`EditCommand` finds the student by Student ID in the complete student list, so a filtered view
 does not change the target. It builds a replacement `Person`, keeping fields that were not supplied.
 For labels, it copies the student's set, removes each `dl/` label, then adds each `l/` label.
 Matching is case-insensitive. Removing a missing label or adding one already present throws a
 `CommandException`, leaving the record unchanged. An empty `l/` produces an empty label set.
 The command then replaces the student through `Model#setPerson`; `LogicManager` saves the pending
 model before publishing it to the live model.
+
+The sequence diagram below shows an edit that removes one label and adds another. It also shows that
+a save failure leaves the live student data unchanged.
+
+<puml src="diagrams/EditLabelSequenceDiagram.puml" alt="Editing student labels and saving before publishing" />
+
+### Mark and unmark attendance
+
+Command formats:
+
+```text
+mark i/STUDENT_ID d/YYYY-MM-DD l/GROUP
+unmark i/STUDENT_ID d/YYYY-MM-DD l/GROUP
+```
+
+The accepted inputs, examples, and feedback are documented under
+[Recording attendance](UserGuide.md#recording-attendance-mark) and
+[Removing attendance](UserGuide.md#removing-attendance-unmark) in the User Guide.
+
+#### Parsing and validation
+
+`AddressBookParser` routes each command to `MarkCommandParser` or `UnmarkCommandParser`.
+Both tokenise `i/`, `d/`, and `l/`, accepting any parameter order and exactly one non-empty value for each.
+Their structure checks follow the same order: internal line breaks, unknown prefixes, preamble text, repeated
+prefixes, then missing or empty values. Repeated and missing/empty checks use `i/`, `d/`, `l/` order.
+The general command parser rejects multiline input before command-specific parsing.
+
+Both parsers reuse `ParserUtil#parseStudentId`, `ParserUtil#parseDate`, and `ParserUtil#parseLabel`, in that order.
+The date parser requires a valid calendar date in the strict `YYYY-MM-DD` format. The parsers then construct
+`MarkCommand` or `UnmarkCommand` with the validated values.
+
+#### Matching and updating records
+
+Both commands search `Model#getAddressBook().getPersonList()` by normalised Student ID, so a student hidden by
+the active filter can still be updated. A missing student throws `CommandException` before any change.
+
+* `MarkCommand` first finds a current group label using case-insensitive matching. It creates an
+  `AttendanceRecord(date, matchedGroup)` and rejects an existing entry for that date and group.
+  Otherwise, it adds the record to a copy of the student's attendance set.
+* `UnmarkCommand` searches the existing attendance set using `AttendanceRecord#equals`, which compares dates
+  exactly and group names case-insensitively using `Locale.ROOT`. A missing record throws `CommandException`.
+  Otherwise, it removes the matched record from a copy of the set. Current group membership is not required:
+  `EditCommand` retains attendance when labels change, and historical records must remain removable.
+  Success feedback uses the matched record's stored group spelling.
+
+Each command constructs a replacement `Person`, retaining every other field, and calls `Model#setPerson`.
+Other attendance entries and the active filter remain unchanged. `unmark` removes the specified attendance entry;
+like other successful data changes, it can later be reversed by `undo`.
+
+#### Saving and sequence diagrams
+
+Both commands return `true` from `Command#isModifyingData`. `LogicManager` blocks them after a startup loading
+failure, executes them on a pending model, saves that model, and only then publishes it to the live model.
+Parsing, command, or save failures preserve the live records, filter, and previous saved file.
+The existing attendance JSON representation is reused; no storage format change is needed.
+
+The following diagrams show valid commands with an existing student and attendance state appropriate to the
+operation, including the save-before-publish path and save-failure protection.
+
+<puml src="diagrams/MarkSequenceDiagram.puml" alt="Parsing, recording, and saving student attendance" />
+
+<puml src="diagrams/UnmarkSequenceDiagram.puml" alt="Parsing, removing, and saving student attendance" />
+
+#### Tests
+
+`MarkCommandTest` and `UnmarkCommandTest` cover record updates and command errors. `UnmarkCommandTest` also
+checks that other dates and groups remain, hidden students can be updated, removed group labels do not block
+removal, and marking followed by unmarking restores the original student.
+The command parser tests cover parameter validation, and `AddressBookParserTest` checks unmark routing.
+`LogicManagerTest` covers persistence and reload, failed saves, filter preservation, and startup failure protection.
 
 ### Adding student information
 
@@ -226,8 +301,9 @@ AddressBookParser → AddCommandParser → AddCommand
 LogicManager → temporary ModelManager → JsonAddressBookStorage → live ModelManager
 ```
 
-1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, and `clear`
-   return true. Future modifying commands must override this method too.
+1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, `mark`, `unmark`, `clear`,
+   and `undo` return true. Future modifying commands must override this method too. `undo` uses the separate snapshot
+   transaction described in [Undoing data changes](#undoing-data-changes).
 2. `LogicManager` copies the live records and current filter into a temporary `ModelManager`, then executes the command
    against that copy. Copying the filter preserves the active view if saving fails; `edit` identifies its target by
    Student ID from the full record list rather than by displayed index.
@@ -247,7 +323,7 @@ live model unchanged. Invalid parameters or a duplicate Student ID stop executio
 
 For example, adding a student while viewing a filtered list restores the complete list only after saving succeeds.
 If replacement fails, the filtered list remains as it was and the new student is not added.
-Read-only commands such as `find`, `filter`, `list`, `help`, and `exit` execute on the live model without saving student data.
+Read-only commands such as `find`, `list`, `help`, and `exit` execute on the live model without saving student data.
 
 #### Startup and feedback
 
@@ -271,59 +347,65 @@ records, and active filter remain unchanged. They also check temporary-file clea
 
 ### Find command
 
-Command format: `find n/KEYWORD [MORE_KEYWORDS]...` or `find i/KEYWORD [MORE_KEYWORDS]...`
-or `find e/KEYWORD [MORE_KEYWORDS]...`.
-Exactly one supported search field must be supplied: name, student ID, or email.
-The accepted format and user-facing examples are documented in the
-[User Guide](UserGuide.md#locating-persons-by-name-student-id-or-email-find).
+Command format: `find n/KEYWORD [MORE_KEYWORDS]...`, `find i/KEYWORD [MORE_KEYWORDS]...`,
+`find e/KEYWORD [MORE_KEYWORDS]...`, `find r/KEYWORD [MORE_KEYWORDS]...`, or `find l/LABEL_NAME`.
+Supply exactly one search field. Label searches replace the former standalone filter command.
+See the [User Guide](UserGuide.md#finding-students-by-name-student-id-email-remark-or-label-find) for examples and errors.
 
 #### Validation and matching
 
-* `ArgumentTokenizer` recognises the supported prefixes `n/`, `i/`, and `e/`.
-* `FindCommandParser` validates malformed input in this order: words before the first parameter prefix, unknown
-  parameter prefixes, repeated search prefixes, missing search prefixes, more than one search prefix type, and empty
-  keyword values.
-* Search keywords are split on whitespace. Multiple spaces, tabs, and line breaks between keywords are collapsed.
-* `FindCommandParser` creates a field-specific predicate: `NameContainsKeywordsPredicate`,
-  `StudentIdContainsKeywordsPredicate`, or `EmailContainsKeywordsPredicate`.
-* Each predicate checks whether the selected field contains any keyword using `StringUtil#containsIgnoreCase`.
-  Matching is therefore case-insensitive and supports partial matches.
+* `ArgumentTokenizer` recognises `n/`, `i/`, `e/`, `r/`, and `l/`.
+* `FindCommandParser` checks words before the first prefix, unknown prefixes, repeated prefixes, missing prefixes,
+  multiple search-field types, empty values, and then label validity, in that order.
+* Name, ID, email, and remark values are split into whitespace-separated keywords. `NameContainsKeywordsPredicate`,
+  `StudentIdContainsKeywordsPredicate`, `EmailContainsKeywordsPredicate`, and `RemarkContainsKeywordsPredicate`
+  match any keyword using
+  `StringUtil#containsIgnoreCase`, including partial matches.
+* `RemarkContainsKeywordsPredicate` searches `Person#getRemark().value` only. Empty remarks do not match
+  non-empty keywords. Numeric slash text such as `8/10` is accepted under the existing prefix rules.
+* A label value is kept whole, validated by `ParserUtil#parseLabel`, and passed to `LabelMatchesPredicate`.
+  This predicate lowercases both the requested and stored label names with `Locale.ROOT`, then compares the complete
+  values, using the same rule as `EditCommand` and `JsonAdaptedPerson`. Internal spaces are preserved.
+  This also handles Unicode lowercase expansions, such as `İ` becoming `i` followed by a combining dot,
+  while keeping `I` and the dotless `ı` distinct.
 
-For example, `find n/alex david` creates a `NameContainsKeywordsPredicate` with keywords `alex` and `david`.
-Any student whose name contains either keyword is shown.
-`find i/a012` searches student IDs, while `find e/example.com` searches email addresses.
+For example, `find n/alex david` finds names containing either keyword, while `find l/Discrete Math Tutorial`
+finds students with that complete group label. `find l/Tutorial` does not match `Discrete Math Tutorial`.
+`find r/recursion loops` searches remarks for either keyword, and `find r/curs` also matches `recursion`.
+Empty `r/`, repeated `r/`, and combinations such as `find r/recursion l/Tutorial 1` are rejected before execution.
 
-#### Execution and displayed list
-
-The execution path is:
+#### Execution, persistence, and startup behaviour
 
 ```text
 AddressBookParser → FindCommandParser → FindCommand
 FindCommand → Model#updateFilteredPersonList
 ```
 
-`FindCommand` stores only the predicate created by the parser. During execution, it calls
-`Model#updateFilteredPersonList` with that predicate, replacing the current displayed list with the matching students.
-The underlying student records are not modified.
+Every search replaces the active predicate and evaluates the complete student list; searches do not narrow the
+previous result set. `FindCommand` returns the standard `N students listed.` (or `1 student listed.` for one match) feedback. Zero matches clear the view.
+`list` restores all students. Invalid commands preserve the previous view.
 
-The command returns the standard listed-students feedback containing the number of matching records.
-When no records match, the filtered list becomes empty and the feedback reports zero listed students.
-The previous filter is replaced by the new search predicate.
+`FindCommand` remains read-only. `LogicManager` executes it without saving, including when startup data loading
+failed. Student records and the saved JSON file remain unchanged.
 
-The sequence diagram below shows how a successful `find n/Alex` command is parsed and executed.
-<puml src="diagrams/FindCommandSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `find` Command" />
+Tests in `RemarkContainsKeywordsPredicateTest`, `FindCommandParserTest`, and `FindCommandTest` cover remark
+matching, invalid remark search inputs, result counts, and searching students hidden by a previous filter.
 
-#### Saving and startup behaviour
+The name-search sequence is shown below; remark and label searches use their corresponding predicates.
 
-`FindCommand` does not override `Command#isModifyingData`, so it remains a read-only command.
-`LogicManager` executes it on the live model without creating a temporary model and without writing the JSON data file.
-If startup loading failed, the command is still available because it does not risk overwriting invalid persisted data.
+<puml src="diagrams/FindCommandSequenceDiagram.puml" alt="Interactions for a name search" />
+
+The following diagrams show label searching through the integrated command:
+
+<puml src="diagrams/LabelFindSequenceDiagram.puml" alt="Interactions for finding students by label" />
+
+<puml src="diagrams/LabelFindActivityDiagram.puml" alt="Validation and results for a label search" />
 
 #### Verification
 
-Tests cover words before the first prefix, unknown prefixes, validation precedence, missing prefixes, multiple prefixes,
-duplicate prefixes, empty keyword values, name searches with multiple keywords and whitespace, student ID searches,
-email searches, zero-result execution, multi-result execution, and equality of commands with equivalent predicates.
+Tests cover all five prefixes, malformed and repeated parameters, mixed search fields, multi-word and boundary-length
+labels, invalid labels, exact and case-insensitive matching, multiple student labels, empty and zero-result lists,
+searches after other searches, restoration with `list`, saved-data preservation, and rejection of the removed command.
 
 ### Deleting student information
 
@@ -363,25 +445,95 @@ The sequence diagram shows deletion by Student ID, including the save-failure pa
 Tests cover normalised IDs, visible/hidden students, an empty displayed list, nonexistent IDs, malformed parameters,
 whole-record removal from persisted JSON, filter preservation, and save failures.
 
-### Filter feature
+### Viewing attendance
 
-The `filter` command lets the user display only students with a matching label.
-It uses the `l/` prefix and the shared `Label` validation rules, so invalid label names
-are rejected during parsing before the model is updated.
+The command `attendance d/YYYY-MM-DD l/GROUP` shows which current members of a tutorial group were marked present on
+a date. Its accepted values and messages are documented in the
+[User Guide](UserGuide.md#viewing-attendance-attendance). Recording and removing attendance are described in
+[Mark and unmark attendance](#mark-and-unmark-attendance).
 
-Given `filter l/Discrete Math Tutorial`, `AddressBookParser` delegates parsing
-to `FilterCommandParser`. The parser returns a `FilterCommand` containing the
-validated label. When executed, `FilterCommand` creates a case-insensitive label
-predicate and calls `Model#updateFilteredPersonList`. Student records are not
-modified by filtering.
+#### Storing attendance
 
-The following sequence diagram shows the main command flow:
+Each `Person` holds an immutable set of `AttendanceRecord` objects. A record is a date and a group `Label`. Two records
+are equal when their dates match and their group names match after `toLowerCase(Locale.ROOT)`, the same rule used to
+reject duplicate labels. This makes the date and group pair unique for each student.
 
-<puml src="diagrams/FilterCommandSequenceDiagram.puml" alt="FilterCommandSequenceDiagram" />
+`JsonAdaptedPerson` saves the records under each person's `attendance` field, and `JsonAdaptedAttendanceRecord`
+validates each date and group when loading. A missing or `null` `attendance` field loads as an empty set, so data files
+written before attendance existed still load. Records are stored inside the `Person`, so deleting a student deletes
+their records, and `edit` keeps them.
 
-The following activity diagram shows the success and failure paths:
+Only presence is stored. A student is absent when they have no record for the date and group.
 
-<puml src="diagrams/FilterCommandActivityDiagram.puml" alt="FilterCommandActivityDiagram" />
+`AttendanceCommandParser` checks `d/` and `l/` in the same order as the `mark` and `unmark` parsers, then reuses
+`ParserUtil#parseDate` and `ParserUtil#parseLabel`.
+
+#### Reporting attendance
+
+`AttendanceReport#of(students, date, group)` keeps the students whose current labels include the group, in the order
+given, and pairs each one with whether they have the matching record. It also gives the present and absent totals.
+Membership comes from current labels, so a student who lost the label is left out even if their records remain.
+
+`AttendanceCommand` is read-only. It builds a report from `model.getAddressBook().getPersonList()`, not the filtered
+list, so `find` does not hide group members. It returns `CommandResult#showingAttendance(message, report)`.
+
+#### Showing and refreshing the attendance view
+
+`CommandResult` carries an optional `AttendanceReport`. `MainWindow#executeCommand` shows an `AttendanceListPanel` in
+the student list area when a result carries a report, and shows the `PersonListPanel` again when it does not. Each
+`AttendanceCard` shows a member's name, Student ID, and a **Present** or **Absent** badge.
+
+`LogicManager` remembers the report being displayed in `displayedAttendance`. After each successful command it:
+
+* stores the result's report if there is one;
+* otherwise, if the result reports an attendance update and a report is displayed, rebuilds that report from the live
+  model and attaches it to the result with `CommandResult#withAttendanceReport`. `MarkCommand` and `UnmarkCommand`
+  report updates by returning `CommandResult#updatingAttendance(message)`;
+* otherwise, clears `displayedAttendance`, so the UI returns to the student list.
+
+Because the rebuild happens after saving and publishing, the view only changes once the change is saved. A failed
+command throws before this step, so the view stays as it was. A successful `undo` returns a plain result, so it closes
+the view; the restored records are shown in the student list.
+
+The sequence diagram below shows `attendance` opening the view, followed by a `mark` that refreshes it. The `alt` block
+shows the save-success and save-failure paths.
+
+<puml src="diagrams/AttendanceSequenceDiagram.puml" alt="Showing attendance and refreshing it after mark" />
+
+#### Design considerations
+
+**Aspect: Where to keep the displayed report**
+
+* **Alternative 1 (current choice):** `LogicManager` remembers it and attaches a refreshed report to the result.
+  * Pros: `MainWindow` stays a simple renderer, and the refresh rules are tested without JavaFX.
+  * Cons: `LogicManager` holds a small piece of display state.
+* **Alternative 2:** `MainWindow` remembers the open date and group and asks `Logic` for a new report after `mark`.
+  * Pros: Display state stays in the UI.
+  * Cons: The UI must know which commands change attendance, and the refresh can only be tested through the GUI.
+
+**Aspect: How to record absence**
+
+* **Alternative 1 (current choice):** Store only presence; absent means not marked.
+  * Pros: One command per present student, and no need to finalise a session.
+  * Cons: An absence cannot be distinguished from a session the TA has not taken yet.
+* **Alternative 2:** Store explicit Present and Absent records.
+  * Pros: Every student has a recorded status for every session.
+  * Cons: Needs a way to record or finalise absences, and more data to keep consistent when labels change.
+
+#### Verification
+
+* `AttendanceRecordTest` covers equality ignoring group case. `JsonAdaptedPersonTest` covers legacy files without
+  `attendance`, invalid saved dates and groups, and duplicate records. `EditCommandTest` checks that edits keep records.
+* `AttendanceCommandParserTest` covers invalid dates, and missing, empty, repeated, and unknown parameters.
+* `AttendanceCommandTest` covers group members hidden by `find` and groups with no members.
+* `AttendanceReportTest` covers several groups on one date, nobody marked, and students who no longer have the label.
+* `LogicManagerTest` covers the view refreshing straight after `mark` and `unmark`, a failed mark leaving the view
+  open, `undo` and other commands closing it, and marking, restarting, and viewing the saved attendance.
+* `MainAppTest` loads a data file without `attendance`, marks students, restarts through the normal startup path,
+  and checks the saved attendance and duplicate-mark check.
+* `AttendanceListPanelTest` lays out the panel and checks its title, totals, members, and Present and Absent badges.
+  It is skipped where JavaFX cannot start. The Linux CI job, which uploads coverage, runs under `xvfb-run` so that
+  JavaFX tests have a virtual display.
 
 ### Loading student data at startup
 
@@ -426,7 +578,7 @@ error messages. It then rejects any command whose `Command#isModifyingData` retu
 `Student data is unavailable because loading failed. Fix the data file and restart.`
 
 This prevents the empty in-memory list from being saved over the user's data file, which may still be recoverable.
-Read-only commands, such as `list`, `find`, and `filter`, still run against the empty list. Restarting is the only way
+Read-only commands, such as `list` and `find`, still run against the empty list. Restarting is the only way
 to retry loading.
 
 Saving is described in [Saving before publishing changes](#saving-before-publishing-changes).
@@ -448,101 +600,41 @@ Saving is described in [Saving before publishing changes](#saving-before-publish
 IDs. It checks that modifying commands are blocked and the file is unchanged after a failed load.
 `JsonAddressBookStorageTest` covers unreadable files, invalid JSON, invalid values, and duplicate Student IDs.
 
-### \[Proposed\] Undo/redo feature
+### Undoing data changes
 
-#### Proposed Implementation
+`LogicManager` owns an in-memory deque of complete `AddressBook` snapshots. It retains at most 100 prior states.
+The snapshots contain student data only; GUI settings and the current `find` predicate are not recorded.
+History begins empty on every application start and is never written to JSON.
 
-The proposed undo/redo mechanism is facilitated by `VersionedAddressBook`. It extends `AddressBook` with an undo/redo history, stored internally as an `addressBookStateList` and `currentStatePointer`. Additionally, it implements the following operations:
+Before a normal data-changing command runs, `LogicManager` copies the live address book. It executes the command on
+the existing pending model and saves that proposed address book. Only after the save succeeds does it append the
+pre-change snapshot, discarding the oldest snapshot first when the deque is full, and publish the pending model.
+Thus parsing, validation, execution, or save failures leave the live records and undo history unchanged.
 
-* `VersionedAddressBook#commit()` -- Saves the current address book state in its history.
-* `VersionedAddressBook#undo()` -- Restores the previous address book state from its history.
-* `VersionedAddressBook#redo()` -- Restores a previously undone address book state from its history.
+For `undo`, `LogicManager` examines the newest snapshot without removing it. It saves that snapshot before replacing
+the live address book, resets the displayed list with `Model.PREDICATE_SHOW_ALL_PERSONS`, and then removes the
+snapshot. (The displayed list is reset to default, as it could be stale after an undo, for example with a filter applied.
+The current design also does not support the notion of saving a "filter", implying "updating the filter" being
+out-of-scope, hence the decision to reset the displayed list.) If saving fails, live records, the displayed list,
+the saved file, and history remain unchanged. If no snapshot exists, it returns `Nothing to undo.` without saving.
 
-These operations are exposed in the `Model` interface as `Model#commitAddressBook()`, `Model#undoAddressBook()` and `Model#redoAddressBook()` respectively.
+Undo is destructive: restoring a snapshot discards the state being reversed, so there is no redo or forward branch.
+A later successful data change records the then-current state as a new predecessor.
 
-Given below is an example usage scenario and how the undo/redo mechanism behaves at each step.
+<puml src="diagrams/UndoHistoryStateDiagram.puml" alt="Bounded destructive undo history" />
 
-Step 1. The user launches the application for the first time. The `VersionedAddressBook` will be initialized with the initial address book state, and the `currentStatePointer` pointing to that single address book state.
+<puml src="diagrams/UndoSequenceDiagram.puml" alt="Undo parsing and transactional restoration" />
 
-<puml src="diagrams/UndoRedoState0.puml" alt="UndoRedoState0" />
+#### Design consideration
 
-Step 2. The user executes `delete i/A0123456B` to delete that student's record. In this proposed undo/redo design,
-the `delete` command calls `Model#commitAddressBook()` after deletion, saving the modified state in the
-`addressBookStateList` and advancing `currentStatePointer` to the new state.
+**Aspect: How undo stores prior state:**
 
-<puml src="diagrams/UndoRedoState1.puml" alt="UndoRedoState1" />
-
-Step 3. The user executes `add n/David ...` to add a new person. The `add` command also calls `Model#commitAddressBook()`, causing another modified address book state to be saved into the `addressBookStateList`.
-
-<puml src="diagrams/UndoRedoState2.puml" alt="UndoRedoState2" />
-
-<box type="info" seamless>
-
-**Note:** If a command fails its execution, it will not call `Model#commitAddressBook()`, so the address book state will not be saved into the `addressBookStateList`.
-</box>
-
-Step 4. The user now decides that adding the person was a mistake, and decides to undo that action by executing the `undo` command. The `undo` command will call `Model#undoAddressBook()`, which will shift the `currentStatePointer` once to the left, pointing it to the previous address book state, and restores the address book to that state.
-
-<puml src="diagrams/UndoRedoState3.puml" alt="UndoRedoState3" />
-
-
-<box type="info" seamless>
-
-**Note:** If the `currentStatePointer` is at index 0, pointing to the initial AddressBook state, then there are no previous AddressBook states to restore. The `undo` command uses `Model#canUndoAddressBook()` to check if this is the case. If so, it will return an error to the user rather
-than attempting to perform the undo.
-</box>
-
-The following sequence diagram shows how an undo operation goes through the `Logic` component:
-
-<puml src="diagrams/UndoSequenceDiagram-Logic.puml" alt="UndoSequenceDiagram-Logic" />
-
-<box type="info" seamless>
-
-**Note:** The lifeline for `UndoCommand` should end at the destroy marker (X), but due to a limitation of PlantUML, it continues to the end of the diagram.
-</box>
-
-Similarly, how an undo operation goes through the `Model` component is shown below:
-
-<puml src="diagrams/UndoSequenceDiagram-Model.puml" alt="UndoSequenceDiagram-Model" />
-
-The `redo` command does the opposite - it calls `Model#redoAddressBook()`, which shifts the `currentStatePointer` once to the right, pointing to the previously undone state, and restores the address book to that state.
-
-<box type="info" seamless>
-
-**Note:** If the `currentStatePointer` is at index `addressBookStateList.size() - 1`, pointing to the latest address book state, then there are no undone AddressBook states to restore. The `redo` command uses `Model#canRedoAddressBook()` to check if this is the case. If so, it will return an error to the user rather than attempting to perform the redo.
-</box>
-
-Step 5. The user then decides to execute the command `list`. Commands that do not modify the address book, such as `list`, will usually not call `Model#commitAddressBook()`, `Model#undoAddressBook()` or `Model#redoAddressBook()`. Thus, the `addressBookStateList` remains unchanged.
-
-<puml src="diagrams/UndoRedoState4.puml" alt="UndoRedoState4" />
-
-Step 6. The user executes `clear`, which calls `Model#commitAddressBook()`. Since the `currentStatePointer` is not pointing at the end of the `addressBookStateList`, all address book states after the `currentStatePointer` will be purged. Reason: It no longer makes sense to redo the `add n/David ...` command. This is the behavior that most modern desktop applications follow.
-
-<puml src="diagrams/UndoRedoState5.puml" alt="UndoRedoState5" />
-
-The following activity diagram summarizes what happens when a user executes a new command:
-
-<puml src="diagrams/CommitActivityDiagram.puml" width="250" />
-
-#### Design considerations:
-
-**Aspect: How undo & redo execute:**
-
-* **Alternative 1 (current choice):** Saves the entire address book.
-  * Pros: Easy to implement.
-  * Cons: May have performance issues in terms of memory usage.
-
-* **Alternative 2:** Individual command knows how to undo/redo by
-  itself.
-  * Pros: Will use less memory (e.g. for `delete`, just save the person being deleted).
-  * Cons: We must ensure that the implementation of each individual command is correct.
-
-_{more aspects and alternatives to be added}_
-
-### \[Proposed\] Data archiving
-
-_{Explain here how the data archiving feature will be implemented}_
-
+* **Current choice: Complete address-book snapshots in `LogicManager`.**
+  * Pros: One transaction handles every data-changing command and keeps saving before publishing explicit.
+  * Cons: Each retained state copies the address-book list structure.
+* **Alternative: Command-specific inverse operations.**
+  * Pros: Can retain less state for some commands.
+  * Cons: Every data-changing command must implement and validate its own reverse operation.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -551,6 +643,7 @@ _{Explain here how the data archiving feature will be implemented}_
 * [Documentation guide](Documentation.md)
 * [Testing guide](Testing.md)
 * [Logging guide](Logging.md)
+* [Configuration guide](Configuration.md)
 * [DevOps guide](DevOps.md)
 
 --------------------------------------------------------------------------------------------------------------------
@@ -675,7 +768,7 @@ MSS:
 
 Use case: UC02 - Find a Student
 MSS:
-1. TA enters a search command specifying a name, student ID, or email query.
+1. TA enters a search command specifying a name, student ID, email, remark, or label query.
 2. TeachAssist searches existing records for matches.
 3. TeachAssist displays the list of matching student records and the count of results.
    Use case ends.
@@ -694,9 +787,9 @@ MSS:
 
 ---
 
-Use case: UC04 - Filter Students by Group Label
+Use case: UC04 - Find Students by Group Label
 MSS:
-1. TA enters command to filter students by a specific group label.
+1. TA enters `find l/LABEL_NAME` to find students by a specific complete group label.
 2. TeachAssist scans stored records for matching group labels.
 3. TeachAssist displays only the students belonging to that group label.
    Use case ends.
@@ -741,16 +834,67 @@ MSS:
 * 3a2. TeachAssist retains the entire student record, current filter, and previous saved file.
 * Use case ends.
 
+---
+
+Use case: UC06 - Mark a Student's Attendance
+MSS:
+1. TA enters command to mark a student present with their student ID, a date, and a group label.
+2. TeachAssist verifies that the student exists, has the group label, and is not already marked for that date and group.
+3. TeachAssist records the attendance and saves the changes to the data file.
+4. TeachAssist displays a confirmation message, and refreshes the attendance view if it is open.
+   Use case ends.
+
+**Extensions**
+* 1a. A parameter is missing, empty, repeated, unknown, or invalid, such as a date that does not exist.
+* 1a1. TeachAssist shows an error message naming the problem. No student data changes.
+* Use case ends.
+* 1b. The data file failed to load at startup.
+* 1b1. TeachAssist blocks marking and asks the TA to fix the data file and restart.
+* Use case ends.
+* 2a. The student does not exist or does not have the group label.
+* 2a1. TeachAssist shows an error message naming the student or group. No student data changes.
+* Use case ends.
+* 2b. The student is already marked present for that date and group.
+* 2b1. TeachAssist shows an error message. No student data changes.
+* Use case ends.
+* 3a. Saving data to the file fails.
+* 3a1. TeachAssist shows an error message indicating that it is unable to save student data.
+* 3a2. TeachAssist keeps the previous records, view, and saved file.
+* Use case ends.
+
+---
+
+Use case: UC07 - View a Group's Attendance
+MSS:
+1. TA enters command to view attendance with a date and a group label.
+2. TeachAssist finds every student who currently has the group label.
+3. TeachAssist replaces the student list with the group members, each marked Present or Absent, and shows the totals.
+   Use case ends.
+
+**Extensions**
+* 1a. A parameter is missing, empty, repeated, unknown, or invalid.
+* 1a1. TeachAssist shows an error message naming the problem. The current view is unchanged.
+* Use case ends.
+* 2a. No student has the group label.
+* 2a1. TeachAssist shows an empty attendance view with zero totals.
+* Use case ends.
+* 3a. TA marks a group member present for the displayed date and group (UC06).
+* 3a1. TeachAssist refreshes the attendance view after saving.
+* Use case resumes at step 3.
+* 3b. TA enters another command, such as `list`.
+* 3b1. TeachAssist returns to the student list.
+* Use case ends.
+
 ### Non-Functional Requirements
 
 1.  Should work on any _mainstream OS_ as long as it has Java `25` or above installed.
-2.  Should be able to hold up to 1000 persons without noticeable sluggishness in performance for typical usage.
+2.  Should be able to hold up to 1000 students without noticeable sluggishness in performance for typical usage.
 3.  A user with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
-
-*{More to be added}*
 
 ### Glossary
 
 * **Mainstream OS**: Windows, Linux, Unix, or macOS
-* **Private contact detail**: A contact detail that is not meant to be shared with others
-
+* **TA**: Teaching Assistant, the intended user of TeachAssist.
+* **Student ID**: The unique identifier used to distinguish student records.
+* **Group label**: A name assigned to students to organise and find them by group, such as a tutorial group.
+* **Remark**: Optional free-text notes attached to a student record.

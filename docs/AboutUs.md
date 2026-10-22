@@ -5,13 +5,13 @@
 
 # About Us
 
-We are a team based in the [School of Computing, National University of Singapore](http://www.comp.nus.edu.sg).
+We are a team based in the [School of Computing, National University of Singapore](https://www.comp.nus.edu.sg).
 
-You can reach us at the email `seer[at]comp.nus.edu.sg`
+For TeachAssist questions and bug reports, use the [project issue tracker](https://github.com/AY2627S1-CS2103T-F12-1/tp/issues).
 
 ## Project team
 
-### Samuel Lau 
+### Samuel Lau
 
 <img src="images/sammeowwww.png" width="200px">
 
@@ -19,22 +19,23 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 [[portfolio](team/sammeowwww.md)]
 
 * Role: Project Advisor
+* Responsibilities: Student add/delete commands and command documentation
 
 ### Ananya Kharbanda
 
 <img src="images/ananyakharbanda.png" width="200px">
 
-[[github](http://github.com/ananyakharbanda)]
+[[github](https://github.com/ananyakharbanda)]
 [[portfolio](team/ananyakharbanda.md)]
 
-* Role: Developer 
+* Role: Developer
 * Responsibilities: Dev Ops + Threading
 
 ### Bryan Lee Jun You
 
 <img src="images/8ryanl33.png" width="200px">
 
-[[github](http://github.com/8ryanl33)] [[portfolio](team/8ryanl33.md)]
+[[github](https://github.com/8ryanl33)] [[portfolio](team/8ryanl33.md)]
 
 * Role: Developer
 * Responsibilities: Data
@@ -43,17 +44,17 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 <img src="images/amberrrruby.png" width="200px">
 
-[[github](http://github.com/amberrrruby)]
+[[github](https://github.com/amberrrruby)]
 [[portfolio](team/amberrrruby.md)]
 
 * Role: Developer
-* Responsibilities: *(to be added)*
+* Responsibilities: Group labels and filtering
 
 ### Tristan Tay
 
 <img src="images/darealtristan.png" width="200px">
 
-[[github](http://github.com/DaRealTristan)]
+[[github](https://github.com/DaRealTristan)]
 [[portfolio](team/darealtristan.md)]
 
 * Role: Code Quality

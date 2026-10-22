@@ -1,6 +1,8 @@
 package seedu.address.logic;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.logging.Logger;
 
 import javafx.collections.ObservableList;
@@ -8,11 +10,15 @@ import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.UndoCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.AddressBookParser;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
+import seedu.address.model.ReadOnlyAddressBook;
+import seedu.address.model.attendance.AttendanceReport;
 import seedu.address.model.person.Person;
 import seedu.address.storage.DataStorageLocationException;
 import seedu.address.storage.Storage;
@@ -26,6 +32,8 @@ public class LogicManager implements Logic {
     public static final String MESSAGE_DATA_UNAVAILABLE =
             "Student data is unavailable because loading failed. Fix the data file and restart.";
 
+    static final int MAX_UNDO_HISTORY_SIZE = 100;
+
     private final Logger logger = LogsCenter.getLogger(LogicManager.class);
 
     private final Model model;
@@ -33,6 +41,10 @@ public class LogicManager implements Logic {
     private final AddressBookParser addressBookParser;
     private final boolean isStudentDataAvailable;
     private final String startupMessage;
+    private final Deque<AddressBook> undoHistory = new ArrayDeque<>();
+
+    /** The attendance report shown in place of the student list, or null while the student list is shown. */
+    private AttendanceReport displayedAttendance;
 
     /**
      * Constructs a {@code LogicManager} whose student data is available for modification.
@@ -64,6 +76,7 @@ public class LogicManager implements Logic {
      * {@inheritDoc}
      * Executes modifying commands against a temporary model and publishes their changes only after saving succeeds.
      * Commands that do not modify student data execute without saving. Startup loading failures block modifications.
+     * An open attendance report is refreshed after attendance changes and closed by other successful commands.
      */
     @Override
     public CommandResult execute(String commandText) throws CommandException, ParseException {
@@ -71,27 +84,65 @@ public class LogicManager implements Logic {
 
         Command command = addressBookParser.parseCommand(commandText);
         if (!command.isModifyingData()) {
-            return command.execute(model);
+            return updateDisplayedAttendance(command.execute(model));
         }
         if (!isStudentDataAvailable) {
             throw new CommandException(MESSAGE_DATA_UNAVAILABLE);
         }
-        return executeAndSave(command);
+        if (command instanceof UndoCommand) {
+            return updateDisplayedAttendance(executeUndo());
+        }
+        return updateDisplayedAttendance(executeAndSave(command));
+    }
+
+    private CommandResult updateDisplayedAttendance(CommandResult result) {
+        if (result.getAttendanceReport().isPresent()) {
+            displayedAttendance = result.getAttendanceReport().get();
+            return result;
+        }
+        if (result.isAttendanceUpdated() && displayedAttendance != null) {
+            displayedAttendance = AttendanceReport.of(model.getAddressBook().getPersonList(),
+                    displayedAttendance.getDate(), displayedAttendance.getGroup());
+            return result.withAttendanceReport(displayedAttendance);
+        }
+        displayedAttendance = null;
+        return result;
     }
 
     private CommandResult executeAndSave(Command command) throws CommandException {
+        AddressBook previousAddressBook = new AddressBook(model.getAddressBook());
         Model pendingModel = new ModelManager(model.getAddressBook(), model.getUserPrefs());
         pendingModel.updateFilteredPersonList(model.getFilteredPersonListPredicate()::test);
         CommandResult result = command.execute(pendingModel);
-        saveStudentData(pendingModel);
+        saveStudentData(pendingModel.getAddressBook());
+        if (undoHistory.size() == MAX_UNDO_HISTORY_SIZE) {
+            undoHistory.removeFirst();
+        }
+        undoHistory.addLast(previousAddressBook);
         model.setAddressBook(pendingModel.getAddressBook());
         model.updateFilteredPersonList(pendingModel.getFilteredPersonListPredicate()::test);
         return result;
     }
 
-    private void saveStudentData(Model pendingModel) throws CommandException {
+    /**
+     * Saves the latest retained snapshot before replacing the live address book and consuming that snapshot.
+     */
+    private CommandResult executeUndo() throws CommandException {
+        if (undoHistory.isEmpty()) {
+            return new CommandResult(UndoCommand.MESSAGE_NOTHING_TO_UNDO);
+        }
+
+        AddressBook previousAddressBook = undoHistory.getLast();
+        saveStudentData(previousAddressBook);
+        model.setAddressBook(previousAddressBook);
+        model.updateFilteredPersonList(Model.PREDICATE_SHOW_ALL_PERSONS);
+        undoHistory.removeLast();
+        return new CommandResult(UndoCommand.MESSAGE_SUCCESS);
+    }
+
+    private void saveStudentData(ReadOnlyAddressBook addressBook) throws CommandException {
         try {
-            storage.saveAddressBook(pendingModel.getAddressBook());
+            storage.saveAddressBook(addressBook);
         } catch (DataStorageLocationException dsle) {
             logger.warning("Unable to create data storage location: " + dsle.getMessage());
             throw new CommandException(MESSAGE_STORAGE_LOCATION_FAILURE, dsle);

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
+  <VBox styleClass="attendance_header">
+    <padding>
+      <Insets top="5" right="5" bottom="5" left="15" />
+    </padding>
+    <Label fx:id="title" styleClass="cell_big_label" wrapText="true" maxWidth="Infinity" />
+    <Label fx:id="totals" styleClass="cell_small_label" />
+  </VBox>
+  <ListView fx:id="attendanceListView" VBox.vgrow="ALWAYS" />
+</VBox>

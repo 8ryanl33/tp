@@ -3,7 +3,6 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static seedu.address.logic.Messages.MESSAGE_PERSONS_LISTED_OVERVIEW;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.TypicalPersons.CARL;
 import static seedu.address.testutil.TypicalPersons.ELLE;
@@ -14,10 +13,14 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import seedu.address.logic.parser.FindCommandParser;
+import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.person.Person;
+import seedu.address.testutil.PersonBuilder;
 
 /**
  * Contains integration tests (interaction with the Model) for {@code FindCommand}.
@@ -55,7 +58,7 @@ public class FindCommandTest {
 
     @Test
     public void execute_zeroKeywords_noPersonFound() {
-        String expectedMessage = String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 0);
+        String expectedMessage = "0 students listed.";
         NameContainsKeywordsPredicate predicate = preparePredicate(" ");
         FindCommand command = new FindCommand(predicate);
         expectedModel.updateFilteredPersonList(predicate);
@@ -65,12 +68,49 @@ public class FindCommandTest {
 
     @Test
     public void execute_multipleKeywords_multiplePersonsFound() {
-        String expectedMessage = String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 3);
+        String expectedMessage = "3 students listed.";
         NameContainsKeywordsPredicate predicate = preparePredicate("Kurz Elle Kunz");
         FindCommand command = new FindCommand(predicate);
         expectedModel.updateFilteredPersonList(predicate);
         assertCommandSuccess(command, model, expectedMessage, expectedModel);
         assertEquals(List.of(CARL, ELLE, FIONA), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_remarkKeywords_findsMatchesAcrossCompleteList() throws ParseException {
+        Person recursionStudent = new PersonBuilder(CARL).withRemark("Needs help with Recursion").build();
+        Person loopsStudent = new PersonBuilder(ELLE).withRemark("Practising loops").build();
+        Person noRemarkStudent = new PersonBuilder(FIONA).withRemark("").build();
+        for (Model currentModel : List.of(model, expectedModel)) {
+            currentModel.setPerson(CARL, recursionStudent);
+            currentModel.setPerson(ELLE, loopsStudent);
+            currentModel.setPerson(FIONA, noRemarkStudent);
+        }
+        model.updateFilteredPersonList(person -> person.equals(noRemarkStudent));
+
+        FindCommand command = new FindCommandParser().parse(" r/CURS loops");
+        expectedModel.updateFilteredPersonList(person ->
+                person.equals(recursionStudent) || person.equals(loopsStudent));
+
+        assertCommandSuccess(command, model, "2 students listed.", expectedModel);
+        assertEquals(List.of(recursionStudent, loopsStudent), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_nonMatchingRemarkKeyword_noPersonFound() throws ParseException {
+        FindCommand command = new FindCommandParser().parse(" r/nonexistentremarkkeyword");
+        expectedModel.updateFilteredPersonList(person -> false);
+
+        assertCommandSuccess(command, model, "0 students listed.", expectedModel);
+        assertEquals(List.of(), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_singleMatch_usesSingularStudent() {
+        NameContainsKeywordsPredicate predicate = preparePredicate("Elle");
+        expectedModel.updateFilteredPersonList(predicate);
+        assertCommandSuccess(new FindCommand(predicate), model, "1 student listed.", expectedModel);
+        assertEquals(List.of(ELLE), model.getFilteredPersonList());
     }
 
     @Test
