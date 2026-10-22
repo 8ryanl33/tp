@@ -18,6 +18,8 @@ import org.junit.jupiter.api.Test;
 
 import javafx.application.Platform;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import seedu.address.model.attendance.AttendanceRecord;
@@ -27,7 +29,8 @@ import seedu.address.model.person.Person;
 import seedu.address.testutil.PersonBuilder;
 
 /**
- * Checks the attendance view's content. Skipped where JavaFX cannot start, such as on a machine without a display.
+ * Checks the attendance view's content. Skipped where JavaFX cannot start, such as on a machine without a display;
+ * CI runs it on Linux under a virtual display.
  */
 public class AttendanceListPanelTest {
 
@@ -56,11 +59,13 @@ public class AttendanceListPanelTest {
         Person absent = new PersonBuilder(BENSON).withLabels("Tutorial 1").build();
         AttendanceReport report = AttendanceReport.of(List.of(present, absent), DATE, GROUP);
 
-        Node root = onFxThread(() -> new AttendanceListPanel(report).getRoot());
+        Parent root = onFxThread(() -> layOut(new AttendanceListPanel(report).getRoot()));
 
         assertEquals("Attendance: Tutorial 1 on 2026-10-20", ((Label) root.lookup("#title")).getText());
         assertEquals("Present: 1    Absent: 1", ((Label) root.lookup("#totals")).getText());
         assertEquals(report.getEntries(), ((ListView<?>) root.lookup("#attendanceListView")).getItems());
+        assertEquals(1, root.lookupAll(".attendance_present").size());
+        assertEquals(1, root.lookupAll(".attendance_absent").size());
     }
 
     @Test
@@ -68,10 +73,11 @@ public class AttendanceListPanelTest {
         assumeTrue(isToolkitAvailable);
         AttendanceReport report = AttendanceReport.of(List.of(), DATE, GROUP);
 
-        Node root = onFxThread(() -> new AttendanceListPanel(report).getRoot());
+        Parent root = onFxThread(() -> layOut(new AttendanceListPanel(report).getRoot()));
 
         assertEquals("Present: 0    Absent: 0", ((Label) root.lookup("#totals")).getText());
         assertTrue(((ListView<?>) root.lookup("#attendanceListView")).getItems().isEmpty());
+        assertTrue(root.lookupAll("#status").isEmpty());
     }
 
     @Test
@@ -91,6 +97,16 @@ public class AttendanceListPanelTest {
         Label absentStatus = (Label) absentCard.lookup("#status");
         assertEquals("Absent", absentStatus.getText());
         assertTrue(absentStatus.getStyleClass().contains("attendance_absent"));
+    }
+
+    /**
+     * Places {@code root} in a scene and lays it out, so that its list creates cells for the visible rows.
+     */
+    private static Parent layOut(Parent root) {
+        new Scene(root, 400, 400);
+        root.applyCss();
+        root.layout();
+        return root;
     }
 
     private static <T> T onFxThread(Supplier<T> supplier) throws Exception {

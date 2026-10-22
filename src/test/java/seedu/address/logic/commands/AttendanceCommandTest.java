@@ -1,5 +1,6 @@
 package seedu.address.logic.commands;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
@@ -72,6 +73,15 @@ public class AttendanceCommandTest {
         assertFalse(command.equals(new AttendanceCommand(DATE.plusDays(1), GROUP)));
         assertFalse(command.equals(new AttendanceCommand(DATE, new Label("Tutorial 2"))));
         assertFalse(command.equals(null));
+        assertFalse(command.equals(GROUP));
+        assertEquals(command.hashCode(), new AttendanceCommand(DATE, new Label("Tutorial 1")).hashCode());
+    }
+
+    @Test
+    public void toStringMethod() {
+        AttendanceCommand command = new AttendanceCommand(DATE, GROUP);
+        String expected = AttendanceCommand.class.getCanonicalName() + "{date=" + DATE + ", group=" + GROUP + "}";
+        assertEquals(expected, command.toString());
     }
 
     @Test
