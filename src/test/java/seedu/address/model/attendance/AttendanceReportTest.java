@@ -104,6 +104,17 @@ public class AttendanceReportTest {
         assertEquals(report.hashCode(), AttendanceReport.of(List.of(member), DATE, GROUP).hashCode());
         assertFalse(report.equals(AttendanceReport.of(List.of(member), DATE.plusDays(1), GROUP)));
         assertFalse(report.equals(AttendanceReport.of(List.of(), DATE, GROUP)));
+        assertFalse(report.equals(AttendanceReport.of(List.of(member), DATE, new Label("TUTORIAL 1"))));
         assertFalse(report.equals(null));
+        assertFalse(report.equals(GROUP));
+    }
+
+    @Test
+    public void toStringMethod() {
+        Person member = new PersonBuilder(ALICE).withLabels("Tutorial 1").build();
+        AttendanceReport report = AttendanceReport.of(List.of(member), DATE, GROUP);
+        String expected = AttendanceReport.class.getCanonicalName() + "{date=" + DATE + ", group=" + GROUP
+                + ", entries=" + List.of(new AttendanceEntry(member, false)) + "}";
+        assertEquals(expected, report.toString());
     }
 }

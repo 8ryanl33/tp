@@ -50,6 +50,7 @@ public class AttendanceCommandParserTest {
     public void parse_invalidStructure_reportsUsage() {
         assertParseFailure(parser, "unexpected d/2026-10-20 l/Tutorial 1", AttendanceCommand.MESSAGE_INVALID_FORMAT);
         assertParseFailure(parser, "d/2026-10-20 l/Tutorial 1\nextra", AttendanceCommand.MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "d/2026-10-20 l/Tutorial 1\rextra", AttendanceCommand.MESSAGE_INVALID_FORMAT);
     }
 
     @Test
