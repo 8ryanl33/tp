@@ -686,6 +686,22 @@ add n/Betsy Lim i/A0234567C e/betsy@example.com l/Tutorial 2
    is not marked.
 4. Enter the first `mark` command again to prepare the later undo case.
 
+#### Viewing attendance
+
+1. Enter `edit i/A0234567C l/Tutorial 1` so that both sample students are current members of `Tutorial 1`. Enter
+   `attendance d/2026-10-20 l/tutorial 1`. Confirm that the attendance view replaces the student list, shows Alex
+   Tan as **Present** and Betsy Lim as **Absent**, and reports one present and one absent student.
+2. Enter `find n/betsy`, then enter `attendance d/2026-10-20 l/Tutorial 1` again. Confirm that the attendance view
+   still shows both Tutorial 1 members even though the preceding find result showed only Betsy Lim.
+3. While the attendance view is open, enter `mark i/A0234567C d/2026-10-20 l/Tutorial 1`. Confirm that the view
+   refreshes immediately and reports two present students. Enter the corresponding `unmark` command and confirm
+   that it refreshes to one present and one absent student.
+4. Enter `attendance d/2026-10-20 l/No Such Group`. Confirm that an empty attendance view with zero totals is
+   shown. Enter `attendance d/2026-02-30 l/Tutorial 1` and confirm that the invalid date is rejected while the
+   empty attendance view remains open and unchanged.
+5. Enter `list`. Confirm that the student list returns. Enter `attendance d/2026-10-20 i/A0123456B` and confirm
+   that the unsupported `i/` parameter is rejected.
+
 #### Delete, clear, and undo
 
 1. Enter `find n/betsy`, then `delete i/A0123456B`. Confirm that Alex Tan is deleted even though the active search
