@@ -27,10 +27,10 @@ TeachAssist allows users to:
 
 * add and remove student records
 * view all students and their information
-* find students by name, student ID, or email
+* find students by name, student ID, email, remark, or tutorial-group label
 * record additional information as free-text remarks
 * assign tutorial-group labels to students
-* filter students according to their tutorial groups
+* undo up to 100 saved data changes during the current session
 * save student records automatically between sessions
 
 Remarks can be used to record information such as learning difficulties, consultation details, assessment progress, or intended follow-up actions.
@@ -49,10 +49,16 @@ Find a student:
 find n/Samuel
 ```
 
+Undo the latest saved data change:
+
+```text
+undo
+```
+
 Display students from a tutorial group:
 
 ```text
-filter l/Tutorial T01
+find l/Tutorial T01
 ```
 
 Display the complete student list:
