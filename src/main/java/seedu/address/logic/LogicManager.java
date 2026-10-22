@@ -18,6 +18,7 @@ import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
+import seedu.address.model.attendance.AttendanceReport;
 import seedu.address.model.person.Person;
 import seedu.address.storage.DataStorageLocationException;
 import seedu.address.storage.Storage;
@@ -41,6 +42,9 @@ public class LogicManager implements Logic {
     private final boolean isStudentDataAvailable;
     private final String startupMessage;
     private final Deque<AddressBook> undoHistory = new ArrayDeque<>();
+
+    /** The attendance report shown in place of the student list, or null while the student list is shown. */
+    private AttendanceReport displayedAttendance;
 
     /**
      * Constructs a {@code LogicManager} whose student data is available for modification.
@@ -72,6 +76,7 @@ public class LogicManager implements Logic {
      * {@inheritDoc}
      * Executes modifying commands against a temporary model and publishes their changes only after saving succeeds.
      * Commands that do not modify student data execute without saving. Startup loading failures block modifications.
+     * An open attendance report is refreshed after attendance changes and closed by other successful commands.
      */
     @Override
     public CommandResult execute(String commandText) throws CommandException, ParseException {
@@ -79,15 +84,29 @@ public class LogicManager implements Logic {
 
         Command command = addressBookParser.parseCommand(commandText);
         if (!command.isModifyingData()) {
-            return command.execute(model);
+            return updateDisplayedAttendance(command.execute(model));
         }
         if (!isStudentDataAvailable) {
             throw new CommandException(MESSAGE_DATA_UNAVAILABLE);
         }
         if (command instanceof UndoCommand) {
-            return executeUndo();
+            return updateDisplayedAttendance(executeUndo());
         }
-        return executeAndSave(command);
+        return updateDisplayedAttendance(executeAndSave(command));
+    }
+
+    private CommandResult updateDisplayedAttendance(CommandResult result) {
+        if (result.getAttendanceReport().isPresent()) {
+            displayedAttendance = result.getAttendanceReport().get();
+            return result;
+        }
+        if (result.isAttendanceUpdated() && displayedAttendance != null) {
+            displayedAttendance = AttendanceReport.of(model.getAddressBook().getPersonList(),
+                    displayedAttendance.getDate(), displayedAttendance.getGroup());
+            return result.withAttendanceReport(displayedAttendance);
+        }
+        displayedAttendance = null;
+        return result;
     }
 
     private CommandResult executeAndSave(Command command) throws CommandException {

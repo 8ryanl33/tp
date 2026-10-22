@@ -1,47 +1,21 @@
 ---
   layout: default.md
-  title: "John Doe's Project Portfolio Page"
+  title: "Gou Guan Lin's Project Portfolio Page"
 ---
 
-(Copied from John Doe template)
-### Project: AddressBook Level 3
+# Gou Guan Lin
 
-AddressBook - Level 3 is a desktop address book application used for teaching Software Engineering principles. The user interacts with it using a CLI, and it has a GUI created with JavaFX. It is written in Java, and has about 10 kLoC.
+## Project: TeachAssist
 
-Given below are my contributions to the project.
+TeachAssist is a Java desktop application that helps Teaching Assistants manage student records, group labels and remarks through a command-line interface and a JavaFX graphical interface.
 
-* **New Feature**: Added the ability to undo/redo previous commands.
-  * What it does: allows the user to undo all previous commands one at a time. Preceding undo commands can be reversed by using the redo command.
-  * Justification: This feature improves the product significantly because a user can make mistakes in commands and the app should provide a convenient way to rectify them.
-  * Highlights: This enhancement affects existing commands and commands to be added in future. It required an in-depth analysis of design alternatives. The implementation too was challenging as it required changes to existing commands.
-  * Credits: *{mention here if you reused any code/ideas from elsewhere or if a third-party library is heavily used in the feature so that a reader can make a more accurate judgement of how much effort went into the feature}*
+## Selected contributions
 
-* **New Feature**: Added a history command that allows the user to navigate to previous commands using up/down keys.
+The following contributions are supported by commits in the project history. This is a selected summary, not a complete contribution record.
 
-* **Code contributed**: [RepoSense link]()
+* Implemented filtering by group label ([commit `2f439946`](https://github.com/AY2627S1-CS2103T-F12-1/tp/commit/2f4399464be89db46ffd99b7d8eb361e8b270709)).
+* Added filter integration tests ([commit `9d2e3d1f`](https://github.com/AY2627S1-CS2103T-F12-1/tp/commit/9d2e3d1f4436bc6d2409b3001fbf4e6166a217f4)).
+* Documented the filter command ([commit `0d8ba667`](https://github.com/AY2627S1-CS2103T-F12-1/tp/commit/0d8ba667ddbdc692933a13d163d5b8d5d3e3eb25)).
+* Added label support to the add command ([commit `0f3f2606`](https://github.com/AY2627S1-CS2103T-F12-1/tp/commit/0f3f26068a103bb2914e0749f1852716f5f66be2)).
 
-* **Project management**:
-  * Managed releases `v1.3` - `v1.5rc` (3 releases) on GitHub
-
-* **Enhancements to existing features**:
-  * Updated the GUI color scheme (Pull requests [\#33](), [\#34]())
-  * Wrote additional tests for existing features to increase coverage from 88% to 92% (Pull requests [\#36](), [\#38]())
-
-* **Documentation**:
-  * User Guide:
-    * Added documentation for the features `delete` and `find` [\#72]()
-    * Did cosmetic tweaks to existing documentation of features `clear`, `exit`: [\#74]()
-  * Developer Guide:
-    * Added implementation details of the `delete` feature.
-
-* **Community**:
-  * PRs reviewed (with non-trivial review comments): [\#12](), [\#32](), [\#19](), [\#42]()
-  * Contributed to forum discussions (examples: [1](), [2](), [3](), [4]())
-  * Reported bugs and suggestions for other teams in the class (examples: [1](), [2](), [3]())
-  * Some parts of the history feature I added was adopted by several other class mates ([1](), [2]())
-
-* **Tools**:
-  * Integrated a third party library (Natty) to the project ([\#42]())
-  * Integrated a new Github plugin (CircleCI) to the team repo
-
-* _{you can add/remove categories in the list above}_
+[Team responsibilities](../AboutUs.md)

@@ -78,7 +78,8 @@ public class UnmarkCommand extends Command {
         Person updatedStudent = new Person(student.getName(), student.getStudentId(), student.getEmail(),
                 student.getLabels(), student.getRemark(), updatedAttendance);
         model.setPerson(student, updatedStudent);
-        return new CommandResult(String.format(MESSAGE_SUCCESS, studentId, matchedRecord.getGroup().labelName, date));
+        return CommandResult.updatingAttendance(
+                String.format(MESSAGE_SUCCESS, studentId, matchedRecord.getGroup().labelName, date));
     }
 
     private Person findStudent(Model model) throws CommandException {

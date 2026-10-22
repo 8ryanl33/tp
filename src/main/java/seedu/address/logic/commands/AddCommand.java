@@ -8,6 +8,7 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_REMARK;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_STUDENT_ID;
 
 import seedu.address.commons.util.ToStringBuilder;
+import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.person.Person;
@@ -39,7 +40,6 @@ public class AddCommand extends Command {
     public static final String MESSAGE_SUCCESS = "Added student %1$s: %2$s.";
     public static final String MESSAGE_DUPLICATE_PERSON = "Student ID %s already exists.";
     private static final String MESSAGE_REMARK = " Remark: %s";
-    private static final String MESSAGE_STUDENT_COUNT = "\n%d students listed.";
 
     private final Person toAdd;
 
@@ -81,7 +81,7 @@ public class AddCommand extends Command {
         if (!toAdd.getRemark().value.isEmpty()) {
             message += String.format(MESSAGE_REMARK, toAdd.getRemark());
         }
-        return message + String.format(MESSAGE_STUDENT_COUNT, studentCount);
+        return message + "\n" + Messages.formatStudentsListed(studentCount);
     }
 
     @Override
