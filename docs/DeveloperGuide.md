@@ -126,6 +126,8 @@ The `Model` component,
 * uses `studentId` as the domain identifier for `Person` duplicate checks. The JavaFX `id` label in `PersonListCard.fxml` is only the displayed list index, not the student's identifier.
 * stores group labels as `Label` objects inside each `Person`.
 * stores attendance as `AttendanceRecord` objects (a date and a group) inside each `Person`, and builds `AttendanceReport` objects from the student list on request.
+  Each report contains `AttendanceEntry` values pairing a student with their presence status. Reports are derived
+  by the logic layer using `AttendanceReport#of`; they are not saved in the address book.
 * stores the `Person` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Person>` that the UI can observe and bind to, so the UI updates when the list changes.
 * stores a `UserPrefs` object that represents the user's preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
@@ -170,7 +172,7 @@ This section describes some noteworthy details on how certain features are imple
 An optional group label is assigned when creating a student with `add ... l/LABEL_NAME`.
 `Label` validates the value, and `ParserUtil#parseLabel` trims command input before constructing it.
 `JsonAdaptedLabel` and `JsonAdaptedPerson` persist labels under each student's `labels` JSON field.
-`EditCommand` preserves existing labels, and `PersonCard` renders them in its `FlowPane`.
+`EditCommand` preserves labels unless label changes are requested, and `PersonCard` renders them in its `FlowPane`.
 Existing saved labels remain compatible, including records containing multiple labels.
 
 ### Edit command
@@ -341,7 +343,7 @@ JSON storage preserves remarks and defaults missing/null remark fields to empty 
 #### Verification
 
 Tests cover field boundaries and normalisation, label parsing, parameter errors and ordering, duplicate IDs with changed details,
-feedback with/without remarks, JSON round trips, filtered index handling, startup loading failures, and save failures.
+feedback with/without remarks, JSON round trips, filtered-list handling, startup loading failures, and save failures.
 Replacement-failure tests simulate an error after the temporary file is written and check that the original file,
 records, and active filter remain unchanged. They also check temporary-file cleanup and failed first saves.
 
@@ -856,14 +858,43 @@ MSS:
 
 **Extensions**
 * 1a. The command contains no search parameters, multiple search parameters, or empty query fields.
-* 1a1. TeachAssist shows an error message explaining the correct find format.
+* 1a1. TeachAssist shows an error message identifying the missing, repeated, mixed, or empty search parameter.
 * Use case ends.
-* 1b. The search query contains invalid characters.
-* 1b1. TeachAssist shows an error message indicating invalid characters in the query.
+* 1b. A label search contains an invalid label value.
+* 1b1. TeachAssist shows the label constraint message. Name, Student ID, email, and remark searches accept
+  non-empty keywords without applying their corresponding stored-field constraints; command prefix rules still apply.
 * Use case ends.
 * 2a. No student records match the search query.
 * 2a1. TeachAssist displays a message indicating no matching students were found.
 * 2a2. TeachAssist clears the displayed student list.
+* Use case ends.
+
+---
+
+Use case: UC03 - Edit a Student
+MSS:
+1. TA enters a Student ID and one or more field or label changes.
+2. TeachAssist validates the input and finds the student in the complete record list.
+3. TeachAssist prepares the updated record, removing requested labels before adding requested labels and retaining
+   attendance and all unspecified fields.
+4. TeachAssist saves the updated records, displays all students, and shows a confirmation message.
+   Use case ends.
+
+**Extensions**
+* 1a. The input is malformed, a value is invalid, no change is specified, or label operations conflict.
+* 1a1. TeachAssist shows the corresponding error without changing the records or current view.
+* Use case ends.
+* 1b. Student data failed to load at startup.
+* 1b1. TeachAssist blocks editing and asks the TA to fix the data file and restart.
+* Use case ends.
+* 2a. The Student ID is not in the records.
+* 2a1. TeachAssist identifies the missing student in an error message.
+* Use case ends.
+* 3a. A label to remove is absent, or a label to add remains present after removals.
+* 3a1. TeachAssist rejects the entire edit and identifies the offending label.
+* Use case ends.
+* 4a. Saving fails.
+* 4a1. TeachAssist reports the storage error and preserves the records, view, saved file, and undo history.
 * Use case ends.
 
 ---
@@ -959,17 +990,91 @@ MSS:
 * 2a. No student has the group label.
 * 2a1. TeachAssist shows an empty attendance view with zero totals.
 * Use case ends.
-* 3a. TA marks a group member present for the displayed date and group (UC06).
+* 3a. TA marks or unmarks attendance for the displayed date and group (UC06 or UC08).
 * 3a1. TeachAssist refreshes the attendance view after saving.
 * Use case resumes at step 3.
 * 3b. TA enters another command, such as `list`.
 * 3b1. TeachAssist returns to the student list.
 * Use case ends.
 
+---
+
+Use case: UC08 - Unmark a Student's Attendance
+MSS:
+1. TA supplies the Student ID, date, and group of an attendance entry to remove.
+2. TeachAssist finds the student and the matching attendance entry, even if the student no longer has that group label.
+3. TeachAssist saves the records with that entry removed, preserving other attendance and student details.
+4. TeachAssist confirms removal and refreshes the attendance view if it is open.
+   Use case ends.
+
+**Extensions**
+* 1a. A parameter is missing, empty, repeated, unknown, or invalid.
+* 1a1. TeachAssist shows the corresponding error and leaves the records and view unchanged.
+* Use case ends.
+* 1b. Student data failed to load at startup.
+* 1b1. TeachAssist blocks removal and asks the TA to fix the data file and restart.
+* Use case ends.
+* 2a. The student or attendance entry does not exist.
+* 2a1. TeachAssist shows the corresponding error without changing data.
+* Use case ends.
+* 3a. Saving fails.
+* 3a1. TeachAssist reports the storage error and preserves the records, view, saved file, and undo history.
+* Use case ends.
+
+---
+
+Use case: UC09 - Clear All Students
+MSS:
+1. TA enters `clear`.
+2. TeachAssist saves an empty address book, regardless of the current search or attendance view.
+3. TeachAssist displays an empty student list and confirms that the address book has been cleared.
+   Use case ends.
+
+**Extensions**
+* 1a. Student data failed to load at startup.
+* 1a1. TeachAssist blocks clearing and asks the TA to fix the data file and restart.
+* Use case ends.
+* 2a. The address book is already empty.
+* 2a1. TeachAssist still saves the empty address book and records an undo snapshot.
+* Use case resumes at step 3.
+* 2b. Saving fails.
+* 2b1. TeachAssist reports the storage error and preserves the records, view, saved file, and undo history.
+* Use case ends.
+
+There is no confirmation prompt. Recovery uses UC10 while the snapshot remains in the current session.
+
+---
+
+Use case: UC10 - Undo a Data Change
+MSS:
+1. TA enters `undo`.
+2. TeachAssist selects the latest retained snapshot from before a successfully saved modifying command.
+3. TeachAssist saves that snapshot, restores its records, and consumes the snapshot.
+4. TeachAssist displays all students and reports `Undid last change.`
+   Use case ends.
+
+**Extensions**
+* 1a. Additional arguments are supplied.
+* 1a1. TeachAssist rejects the command with the undo usage message.
+* Use case ends.
+* 1b. Student data failed to load at startup.
+* 1b1. TeachAssist blocks undo and asks the TA to fix the data file and restart.
+* Use case ends.
+* 2a. No snapshot is available, including after restarting the app.
+* 2a1. TeachAssist reports `Nothing to undo.` without saving or changing records. An open attendance view closes;
+  the existing student filter is retained.
+* Use case ends.
+* 3a. Saving fails.
+* 3a1. TeachAssist reports the storage error and preserves the records, view, saved file, and snapshot for a later retry.
+* Use case ends.
+
 ### Non-Functional Requirements
 
 1.  Should work on any _mainstream OS_ as long as it has Java `25` or above installed.
-2.  Should be able to hold up to 1000 students without noticeable sluggishness in performance for typical usage.
+2.  Should support 1000 students. The release acceptance target is a usable window within 5 seconds of launching
+    the JAR, and visible command feedback and list updates within 1 second in at least 19 of 20 measured runs per
+    command on the recorded test machine, using a local writable disk. This is a verification target, not a claim
+    that benchmarking has passed. See [Performance verification](#performance-verification) for the dataset and procedure.
 3.  A user with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
 
 ### Glossary
@@ -979,3 +1084,154 @@ MSS:
 * **Student ID**: The unique identifier used to distinguish student records.
 * **Group label**: A name assigned to students to organise and find them by group, such as a tutorial group.
 * **Remark**: Optional free-text notes attached to a student record.
+
+--------------------------------------------------------------------------------------------------------------------
+
+## Appendix: Instructions for manual testing
+
+### Setup and baseline
+
+Use Java 25 and a release JAR copied into a separate, writable test folder. These scenarios deliberately delete and
+replace test records; use no real student data. Follow the [User Guide quick start](UserGuide.md#quick-start) to launch
+the JAR. With no `data/addressbook.json`, expect an empty list and
+`No existing student data found. Starting with an empty student list.`
+
+Before each scenario below, start a fresh application session with no data file in the test folder and enter:
+
+```text
+add n/Alex Tan i/A0123456B e/alex@example.com r/Needs help with recursion l/Tutorial 1
+add n/Beth Lim i/A0234567C e/beth@example.com l/Tutorial 1
+```
+
+Expect Alex and Beth to appear, with `1 student listed.` after the first add and `2 students listed.` after the second.
+Unless stated otherwise, run each scenario's steps in order. For rejected commands, verify that student details,
+the current view, and the contents of `data/addressbook.json` are unchanged.
+
+### Adding, finding, and listing students
+
+| Step | Command | Expected result |
+|------|---------|-----------------|
+| 1 | `add n/Another Name i/a0123456b e/another@example.com` | `Student ID A0123456B already exists.`; two students remain. |
+| 2 | `add n/Bad Name i/A0345678D` | `Missing required parameter: e/.`; no student is added. |
+| 3 | `find n/al` | Only Alex appears; `1 student listed.` |
+| 4 | `find i/a023` | Only Beth appears, proving searches replace the previous filter. |
+| 5 | `find e/example.com` | Both students appear. |
+| 6 | `find r/curs` | Only Alex appears. |
+| 7 | `find l/tutorial 1` | Both students appear; matching ignores case. |
+| 8 | `find l/Tutorial` | Empty list; `0 students listed.`; label matching is exact. |
+| 9 | `find r/` | `Parameter r/ cannot be empty.`; the empty view is preserved. |
+| 10 | `list` | Both students appear; `Listed all students.` |
+| 11 | `list 3` | `Invalid command format!` followed by `Usage: list`; both students remain visible. |
+
+### Editing students and labels
+
+| Step | Command | Expected result |
+|------|---------|-----------------|
+| 1 | `find n/Beth` | Only Beth appears. |
+| 2 | `edit i/a0123456b e/alex.new@example.com r/Revision complete` | Hidden student Alex is updated; both students appear. Feedback begins `Edited student: Alex Tan`; Alex's card shows the new remark. |
+| 3 | `edit i/A0123456B dl/Tutorial 1 l/Tutorial 2 l/Consultation` | Alex has Tutorial 2 and Consultation; Beth keeps Tutorial 1. |
+| 4 | `edit i/A0123456B n/Changed Name dl/Missing` | `Student A0123456B does not have label "Missing".`; Alex's name and labels are unchanged. |
+| 5 | `edit i/A0123456B l/Consultation` | `Student A0123456B already has label "Consultation".` |
+| 6 | `edit i/A0123456B l/New l/new` | `Parameter l/ repeats label "new".`; neither label is added. |
+| 7 | `edit i/A0123456B` | `At least one field to edit must be provided.` |
+| 8 | `edit i/A0123456B l/ dl/Tutorial 2` | `An empty l/ cannot be combined with other label changes.` |
+| 9 | `edit i/A0123456B l/ r/` | All of Alex's labels and the remark are cleared; name and email are retained. |
+
+### Marking, viewing, and unmarking attendance
+
+| Step | Command | Expected result |
+|------|---------|-----------------|
+| 1 | `attendance d/2026-10-20 l/Tutorial 1` | Alex and Beth are Absent; totals are 0 present, 2 absent. |
+| 2 | `mark i/A0123456B d/2026-10-20 l/tutorial 1` | Alex becomes Present in the open view; totals become 1 present, 1 absent. |
+| 3 | Repeat step 2 | Already-marked error; the attendance view and totals are unchanged. |
+| 4 | `unmark i/A0123456B d/2026-10-20 l/Tutorial 1` | Alex becomes Absent; totals become 0 present, 2 absent. |
+| 5 | Repeat step 4 | Not-marked error; the view remains unchanged. |
+| 6 | `mark i/A0123456B d/2026-02-30 l/Tutorial 1` | `Date must use a valid YYYY-MM-DD date.` |
+| 7 | Repeat step 2, then `edit i/A0123456B dl/Tutorial 1` | Attendance is recorded, then Alex's label is removed; the edit returns to the student list. |
+| 8 | `attendance d/2026-10-20 l/Tutorial 1` | Only Beth appears; totals are 0 present, 1 absent. |
+| 9 | `unmark i/A0123456B d/2026-10-20 l/Tutorial 1` | Removal succeeds even without current group membership; the view still contains only Beth. |
+| 10 | `attendance d/2026-10-20 l/Missing` | Empty attendance view with zero totals. |
+| 11 | `list` | Both students appear in the normal student list. |
+
+### Deleting, clearing, and undoing changes
+
+| Step | Command | Expected result |
+|------|---------|-----------------|
+| 1 | `find n/Beth` | Only Beth appears. |
+| 2 | `delete i/a0123456b` | `Deleted student A0123456B: Alex Tan.`; Beth remains visible. |
+| 3 | Repeat step 2 | `Student with ID A0123456B is not in the records.` |
+| 4 | `undo` | `Undid last change.`; Alex and Beth both appear. The failed deletion did not consume history. |
+| 5 | `find n/Alex`, then `clear` | Empty list; `Address book has been cleared!`; both records are removed from the saved file. |
+| 6 | `undo` | Both complete records are restored and visible. |
+| 7 | `undo 1` | `Invalid command format!` followed by `Usage: undo`; records are unchanged. |
+| 8 | Run `undo` until the list is empty, then once more | The original two adds are reversed; the final response is `Nothing to undo.` |
+| 9 | `clear`, then `undo` | Clearing an empty list succeeds and creates a snapshot; undo reports `Undid last change.` and the list remains empty. |
+
+The automated tests in `LogicManagerTest` cover eviction at the 100-snapshot history limit and failed-save preservation.
+
+### Help, exit, and restart persistence
+
+1. With the baseline students, run `mark i/A0123456B d/2026-10-20 l/Tutorial 1`.
+2. Run `help`. Confirm that the help window shows the UG address and that **Copy URL** copies it. Close that window.
+3. Run `exit`. Confirm that the application closes. Relaunch the same JAR from the same test folder.
+4. Expect `2 students loaded.`. Verify both students' details, Alex's remark, and both labels.
+5. Run `attendance d/2026-10-20 l/Tutorial 1`. Expect Alex Present and Beth Absent.
+6. Run `undo`. Expect `Nothing to undo.` because history is not persisted; the attendance view closes.
+
+### Loading and saving failures
+
+Use separate copies of the baseline test folder for each case. Close the app before changing files, except for the
+failed-replacement scenario, which deliberately introduces an obstruction while the loaded app remains open.
+
+| Case | Preparation and action | Expected result |
+|------|------------------------|-----------------|
+| Invalid JSON | Back up `data/addressbook.json`, replace its contents with `{`, then launch. Run `list`, then `clear`. | Startup reports corrupted or invalid data. `list` reports `No students found.`; `clear` reports that student data is unavailable. The invalid file remains untouched. Restore the backup and restart to recover both students. |
+| Duplicate ID | Duplicate a complete student object in the JSON `persons` array, then launch. | Startup reports the duplicate Student ID; modifying commands are blocked. Restore the backup and restart. |
+| Cannot create data folder | In a fresh test folder, create a regular file named `data` beside the JAR. Launch and try a valid add. | `Unable to create data storage location.`; no student is added. Close the app, remove the test obstruction, and restart before retrying. |
+| Failed replacement | In a baseline folder, launch and run `find n/Beth`. While the app remains open, rename `data/addressbook.json` to `addressbook.backup.json` in the same folder. Create a non-empty directory named `addressbook.json` in its place, then run `delete i/A0123456B`. | `Unable to save student data.`; Beth remains the only visible student. `list` still shows both students. The backup file is unchanged. Close the app, remove the test directory, restore the backup filename, and restart. |
+
+For the screen-size, scaling, and disconnected-monitor scenarios, follow
+[Display settings and window usability](Testing.md#display-settings-and-window-usability).
+
+### Performance verification
+
+This procedure evaluates NFR 2; it does not record a passing result. Record the app version, OS, Java version, CPU,
+RAM, disk type, screen settings, dataset, timings, and any failures in the release test results.
+
+1. Copy the release JAR into a fresh test folder. With the app closed, run the Python 3 script below from that folder
+   to create 1000 synthetic students. The script refuses to overwrite an existing data file.
+
+   ```python
+   import json
+   from pathlib import Path
+
+   students = []
+   for number in range(1000):
+       group = f"Tutorial {number % 10 + 1}"
+       students.append({
+           "name": "Performance Student",
+           "studentId": f"T{number:07d}A",
+           "email": f"student{number}@example.com",
+           "remark": "Needs practice with recursion. " * 7,
+           "labels": [group],
+           "attendance": [{"date": f"2026-10-{day:02d}", "group": group}
+                          for day in range(1, 11)],
+       })
+   Path("data").mkdir(exist_ok=True)
+   with Path("data/addressbook.json").open("x", encoding="utf-8") as output:
+       json.dump({"persons": students}, output, indent=2)
+   ```
+
+2. Measure three launches from starting the Java process until the window is usable and reports `1000 students loaded.`.
+   Each launch should take at most 5 seconds. Retain the original fixture for repeatable runs.
+3. After one warm-up of each operation, measure 20 runs each of `find n/Performance`, `list`,
+   `attendance d/2026-10-20 l/Tutorial 1`, and `edit i/T0000000A r/Performance check`.
+   Time from pressing Enter until both feedback and the resulting view finish updating, using a screen recording
+   or equivalent timing tool. For at least 19 runs per command, the elapsed time should be at most 1 second.
+4. Also measure 20 `mark i/T0000000A d/2026-10-20 l/Tutorial 1` / `undo` pairs after a warm-up pair.
+   Each undo restores the unmarked state so the next mark succeeds. Apply the same 19-of-20 target separately
+   to mark and undo. Outside the timed commands, use `attendance d/2026-10-20 l/Tutorial 1` to verify 100 members,
+   with 1 present and 99 absent after mark, and 0 present and 100 absent after undo.
+5. Scroll to the end of the full student list and confirm that the command box stays usable and no cards are missing.
+   Record freezes or rendering errors separately from command timings. A failure requires investigation; this dataset
+   does not establish performance for maximum-length remarks or unbounded attendance histories.
