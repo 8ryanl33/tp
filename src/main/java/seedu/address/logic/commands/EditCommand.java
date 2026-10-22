@@ -36,7 +36,7 @@ public class EditCommand extends Command {
 
     public static final String COMMAND_WORD = "edit";
 
-    public static final String MESSAGE_USAGE = COMMAND_WORD + ": Edits the details of the person identified "
+    public static final String MESSAGE_USAGE = COMMAND_WORD + ": Edits the details of the student identified "
             + "by their Student ID. Add labels with l/ and remove them with dl/. "
             + "An empty l/ clears all labels; an empty r/ clears the remark.\n"
             + "Parameters: " + PREFIX_STUDENT_ID + "STUDENT_ID "
@@ -48,9 +48,9 @@ public class EditCommand extends Command {
             + "Example: " + COMMAND_WORD + " " + PREFIX_STUDENT_ID + "A0123456B "
             + PREFIX_EMAIL + "johndoe@example.com";
 
-    public static final String MESSAGE_EDIT_PERSON_SUCCESS = "Edited person: %1$s";
+    public static final String MESSAGE_EDIT_PERSON_SUCCESS = "Edited student: %1$s";
     public static final String MESSAGE_NOT_EDITED = "At least one field to edit must be provided.";
-    public static final String MESSAGE_DUPLICATE_PERSON = "This person already exists in the address book.";
+    public static final String MESSAGE_DUPLICATE_PERSON = "This student already exists in TeachAssist.";
     public static final String MESSAGE_STUDENT_NOT_FOUND = "Student with ID %s is not in the records.";
     public static final String MESSAGE_LABEL_NOT_FOUND = "Student %1$s does not have label \"%2$s\".";
     public static final String MESSAGE_DUPLICATE_LABEL = "Student %1$s already has label \"%2$s\".";

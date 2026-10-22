@@ -1,8 +1,8 @@
 {
   "baseUrl": "",
   "titlePrefix": "TeachAssist",
-  "titleSuffix": "adapted from AB-3",
-  "faviconPath": "images/SeEduLogo.png",
+  "titleSuffix": "",
+  "faviconPath": "images/TeachAssistLogo.svg",
   "style": {
     "codeTheme": "light"
   },

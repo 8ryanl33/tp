@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
 import seedu.address.logic.commands.AddCommand;
+import seedu.address.logic.commands.AttendanceCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.EditCommand;
@@ -104,6 +105,13 @@ public class AddressBookParserTest {
         EditCommand command = (EditCommand) parser.parseCommand(EditCommand.COMMAND_WORD + " "
                 + "i/" + person.getStudentId() + " " + PersonUtil.getEditPersonDescriptorDetails(descriptor));
         assertEquals(new EditCommand(person.getStudentId(), descriptor), command);
+    }
+
+    @Test
+    public void parseCommand_attendance() throws Exception {
+        AttendanceCommand command = (AttendanceCommand) parser.parseCommand(
+                AttendanceCommand.COMMAND_WORD + " d/2026-10-20 l/Tutorial 1");
+        assertEquals(new AttendanceCommand(LocalDate.parse("2026-10-20"), new Label("Tutorial 1")), command);
     }
 
     @Test

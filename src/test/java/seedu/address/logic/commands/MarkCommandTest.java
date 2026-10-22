@@ -43,7 +43,8 @@ public class MarkCommandTest {
         expected.setPerson(student, marked);
 
         assertCommandSuccess(new MarkCommand(student.getStudentId(), DATE, new Label("tutorial 1")), model,
-                "Marked student A1234567B present for Tutorial 1 on 2026-10-20.", expected);
+                CommandResult.updatingAttendance("Marked student A1234567B present for Tutorial 1 on 2026-10-20."),
+                expected);
         assertEquals(List.of(BENSON), model.getFilteredPersonList());
     }
 

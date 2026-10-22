@@ -22,7 +22,7 @@ TeachAssist is a **desktop application for managing student records, optimized f
 
 1. Copy the file to the folder you want to use as the _home folder_ for TeachAssist.
 
-1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
+1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar teach-assist-v1.3.jar`.<br>
    A GUI similar to the one below should appear in a few seconds. With no saved data file, the student list starts empty.<br>
    ![Ui](images/Ui.png)
 
@@ -238,7 +238,7 @@ or `find e/KEYWORD [MORE_KEYWORDS]` or `find r/KEYWORD [MORE_KEYWORDS]` or `find
 * Label names follow the rules under `add`: 1–60 Unicode code points, at least one letter or digit, and only the
   permitted characters. Surrounding whitespace is ignored; internal spacing is preserved. Slashes and control
   characters are rejected.
-* Reports `N person(s) listed!`. If no students match, the displayed list is cleared and reports `0 person(s) listed!`.
+* Reports `N students listed.`, or `1 student listed.` for one match. If no students match, the displayed list is cleared and reports `0 students listed.`
 * Student records and the saved data file are unchanged. Use `list` to show all students again.
 
 Examples:
@@ -276,7 +276,7 @@ student records, and saved file.
 
 ### Deleting a student: `delete`
 
-Deletes the student with the specified Student ID, including their name, email, remark, and labels.
+Deletes the student with the specified Student ID, including their name, email, remark, labels, and attendance records.
 
 Format: `delete i/STUDENT_ID`
 
@@ -410,9 +410,51 @@ order. Field values are then validated in Student ID, date, and group order. Onl
 The startup-loading check occurs after parsing. Student and attendance checks follow it, and saving occurs last.
 Failed commands preserve the records, active filter, and saved file.
 
+### Viewing attendance: `attendance`
+
+Shows which members of a tutorial group were present on a date.
+
+Format: `attendance d/YYYY-MM-DD l/GROUP`
+
+* Exactly one non-empty `d/` and `l/` is required, in any order. They follow the same rules as in
+  [`mark`](#recording-attendance-mark).
+* The view lists every student who **currently** has the group label, in the same order as the student list,
+  including students hidden by `find`.
+* Each student is shown as **Present** if they were marked for that date and group, and **Absent** otherwise.
+  There is no separate way to record an absence.
+* The totals of present and absent students are shown above the list and in the result message.
+* Group membership is based on current labels. A student marked present who has since lost the label is not shown,
+  but their attendance record is kept.
+* If no student has the group label, an empty view with zero totals is shown.
+* This command does not change any data.
+
+The attendance view replaces the student list:
+
+* A successful `mark` or `unmark` refreshes it immediately, so you can mark students one by one and watch the totals
+  change.
+* A failed command leaves it open and unchanged.
+* Any other successful command, such as `list` or `undo`, returns to the student list.
+
+Examples:
+
+* `attendance d/2026-10-20 l/Tutorial 1`
+* `attendance l/tutorial 1 d/2026-10-20` shows the same view.
+
+Successful output, when one of three group members was marked:
+
+```text
+Attendance for Tutorial 1 on 2026-10-20: 1 present, 2 absent.
+```
+
+The group name in the message is shown as typed.
+Input errors use the same messages and order as [Attendance command errors](#attendance-command-errors), without the
+Student ID, with the usage line `Invalid command format. Usage: attendance d/YYYY-MM-DD l/GROUP`.
+An `i/` parameter is rejected as `Unknown parameter: i/.`
+Because `attendance` only reads data, it remains available when student data fails to load.
+
 ### Clearing all entries: `clear`
 
-Clears all entries from the address book.
+Clears all student records from TeachAssist.
 
 Format: `clear`
 
@@ -473,7 +515,8 @@ If loading fails, TeachAssist starts with an empty student list and leaves the d
 
 * Commands that change student records (`add`, `edit`, `delete`, `mark`, `unmark`, `clear`, and `undo`) are blocked with
   `Student data is unavailable because loading failed. Fix the data file and restart.`
-* Commands that do not change student records, such as `list`, `find`, `help`, and `exit`, remain available.
+* Commands that do not change student records, such as `list`, `find`, `attendance`, `help`, and `exit`, remain
+  available.
 
 To recover, close TeachAssist, fix or restore the data file, and restart. Deleting the data file makes TeachAssist start
 with an empty student list.
@@ -482,7 +525,8 @@ with an empty student list.
 
 TeachAssist automatically saves after commands that change student records (`add`, `edit`, `delete`, `mark`, `unmark`,
 `clear`, and successful `undo`).
-You do not need to save manually. Commands such as `find`, `list`, `help`, and `exit` do not write student data.
+You do not need to save manually. Commands such as `find`, `list`, `attendance`, `help`, and `exit` do not write
+student data.
 If saving fails, the proposed change is not applied, and existing records, the displayed filter, and the previous
 saved file remain unchanged. The application displays `Unable to save student data.`
 Storage must support atomic file replacement; unsupported storage produces the same save error.
@@ -505,21 +549,20 @@ See [Loading the data](#loading-the-data) for the message shown and the commands
 Back up the file before editing it.<br>
 Furthermore, certain edits can cause TeachAssist to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 
-Each person record must include a valid `studentId`. Older data files that do not include `studentId` for every person may fail to load until the missing values are added manually.
-Group labels are saved under each person record as `labels`. Older data files without `labels` still load; those persons simply start with no labels.
+Each student record must include a valid `studentId`. Older data files that do not include `studentId` for every student may fail to load until the missing values are added manually.
+Group labels are saved under each student record as `labels`. Older data files without `labels` still load; those students simply start with no labels.
 Legacy `tags` fields are ignored when loading and are not saved again.
+Attendance is saved under each person record as `attendance`, a list of `{"date": "2026-10-20", "group": "Tutorial 1"}`
+entries. Each date and group pair may appear only once per person, ignoring the case of the group. Older data files
+without `attendance` still load; those persons simply start with no attendance records.
 </box>
-
-### Archiving data files `[coming in v2.0]`
-
-_Details coming soon ..._
 
 --------------------------------------------------------------------------------------------------------------------
 
 ## FAQ
 
 **Q**: How do I transfer my data to another computer?<br>
-**A**: Install the app on the other computer and overwrite the data file it creates with the data file from your previous AddressBook home folder.
+**A**: Install the app on the other computer and overwrite the data file it creates with the data file from your previous TeachAssist home folder.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -535,6 +578,7 @@ _Details coming soon ..._
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add n/NAME i/STUDENT_ID e/EMAIL [r/REMARK] [l/LABEL_NAME]` <br> e.g., `add n/James Ho i/A0123456B e/jamesho@example.com r/Needs help with recursion l/Discrete Math Tutorial`
+**Attendance** | `attendance d/YYYY-MM-DD l/GROUP`<br> e.g., `attendance d/2026-10-20 l/Tutorial 1`
 **Clear**  | `clear`
 **Delete** | `delete i/STUDENT_ID`<br> e.g., `delete i/A0123456B`
 **Edit**   | `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/LABEL_NAME]...`<br> e.g., `edit i/A0123456B dl/Tutorial 1 l/Tutorial 2`
