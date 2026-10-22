@@ -71,7 +71,7 @@ The **API** of this component is specified in [`Ui.java`](https://github.com/se-
 
 <puml src="diagrams/UiClassDiagram.puml" alt="Structure of the UI Component"/>
 
-The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
+The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, `AttendanceListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
 
 The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
 
@@ -80,7 +80,8 @@ The `UI` component,
 * executes user commands using the `Logic` component.
 * listens for changes to `Model` data so that the UI can be updated with the modified data.
 * keeps a reference to the `Logic` component, because the `UI` relies on the `Logic` to execute commands.
-* depends on some classes in the `Model` component because it displays `Person` objects from the model.
+* depends on some classes in the `Model` component because it displays `Person` objects and `AttendanceReport` objects from the model.
+* shows an `AttendanceListPanel` in place of the `PersonListPanel` while a command result carries an attendance report. See [Viewing attendance](#viewing-attendance).
 
 ### Logic component
 
@@ -121,6 +122,7 @@ The `Model` component,
 * stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object).
 * uses `studentId` as the domain identifier for `Person` duplicate checks. The JavaFX `id` label in `PersonListCard.fxml` is only the displayed list index, not the student's identifier.
 * stores group labels as `Label` objects inside each `Person`.
+* stores attendance as `AttendanceRecord` objects (a date and a group) inside each `Person`, and builds `AttendanceReport` objects from the student list on request.
 * stores the `Person` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Person>` that the UI can observe and bind to, so the UI updates when the list changes.
 * stores a `UserPrefs` object that represents the user's preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
@@ -440,6 +442,96 @@ The sequence diagram shows deletion by Student ID, including the save-failure pa
 Tests cover normalised IDs, visible/hidden students, an empty displayed list, nonexistent IDs, malformed parameters,
 whole-record removal from persisted JSON, filter preservation, and save failures.
 
+### Viewing attendance
+
+The command `attendance d/YYYY-MM-DD l/GROUP` shows which current members of a tutorial group were marked present on
+a date. Its accepted values and messages are documented in the
+[User Guide](UserGuide.md#viewing-attendance-attendance). Recording and removing attendance are described in
+[Mark and unmark attendance](#mark-and-unmark-attendance).
+
+#### Storing attendance
+
+Each `Person` holds an immutable set of `AttendanceRecord` objects. A record is a date and a group `Label`. Two records
+are equal when their dates match and their group names match after `toLowerCase(Locale.ROOT)`, the same rule used to
+reject duplicate labels. This makes the date and group pair unique for each student.
+
+`JsonAdaptedPerson` saves the records under each person's `attendance` field, and `JsonAdaptedAttendanceRecord`
+validates each date and group when loading. A missing or `null` `attendance` field loads as an empty set, so data files
+written before attendance existed still load. Records are stored inside the `Person`, so deleting a student deletes
+their records, and `edit` keeps them.
+
+Only presence is stored. A student is absent when they have no record for the date and group.
+
+`AttendanceCommandParser` checks `d/` and `l/` in the same order as the `mark` and `unmark` parsers, then reuses
+`ParserUtil#parseDate` and `ParserUtil#parseLabel`.
+
+#### Reporting attendance
+
+`AttendanceReport#of(students, date, group)` keeps the students whose current labels include the group, in the order
+given, and pairs each one with whether they have the matching record. It also gives the present and absent totals.
+Membership comes from current labels, so a student who lost the label is left out even if their records remain.
+
+`AttendanceCommand` is read-only. It builds a report from `model.getAddressBook().getPersonList()`, not the filtered
+list, so `find` does not hide group members. It returns `CommandResult#showingAttendance(message, report)`.
+
+#### Showing and refreshing the attendance view
+
+`CommandResult` carries an optional `AttendanceReport`. `MainWindow#executeCommand` shows an `AttendanceListPanel` in
+the student list area when a result carries a report, and shows the `PersonListPanel` again when it does not. Each
+`AttendanceCard` shows a member's name, Student ID, and a **Present** or **Absent** badge.
+
+`LogicManager` remembers the report being displayed in `displayedAttendance`. After each successful command it:
+
+* stores the result's report if there is one;
+* otherwise, if the result reports an attendance update and a report is displayed, rebuilds that report from the live
+  model and attaches it to the result with `CommandResult#withAttendanceReport`. `MarkCommand` and `UnmarkCommand`
+  report updates by returning `CommandResult#updatingAttendance(message)`;
+* otherwise, clears `displayedAttendance`, so the UI returns to the student list.
+
+Because the rebuild happens after saving and publishing, the view only changes once the change is saved. A failed
+command throws before this step, so the view stays as it was. A successful `undo` returns a plain result, so it closes
+the view; the restored records are shown in the student list.
+
+The sequence diagram below shows `attendance` opening the view, followed by a `mark` that refreshes it. The `alt` block
+shows the save-success and save-failure paths.
+
+<puml src="diagrams/AttendanceSequenceDiagram.puml" alt="Showing attendance and refreshing it after mark" />
+
+#### Design considerations
+
+**Aspect: Where to keep the displayed report**
+
+* **Alternative 1 (current choice):** `LogicManager` remembers it and attaches a refreshed report to the result.
+  * Pros: `MainWindow` stays a simple renderer, and the refresh rules are tested without JavaFX.
+  * Cons: `LogicManager` holds a small piece of display state.
+* **Alternative 2:** `MainWindow` remembers the open date and group and asks `Logic` for a new report after `mark`.
+  * Pros: Display state stays in the UI.
+  * Cons: The UI must know which commands change attendance, and the refresh can only be tested through the GUI.
+
+**Aspect: How to record absence**
+
+* **Alternative 1 (current choice):** Store only presence; absent means not marked.
+  * Pros: One command per present student, and no need to finalise a session.
+  * Cons: An absence cannot be distinguished from a session the TA has not taken yet.
+* **Alternative 2:** Store explicit Present and Absent records.
+  * Pros: Every student has a recorded status for every session.
+  * Cons: Needs a way to record or finalise absences, and more data to keep consistent when labels change.
+
+#### Verification
+
+* `AttendanceRecordTest` covers equality ignoring group case. `JsonAdaptedPersonTest` covers legacy files without
+  `attendance`, invalid saved dates and groups, and duplicate records. `EditCommandTest` checks that edits keep records.
+* `AttendanceCommandParserTest` covers invalid dates, and missing, empty, repeated, and unknown parameters.
+* `AttendanceCommandTest` covers group members hidden by `find` and groups with no members.
+* `AttendanceReportTest` covers several groups on one date, nobody marked, and students who no longer have the label.
+* `LogicManagerTest` covers the view refreshing straight after `mark` and `unmark`, a failed mark leaving the view
+  open, `undo` and other commands closing it, and marking, restarting, and viewing the saved attendance.
+* `MainAppTest` loads a data file without `attendance`, marks students, restarts through the normal startup path,
+  and checks the saved attendance and duplicate-mark check.
+* `AttendanceListPanelTest` lays out the panel and checks its title, totals, members, and Present and Absent badges.
+  It is skipped where JavaFX cannot start. The Linux CI job, which uploads coverage, runs under `xvfb-run` so that
+  JavaFX tests have a virtual display.
+
 ### Loading student data at startup
 
 The startup messages and the commands available after a failed load are documented in the
@@ -741,6 +833,57 @@ MSS:
 * 3a. Saving data to the file fails.
 * 3a1. TeachAssist shows an error message indicating that it is unable to save student data.
 * 3a2. TeachAssist retains the entire student record, current filter, and previous saved file.
+* Use case ends.
+
+---
+
+Use case: UC06 - Mark a Student's Attendance
+MSS:
+1. TA enters command to mark a student present with their student ID, a date, and a group label.
+2. TeachAssist verifies that the student exists, has the group label, and is not already marked for that date and group.
+3. TeachAssist records the attendance and saves the changes to the data file.
+4. TeachAssist displays a confirmation message, and refreshes the attendance view if it is open.
+   Use case ends.
+
+**Extensions**
+* 1a. A parameter is missing, empty, repeated, unknown, or invalid, such as a date that does not exist.
+* 1a1. TeachAssist shows an error message naming the problem. No student data changes.
+* Use case ends.
+* 1b. The data file failed to load at startup.
+* 1b1. TeachAssist blocks marking and asks the TA to fix the data file and restart.
+* Use case ends.
+* 2a. The student does not exist or does not have the group label.
+* 2a1. TeachAssist shows an error message naming the student or group. No student data changes.
+* Use case ends.
+* 2b. The student is already marked present for that date and group.
+* 2b1. TeachAssist shows an error message. No student data changes.
+* Use case ends.
+* 3a. Saving data to the file fails.
+* 3a1. TeachAssist shows an error message indicating that it is unable to save student data.
+* 3a2. TeachAssist keeps the previous records, view, and saved file.
+* Use case ends.
+
+---
+
+Use case: UC07 - View a Group's Attendance
+MSS:
+1. TA enters command to view attendance with a date and a group label.
+2. TeachAssist finds every student who currently has the group label.
+3. TeachAssist replaces the student list with the group members, each marked Present or Absent, and shows the totals.
+   Use case ends.
+
+**Extensions**
+* 1a. A parameter is missing, empty, repeated, unknown, or invalid.
+* 1a1. TeachAssist shows an error message naming the problem. The current view is unchanged.
+* Use case ends.
+* 2a. No student has the group label.
+* 2a1. TeachAssist shows an empty attendance view with zero totals.
+* Use case ends.
+* 3a. TA marks a group member present for the displayed date and group (UC06).
+* 3a1. TeachAssist refreshes the attendance view after saving.
+* Use case resumes at step 3.
+* 3b. TA enters another command, such as `list`.
+* 3b1. TeachAssist returns to the student list.
 * Use case ends.
 
 ### Non-Functional Requirements
