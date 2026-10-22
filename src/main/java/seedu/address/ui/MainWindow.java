@@ -9,6 +9,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -177,6 +178,17 @@ public class MainWindow extends UiPart<Stage> {
     }
 
     /**
+     * Shows the attendance report carried by {@code commandResult} in the student list area,
+     * or the student list if it carries none.
+     */
+    private void showStudentOrAttendanceList(CommandResult commandResult) {
+        Region list = commandResult.getAttendanceReport()
+                .map(report -> new AttendanceListPanel(report).getRoot())
+                .orElse(personListPanel.getRoot());
+        personListPanelPlaceholder.getChildren().setAll(list);
+    }
+
+    /**
      * Executes the command and returns the result.
      *
      * @see seedu.address.logic.Logic#execute(String)
@@ -186,6 +198,7 @@ public class MainWindow extends UiPart<Stage> {
             CommandResult commandResult = logic.execute(commandText);
             logger.info("Result: " + commandResult.getFeedbackToUser());
             resultDisplay.setFeedbackToUser(commandResult.getFeedbackToUser());
+            showStudentOrAttendanceList(commandResult);
 
             if (commandResult.isShowHelp()) {
                 handleHelp();
