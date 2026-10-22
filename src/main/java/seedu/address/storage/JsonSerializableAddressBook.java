@@ -21,7 +21,7 @@ class JsonSerializableAddressBook {
 
     public static final String MESSAGE_DUPLICATE_STUDENT_ID =
             "Unable to load student data: duplicate Student ID %1$s detected.";
-    public static final String MESSAGE_NULL_PERSON = "Persons list contains null person(s).";
+    public static final String MESSAGE_NULL_PERSON = "Student list contains null student records.";
 
     private final List<JsonAdaptedPerson> persons = new ArrayList<>();
 
