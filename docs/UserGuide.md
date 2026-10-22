@@ -22,7 +22,7 @@ TeachAssist is a **desktop application for managing student records, optimized f
 
 1. Copy the file to the folder you want to use as the _home folder_ for TeachAssist.
 
-1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
+1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar teach-assist-v1.3.jar`.<br>
    A GUI similar to the one below should appear in a few seconds. With no saved data file, the student list starts empty.<br>
    ![Ui](images/Ui.png)
 
@@ -238,7 +238,7 @@ or `find e/KEYWORD [MORE_KEYWORDS]` or `find r/KEYWORD [MORE_KEYWORDS]` or `find
 * Label names follow the rules under `add`: 1–60 Unicode code points, at least one letter or digit, and only the
   permitted characters. Surrounding whitespace is ignored; internal spacing is preserved. Slashes and control
   characters are rejected.
-* Reports `N person(s) listed!`. If no students match, the displayed list is cleared and reports `0 person(s) listed!`.
+* Reports `N students listed.`, or `1 student listed.` for one match. If no students match, the displayed list is cleared and reports `0 students listed.`
 * Student records and the saved data file are unchanged. Use `list` to show all students again.
 
 Examples:
@@ -412,7 +412,7 @@ Failed commands preserve the records, active filter, and saved file.
 
 ### Clearing all entries: `clear`
 
-Clears all entries from the address book.
+Clears all student records from TeachAssist.
 
 Format: `clear`
 
@@ -473,21 +473,17 @@ See [Loading the data](#loading-the-data) for the message shown and the commands
 Back up the file before editing it.<br>
 Furthermore, certain edits can cause TeachAssist to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 
-Each person record must include a valid `studentId`. Older data files that do not include `studentId` for every person may fail to load until the missing values are added manually.
-Group labels are saved under each person record as `labels`. Older data files without `labels` still load; those persons simply start with no labels.
+Each student record must include a valid `studentId`. Older data files that do not include `studentId` for every student may fail to load until the missing values are added manually.
+Group labels are saved under each student record as `labels`. Older data files without `labels` still load; those students simply start with no labels.
 Legacy `tags` fields are ignored when loading and are not saved again.
 </box>
-
-### Archiving data files `[coming in v2.0]`
-
-_Details coming soon ..._
 
 --------------------------------------------------------------------------------------------------------------------
 
 ## FAQ
 
 **Q**: How do I transfer my data to another computer?<br>
-**A**: Install the app on the other computer and overwrite the data file it creates with the data file from your previous AddressBook home folder.
+**A**: Install the app on the other computer and overwrite the data file it creates with the data file from your previous TeachAssist home folder.
 
 --------------------------------------------------------------------------------------------------------------------
 

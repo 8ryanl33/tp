@@ -3,7 +3,6 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static seedu.address.logic.Messages.MESSAGE_PERSONS_LISTED_OVERVIEW;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.TypicalPersons.CARL;
 import static seedu.address.testutil.TypicalPersons.ELLE;
@@ -59,7 +58,7 @@ public class FindCommandTest {
 
     @Test
     public void execute_zeroKeywords_noPersonFound() {
-        String expectedMessage = String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 0);
+        String expectedMessage = "0 students listed.";
         NameContainsKeywordsPredicate predicate = preparePredicate(" ");
         FindCommand command = new FindCommand(predicate);
         expectedModel.updateFilteredPersonList(predicate);
@@ -69,7 +68,7 @@ public class FindCommandTest {
 
     @Test
     public void execute_multipleKeywords_multiplePersonsFound() {
-        String expectedMessage = String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 3);
+        String expectedMessage = "3 students listed.";
         NameContainsKeywordsPredicate predicate = preparePredicate("Kurz Elle Kunz");
         FindCommand command = new FindCommand(predicate);
         expectedModel.updateFilteredPersonList(predicate);
@@ -93,7 +92,7 @@ public class FindCommandTest {
         expectedModel.updateFilteredPersonList(person ->
                 person.equals(recursionStudent) || person.equals(loopsStudent));
 
-        assertCommandSuccess(command, model, String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 2), expectedModel);
+        assertCommandSuccess(command, model, "2 students listed.", expectedModel);
         assertEquals(List.of(recursionStudent, loopsStudent), model.getFilteredPersonList());
     }
 
@@ -102,8 +101,16 @@ public class FindCommandTest {
         FindCommand command = new FindCommandParser().parse(" r/nonexistentremarkkeyword");
         expectedModel.updateFilteredPersonList(person -> false);
 
-        assertCommandSuccess(command, model, String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 0), expectedModel);
+        assertCommandSuccess(command, model, "0 students listed.", expectedModel);
         assertEquals(List.of(), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_singleMatch_usesSingularStudent() {
+        NameContainsKeywordsPredicate predicate = preparePredicate("Elle");
+        expectedModel.updateFilteredPersonList(predicate);
+        assertCommandSuccess(new FindCommand(predicate), model, "1 student listed.", expectedModel);
+        assertEquals(List.of(ELLE), model.getFilteredPersonList());
     }
 
     @Test

@@ -229,7 +229,7 @@ public class LogicManagerTest {
     @Test
     public void execute_add_successSavesBeforePublishing() throws Exception {
         CommandResult result = logic.execute("add n/Samuel i/a0123456b e/Sam@EXAMPLE.COM r/Quiz: 8/10.");
-        assertEquals("Added student A0123456B: Samuel. Remark: Quiz: 8/10.\n1 students listed.",
+        assertEquals("Added student A0123456B: Samuel. Remark: Quiz: 8/10.\n1 student listed.",
                 result.getFeedbackToUser());
         assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
         assertEquals("Sam@example.com", model.getAddressBook().getPersonList().getFirst().getEmail().value);
@@ -246,7 +246,7 @@ public class LogicManagerTest {
         logic = new LogicManager(model, storage);
 
         CommandResult result = logic.execute("find l/tutorial 1");
-        assertEquals(String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 1), result.getFeedbackToUser());
+        assertEquals("1 student listed.", result.getFeedbackToUser());
         assertEquals(List.of(expectedStudent), model.getFilteredPersonList());
     }
 
@@ -404,7 +404,7 @@ public class LogicManagerTest {
         expectedModel.updateFilteredPersonList(person -> person.equals(samuel));
 
         assertCommandSuccess("find l/Discrete Math Tutorial",
-                String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 1), expectedModel);
+                "1 student listed.", expectedModel);
         assertEquals(List.of(samuel), model.getFilteredPersonList());
         assertEquals(originalAddressBook, model.getAddressBook());
     }
@@ -428,7 +428,7 @@ public class LogicManagerTest {
         expectedModel.updateFilteredPersonList(person -> person.equals(samuel));
 
         assertCommandSuccess("find l/discrete math tutorial",
-                String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 1), expectedModel);
+                "1 student listed.", expectedModel);
         assertEquals(List.of(samuel), model.getFilteredPersonList());
         assertEquals(originalAddressBook, model.getAddressBook());
     }
