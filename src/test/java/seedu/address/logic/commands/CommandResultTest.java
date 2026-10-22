@@ -5,7 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
+
+import seedu.address.model.attendance.AttendanceReport;
+import seedu.address.model.label.Label;
 
 public class CommandResultTest {
     @Test
@@ -33,6 +40,29 @@ public class CommandResultTest {
 
         // different exit value -> returns false
         assertFalse(commandResult.equals(new CommandResult("feedback", false, true)));
+
+        // different attendance values -> returns false
+        AttendanceReport report = AttendanceReport.of(List.of(), LocalDate.parse("2026-10-20"),
+                new Label("Tutorial 1"));
+        assertFalse(commandResult.equals(CommandResult.showingAttendance("feedback", report)));
+        assertFalse(commandResult.equals(CommandResult.updatingAttendance("feedback")));
+        assertTrue(CommandResult.showingAttendance("feedback", report)
+                .equals(CommandResult.showingAttendance("feedback", report)));
+    }
+
+    @Test
+    public void attendance_factoriesAndCopy_setAttendanceFields() {
+        AttendanceReport report = AttendanceReport.of(List.of(), LocalDate.parse("2026-10-20"),
+                new Label("Tutorial 1"));
+        assertEquals(Optional.empty(), new CommandResult("feedback").getAttendanceReport());
+        assertFalse(new CommandResult("feedback").isAttendanceUpdated());
+        assertEquals(Optional.of(report), CommandResult.showingAttendance("feedback", report).getAttendanceReport());
+        assertTrue(CommandResult.updatingAttendance("feedback").isAttendanceUpdated());
+
+        CommandResult refreshed = CommandResult.updatingAttendance("feedback").withAttendanceReport(report);
+        assertEquals(Optional.of(report), refreshed.getAttendanceReport());
+        assertTrue(refreshed.isAttendanceUpdated());
+        assertEquals("feedback", refreshed.getFeedbackToUser());
     }
 
     @Test
@@ -57,7 +87,7 @@ public class CommandResultTest {
         CommandResult commandResult = new CommandResult("feedback");
         String expected = CommandResult.class.getCanonicalName() + "{feedbackToUser="
                 + commandResult.getFeedbackToUser() + ", showHelp=" + commandResult.isShowHelp()
-                + ", exit=" + commandResult.isExit() + "}";
+                + ", exit=" + commandResult.isExit() + ", attendanceReport=null, attendanceUpdated=false}";
         assertEquals(expected, commandResult.toString());
     }
 }

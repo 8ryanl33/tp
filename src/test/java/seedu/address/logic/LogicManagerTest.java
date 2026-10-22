@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.UndoCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.ParserUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -35,6 +37,7 @@ import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.attendance.AttendanceRecord;
+import seedu.address.model.attendance.AttendanceReport;
 import seedu.address.model.label.Label;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
@@ -82,6 +85,111 @@ public class LogicManagerTest {
 
         assertEquals(List.of(student), model.getAddressBook().getPersonList());
         assertEquals(List.of(student), storage.readAddressBook().orElseThrow().getPersonList());
+    }
+
+    @Test
+    public void execute_undo_restoresLatestSnapshotSavesAndShowsAllStudents() throws Exception {
+        model.addPerson(ALICE);
+        model.addPerson(BENSON);
+        AddressBook originalAddressBook = new AddressBook(model.getAddressBook());
+        logic.execute("add n/Samuel i/A0123456B e/samuel@example.com");
+        logic.execute("find n/Samuel");
+
+        CommandResult result = logic.execute("undo");
+
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, result.getFeedbackToUser());
+        assertEquals(originalAddressBook, model.getAddressBook());
+        assertEquals(originalAddressBook, storage.readAddressBook().orElseThrow());
+        assertEquals(List.of(ALICE, BENSON), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_undoWithoutHistory_reportsNothingToUndo() throws Exception {
+        model.addPerson(ALICE);
+        storage.saveAddressBook(model.getAddressBook());
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+
+        CommandResult result = logic.execute("undo");
+
+        assertEquals(UndoCommand.MESSAGE_NOTHING_TO_UNDO, result.getFeedbackToUser());
+        assertEquals(List.of(ALICE), model.getAddressBook().getPersonList());
+        assertEquals(List.of(ALICE), model.getFilteredPersonList());
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
+    }
+
+    @Test
+    public void execute_undoSaveFailure_preservesDataFileViewAndHistory() throws Exception {
+        ToggleableJsonAddressBookStorage addressBookStorage =
+                new ToggleableJsonAddressBookStorage(temporaryFolder.resolve("addressBook.json"));
+        storage = new StorageManager(addressBookStorage,
+                new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
+        logic = new LogicManager(model, storage);
+        model.addPerson(ALICE);
+        model.addPerson(BENSON);
+        AddressBook originalAddressBook = new AddressBook(model.getAddressBook());
+        logic.execute("add n/Samuel i/A0123456B e/samuel@example.com");
+        Person addedStudent = model.getAddressBook().getPersonList().getLast();
+        logic.execute("find n/Samuel");
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+        addressBookStorage.setFailWrites(true);
+
+        assertThrows(CommandException.class, LogicManager.MESSAGE_SAVE_FAILURE, () -> logic.execute("undo"));
+        assertEquals(List.of(ALICE, BENSON, addedStudent), model.getAddressBook().getPersonList());
+        assertEquals(List.of(addedStudent), model.getFilteredPersonList());
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
+
+        addressBookStorage.setFailWrites(false);
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(originalAddressBook, model.getAddressBook());
+    }
+
+    @Test
+    public void execute_consecutiveUndo_discardsEachReversedState() throws Exception {
+        logic.execute("add n/First Student i/A0000001B e/first@example.com");
+        Person firstStudent = model.getAddressBook().getPersonList().getFirst();
+        logic.execute("add n/Second Student i/A0000002B e/second@example.com");
+        Person secondStudent = model.getAddressBook().getPersonList().getLast();
+        logic.execute("add n/Third Student i/A0000003B e/third@example.com");
+
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(firstStudent, secondStudent), model.getAddressBook().getPersonList());
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(firstStudent), model.getAddressBook().getPersonList());
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(), model.getAddressBook().getPersonList());
+        assertEquals(UndoCommand.MESSAGE_NOTHING_TO_UNDO, logic.execute("undo").getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_changeAfterUndo_createsOnlyANewPredecessor() throws Exception {
+        logic.execute("add n/First Student i/A0000001B e/first@example.com");
+        Person firstStudent = model.getAddressBook().getPersonList().getFirst();
+        logic.execute("add n/Second Student i/A0000002B e/second@example.com");
+        Person secondStudent = model.getAddressBook().getPersonList().getLast();
+        logic.execute("add n/Third Student i/A0000003B e/third@example.com");
+
+        logic.execute("undo");
+        logic.execute("add n/Fourth Student i/A0000004B e/fourth@example.com");
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(firstStudent, secondStudent), model.getAddressBook().getPersonList());
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(firstStudent), model.getAddressBook().getPersonList());
+    }
+
+    @Test
+    public void execute_undoHistoryRetainsOnlyOneHundredPriorStates() throws Exception {
+        int historyLimit = LogicManager.MAX_UNDO_HISTORY_SIZE;
+        int numberOfChanges = historyLimit + 1;
+        for (int changeNumber = 1; changeNumber <= numberOfChanges; changeNumber++) {
+            logic.execute(String.format("add n/Student i/A%07dB e/student%d@example.com",
+                    changeNumber, changeNumber));
+        }
+
+        for (int undoCount = 0; undoCount < historyLimit; undoCount++) {
+            assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        }
+        assertEquals(1, model.getAddressBook().getPersonList().size());
+        assertEquals(UndoCommand.MESSAGE_NOTHING_TO_UNDO, logic.execute("undo").getFeedbackToUser());
     }
 
     @Test
@@ -155,6 +263,74 @@ public class LogicManagerTest {
         assertEquals(List.of(expectedStudent), model.getAddressBook().getPersonList());
         assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
         assertEquals(List.of(), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_attendance_showsReportAndRefreshesAfterMark() throws Exception {
+        Person alice = new PersonBuilder(ALICE).withLabels("Tutorial 1").build();
+        Person benson = new PersonBuilder(BENSON).withLabels("Tutorial 1").build();
+        model.addPerson(alice);
+        model.addPerson(benson);
+        LocalDate date = LocalDate.parse("2026-10-20");
+        Label group = new Label("tutorial 1");
+
+        CommandResult shown = logic.execute("attendance d/2026-10-20 l/tutorial 1");
+        assertEquals("Attendance for tutorial 1 on 2026-10-20: 0 present, 2 absent.", shown.getFeedbackToUser());
+        assertEquals(AttendanceReport.of(List.of(alice, benson), date, group),
+                shown.getAttendanceReport().orElseThrow());
+
+        CommandResult marked = logic.execute("mark i/A1234567B d/2026-10-20 l/Tutorial 1");
+        AttendanceReport refreshed = marked.getAttendanceReport().orElseThrow();
+        assertEquals(AttendanceReport.of(model.getAddressBook().getPersonList(), date, group), refreshed);
+        assertEquals(1, refreshed.getPresentCount());
+        assertEquals(1, refreshed.getAbsentCount());
+        assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+
+        AttendanceReport afterOtherDate = logic.execute("mark i/B1234567C d/2026-10-21 l/Tutorial 1")
+                .getAttendanceReport().orElseThrow();
+        assertEquals(date, afterOtherDate.getDate());
+        assertEquals(1, afterOtherDate.getPresentCount());
+        assertEquals(1, afterOtherDate.getAbsentCount());
+
+        assertCommandException("mark i/A1234567B d/2026-10-20 l/Tutorial 1",
+                "Student A1234567B is already marked present for Tutorial 1 on 2026-10-20.");
+        assertEquals(2, logic.execute("mark i/B1234567C d/2026-10-20 l/Tutorial 1")
+                .getAttendanceReport().orElseThrow().getPresentCount());
+
+        assertEquals(Optional.empty(), logic.execute("list").getAttendanceReport());
+        assertEquals(Optional.empty(), logic.execute("mark i/A1234567B d/2026-10-22 l/Tutorial 1")
+                .getAttendanceReport());
+    }
+
+    @Test
+    public void execute_unmarkAndUndo_updateAttendanceView() throws Exception {
+        model.addPerson(new PersonBuilder(ALICE).withLabels("Tutorial 1").build());
+        logic.execute("mark i/A1234567B d/2026-10-20 l/Tutorial 1");
+        assertEquals(1, logic.execute("attendance d/2026-10-20 l/Tutorial 1")
+                .getAttendanceReport().orElseThrow().getPresentCount());
+
+        CommandResult unmarked = logic.execute("unmark i/A1234567B d/2026-10-20 l/Tutorial 1");
+        assertEquals(0, unmarked.getAttendanceReport().orElseThrow().getPresentCount());
+
+        assertEquals(Optional.empty(), logic.execute("undo").getAttendanceReport());
+    }
+
+    @Test
+    public void execute_attendanceAfterRestart_showsSavedAttendance() throws Exception {
+        model.addPerson(new PersonBuilder(ALICE).withLabels("Tutorial 1").build());
+        model.addPerson(new PersonBuilder(BENSON).withLabels("Tutorial 1", "Tutorial 2").build());
+        logic.execute("mark i/A1234567B d/2026-10-20 l/Tutorial 1");
+        logic.execute("mark i/B1234567C d/2026-10-20 l/Tutorial 2");
+
+        model = new ModelManager(storage.readAddressBook().orElseThrow(), new UserPrefs());
+        logic = new LogicManager(model, storage);
+
+        assertEquals("Attendance for Tutorial 1 on 2026-10-20: 1 present, 1 absent.",
+                logic.execute("attendance d/2026-10-20 l/Tutorial 1").getFeedbackToUser());
+        assertEquals("Attendance for Tutorial 2 on 2026-10-20: 1 present, 0 absent.",
+                logic.execute("attendance d/2026-10-20 l/Tutorial 2").getFeedbackToUser());
+        assertEquals("Attendance for Tutorial 3 on 2026-10-20: 0 present, 0 absent.",
+                logic.execute("attendance d/2026-10-20 l/Tutorial 3").getFeedbackToUser());
     }
 
     @Test
@@ -286,6 +462,7 @@ public class LogicManagerTest {
         logic.execute("list");
         logic.execute("find n/ Samuel");
         logic.execute("find l/Discrete Math Tutorial");
+        logic.execute("attendance d/2026-10-20 l/Discrete Math Tutorial");
         logic.execute("help");
         logic.execute("exit");
     }
@@ -300,6 +477,7 @@ public class LogicManagerTest {
             assertCommandException(command, LogicManager.MESSAGE_DATA_UNAVAILABLE);
         }
         logic.execute("list");
+        logic.execute("attendance d/2026-10-20 l/Tutorial 1");
         assertEquals("invalid student data", Files.readString(storage.getAddressBookFilePath()));
     }
 
@@ -656,5 +834,28 @@ public class LogicManagerTest {
                 + EMAIL_DESC_AMY;
         ModelManager expectedModel = new ModelManager(model.getAddressBook(), model.getUserPrefs());
         assertCommandFailure(addCommand, CommandException.class, expectedMessage, expectedModel);
+    }
+
+    /**
+     * A JSON storage implementation whose replacement failures can be enabled after an initial successful save.
+     */
+    private static class ToggleableJsonAddressBookStorage extends JsonAddressBookStorage {
+        private boolean failWrites;
+
+        ToggleableJsonAddressBookStorage(Path filePath) {
+            super(filePath);
+        }
+
+        void setFailWrites(boolean failWrites) {
+            this.failWrites = failWrites;
+        }
+
+        @Override
+        protected void replaceDataFile(Path temporaryFile, Path targetFile) throws IOException {
+            if (failWrites) {
+                throw new IOException("Simulated replacement failure");
+            }
+            super.replaceDataFile(temporaryFile, targetFile);
+        }
     }
 }

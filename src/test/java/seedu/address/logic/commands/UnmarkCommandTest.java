@@ -47,7 +47,7 @@ public class UnmarkCommandTest {
         expected.setPerson(student, unmarked);
 
         assertCommandSuccess(new UnmarkCommand(new StudentId("a1234567b"), DATE, new Label("tutorial 1")), model,
-                "Unmarked student A1234567B for Tutorial 1 on 2026-10-20.", expected);
+                CommandResult.updatingAttendance("Unmarked student A1234567B for Tutorial 1 on 2026-10-20."), expected);
         assertEquals(List.of(BENSON), model.getFilteredPersonList());
     }
 
@@ -59,7 +59,7 @@ public class UnmarkCommandTest {
         expected.setPerson(student, new PersonBuilder(student).withAttendance().build());
 
         assertCommandSuccess(new UnmarkCommand(student.getStudentId(), DATE, new Label("TUTORIAL 1")), model,
-                "Unmarked student A1234567B for Tutorial 1 on 2026-10-20.", expected);
+                CommandResult.updatingAttendance("Unmarked student A1234567B for Tutorial 1 on 2026-10-20."), expected);
     }
 
     @Test
@@ -96,7 +96,7 @@ public class UnmarkCommandTest {
         new MarkCommand(student.getStudentId(), DATE, GROUP).execute(model);
 
         assertCommandSuccess(new UnmarkCommand(student.getStudentId(), DATE, GROUP), model,
-                "Unmarked student A1234567B for Tutorial 1 on 2026-10-20.", expected);
+                CommandResult.updatingAttendance("Unmarked student A1234567B for Tutorial 1 on 2026-10-20."), expected);
         assertCommandFailure(new UnmarkCommand(student.getStudentId(), DATE, GROUP), model,
                 "Student A1234567B is not marked present for Tutorial 1 on 2026-10-20.");
     }

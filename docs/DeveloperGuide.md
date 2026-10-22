@@ -13,7 +13,7 @@
 
 ## **Acknowledgements**
 
-* TeachAssist's initial codebase, architecture, documentation structure and proposed undo/redo design are adapted from [AddressBook Level 3](https://github.com/se-edu/addressbook-level3), created by the [SE-EDU initiative](https://se-education.org).
+* TeachAssist's initial codebase, architecture and documentation structure are adapted from [AddressBook Level 3](https://github.com/se-edu/addressbook-level3), created by the [SE-EDU initiative](https://se-education.org).
 * Application libraries: [JavaFX](https://openjfx.io/) for the graphical interface and [Jackson](https://github.com/FasterXML/jackson) for JSON persistence.
 * Testing and build tools: [JUnit 5](https://junit.org/junit5/), [Gradle](https://gradle.org/), [Shadow](https://gradleup.com/shadow/), [Checkstyle](https://checkstyle.org/) and [JaCoCo](https://www.jacoco.org/jacoco/).
 * Documentation tools: [MarkBind](https://markbind.org/) for the website and [PlantUML](https://plantuml.com/) for UML diagrams.
@@ -188,6 +188,11 @@ Matching is case-insensitive. Removing a missing label or adding one already pre
 The command then replaces the student through `Model#setPerson`; `LogicManager` saves the pending
 model before publishing it to the live model.
 
+The sequence diagram below shows an edit that removes one label and adds another. It also shows that
+a save failure leaves the live student data unchanged.
+
+<puml src="diagrams/EditLabelSequenceDiagram.puml" alt="Editing student labels and saving before publishing" />
+
 ### Mark and unmark attendance
 
 Command formats:
@@ -229,7 +234,7 @@ the active filter can still be updated. A missing student throws `CommandExcepti
 
 Each command constructs a replacement `Person`, retaining every other field, and calls `Model#setPerson`.
 Other attendance entries and the active filter remain unchanged. `unmark` removes the specified attendance entry;
-it does not use the proposed general undo/redo mechanism described later in this guide.
+like other successful data changes, it can later be reversed by `undo`.
 
 #### Saving and sequence diagrams
 
@@ -294,8 +299,9 @@ AddressBookParser → AddCommandParser → AddCommand
 LogicManager → temporary ModelManager → JsonAddressBookStorage → live ModelManager
 ```
 
-1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, `mark`, `unmark`, and `clear`
-   return true. Future modifying commands must override this method too.
+1. `Command#isModifyingData` identifies commands that alter student records. `add`, `edit`, `delete`, `mark`, `unmark`, `clear`,
+   and `undo` return true. Future modifying commands must override this method too. `undo` uses the separate snapshot
+   transaction described in [Undoing data changes](#undoing-data-changes).
 2. `LogicManager` copies the live records and current filter into a temporary `ModelManager`, then executes the command
    against that copy. Copying the filter preserves the active view if saving fails; `edit` identifies its target by
    Student ID from the full record list rather than by displayed index.
@@ -502,95 +508,41 @@ Saving is described in [Saving before publishing changes](#saving-before-publish
 IDs. It checks that modifying commands are blocked and the file is unchanged after a failed load.
 `JsonAddressBookStorageTest` covers unreadable files, invalid JSON, invalid values, and duplicate Student IDs.
 
-### \[Proposed\] Undo/redo feature
+### Undoing data changes
 
-#### Proposed Implementation
+`LogicManager` owns an in-memory deque of complete `AddressBook` snapshots. It retains at most 100 prior states.
+The snapshots contain student data only; GUI settings and the current `find` predicate are not recorded.
+History begins empty on every application start and is never written to JSON.
 
-The proposed undo/redo mechanism is facilitated by `VersionedAddressBook`. It extends `AddressBook` with an undo/redo history, stored internally as an `addressBookStateList` and `currentStatePointer`. Additionally, it implements the following operations:
+Before a normal data-changing command runs, `LogicManager` copies the live address book. It executes the command on
+the existing pending model and saves that proposed address book. Only after the save succeeds does it append the
+pre-change snapshot, discarding the oldest snapshot first when the deque is full, and publish the pending model.
+Thus parsing, validation, execution, or save failures leave the live records and undo history unchanged.
 
-* `VersionedAddressBook#commit()` -- Saves the current student-record state in its history.
-* `VersionedAddressBook#undo()` -- Restores the previous student-record state from its history.
-* `VersionedAddressBook#redo()` -- Restores a previously undone student-record state from its history.
+For `undo`, `LogicManager` examines the newest snapshot without removing it. It saves that snapshot before replacing
+the live address book, resets the displayed list with `Model.PREDICATE_SHOW_ALL_PERSONS`, and then removes the
+snapshot. (The displayed list is reset to default, as it could be stale after an undo, for example with a filter applied.
+The current design also does not support the notion of saving a "filter", implying "updating the filter" being
+out-of-scope, hence the decision to reset the displayed list.) If saving fails, live records, the displayed list,
+the saved file, and history remain unchanged. If no snapshot exists, it returns `Nothing to undo.` without saving.
 
-These operations are exposed in the `Model` interface as `Model#commitAddressBook()`, `Model#undoAddressBook()` and `Model#redoAddressBook()` respectively.
+Undo is destructive: restoring a snapshot discards the state being reversed, so there is no redo or forward branch.
+A later successful data change records the then-current state as a new predecessor.
 
-Given below is an example usage scenario and how the undo/redo mechanism behaves at each step.
+<puml src="diagrams/UndoHistoryStateDiagram.puml" alt="Bounded destructive undo history" />
 
-Step 1. The user launches the application for the first time. The `VersionedAddressBook` will be initialized with the initial student-record state, and the `currentStatePointer` pointing to that single student-record state.
+<puml src="diagrams/UndoSequenceDiagram.puml" alt="Undo parsing and transactional restoration" />
 
-<puml src="diagrams/UndoRedoState0.puml" alt="UndoRedoState0" />
+#### Design consideration
 
-Step 2. The user executes `delete i/A0123456B` to delete that student's record. In this proposed undo/redo design,
-the `delete` command calls `Model#commitAddressBook()` after deletion, saving the modified state in the
-`addressBookStateList` and advancing `currentStatePointer` to the new state.
+**Aspect: How undo stores prior state:**
 
-<puml src="diagrams/UndoRedoState1.puml" alt="UndoRedoState1" />
-
-Step 3. The user executes `add n/David ...` to add a new student. The `add` command also calls `Model#commitAddressBook()`, causing another modified student-record state to be saved into the `addressBookStateList`.
-
-<puml src="diagrams/UndoRedoState2.puml" alt="UndoRedoState2" />
-
-<box type="info" seamless>
-
-**Note:** If a command fails its execution, it will not call `Model#commitAddressBook()`, so the student-record state will not be saved into the `addressBookStateList`.
-</box>
-
-Step 4. The user now decides that adding the student was a mistake, and decides to undo that action by executing the `undo` command. The `undo` command will call `Model#undoAddressBook()`, which will shift the `currentStatePointer` once to the left, pointing it to the previous student-record state, and restores the student records to that state.
-
-<puml src="diagrams/UndoRedoState3.puml" alt="UndoRedoState3" />
-
-
-<box type="info" seamless>
-
-**Note:** If the `currentStatePointer` is at index 0, pointing to the initial student-record state, then there are no previous student-record states to restore. The `undo` command uses `Model#canUndoAddressBook()` to check if this is the case. If so, it will return an error to the user rather
-than attempting to perform the undo.
-</box>
-
-The following sequence diagram shows how an undo operation goes through the `Logic` component:
-
-<puml src="diagrams/UndoSequenceDiagram-Logic.puml" alt="UndoSequenceDiagram-Logic" />
-
-<box type="info" seamless>
-
-**Note:** The lifeline for `UndoCommand` should end at the destroy marker (X), but due to a limitation of PlantUML, it continues to the end of the diagram.
-</box>
-
-Similarly, how an undo operation goes through the `Model` component is shown below:
-
-<puml src="diagrams/UndoSequenceDiagram-Model.puml" alt="UndoSequenceDiagram-Model" />
-
-The `redo` command does the opposite - it calls `Model#redoAddressBook()`, which shifts the `currentStatePointer` once to the right, pointing to the previously undone state, and restores the student records to that state.
-
-<box type="info" seamless>
-
-**Note:** If the `currentStatePointer` is at index `addressBookStateList.size() - 1`, pointing to the latest student-record state, then there are no undone student-record states to restore. The `redo` command uses `Model#canRedoAddressBook()` to check if this is the case. If so, it will return an error to the user rather than attempting to perform the redo.
-</box>
-
-Step 5. The user then decides to execute the command `list`. Commands that do not modify the student records, such as `list`, will usually not call `Model#commitAddressBook()`, `Model#undoAddressBook()` or `Model#redoAddressBook()`. Thus, the `addressBookStateList` remains unchanged.
-
-<puml src="diagrams/UndoRedoState4.puml" alt="UndoRedoState4" />
-
-Step 6. The user executes `clear`, which calls `Model#commitAddressBook()`. Since the `currentStatePointer` is not pointing at the end of the `addressBookStateList`, all student-record states after the `currentStatePointer` will be purged. Reason: It no longer makes sense to redo the `add n/David ...` command. This is the behavior that most modern desktop applications follow.
-
-<puml src="diagrams/UndoRedoState5.puml" alt="UndoRedoState5" />
-
-The following activity diagram summarizes what happens when a user executes a new command:
-
-<puml src="diagrams/CommitActivityDiagram.puml" width="250" />
-
-#### Design considerations:
-
-**Aspect: How undo & redo execute:**
-
-* **Alternative 1 (current choice):** Saves the entire set of student records.
-  * Pros: Easy to implement.
-  * Cons: May have performance issues in terms of memory usage.
-
-* **Alternative 2:** Individual command knows how to undo/redo by
-  itself.
-  * Pros: Will use less memory (e.g. for `delete`, just save the student being deleted).
-  * Cons: We must ensure that the implementation of each individual command is correct.
-
+* **Current choice: Complete address-book snapshots in `LogicManager`.**
+  * Pros: One transaction handles every data-changing command and keeps saving before publishing explicit.
+  * Cons: Each retained state copies the address-book list structure.
+* **Alternative: Command-specific inverse operations.**
+  * Pros: Can retain less state for some commands.
+  * Cons: Every data-changing command must implement and validate its own reverse operation.
 
 --------------------------------------------------------------------------------------------------------------------
 
