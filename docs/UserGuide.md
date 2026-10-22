@@ -42,6 +42,7 @@ TeachAssist is a **desktop application for managing student records, optimized f
 1. Refer to the [Features](#features) section below for details of each command.
 
 TeachAssist fits its startup window within the available screen area, accounting for display scaling and the taskbar.
+If a previously used monitor is disconnected, the saved window position is adjusted to fit the primary screen.
 You can resize the window down to 450 × 400 logical pixels. At higher scaling, fewer student cards fit at once;
 scroll the student list to reach the remaining students.
 
@@ -205,12 +206,17 @@ Edits a student identified by Student ID, including a student hidden by the curr
 Format: `edit i/STUDENT_ID [n/NAME] [e/EMAIL] [r/REMARK] [l/LABEL_NAME]... [dl/LABEL_NAME]...`
 
 * `i/STUDENT_ID` is required and must identify an existing student. Matching is case-insensitive.
+* `i/`, `n/`, `e/`, and `r/` may each appear at most once. Unknown alphabetic prefixes are rejected, including inside remarks.
 * At least one field to change must be provided. Student ID itself cannot be edited.
 * `n/` and `e/` replace the existing name and email. Their values cannot be empty and follow the rules under `add`.
 * `r/` replaces the existing remark. An empty `r/` clears it.
 * Each `l/LABEL_NAME` adds a label; each `dl/LABEL_NAME` removes one. Both may be repeated, and label matching is case-insensitive. Label names follow the `l/LABEL_NAME` rules in the Add section.
+* The same label cannot appear twice under `l/` or twice under `dl/`, ignoring case. An empty `dl/` is invalid.
+* All removals happen before additions, regardless of parameter order. You can remove and add the same label to change
+  its capitalisation, for example `edit i/A0123456B dl/tutorial 1 l/Tutorial 1`.
 * An empty `l/` clears **all** labels. It cannot be combined with another `l/` or any `dl/` in the same command.
 * Fields not supplied keep their existing values. A successful edit displays the complete student list.
+* Attendance records are preserved, including records for labels that are removed.
 
 Examples:
 
@@ -219,7 +225,45 @@ Examples:
 * `edit i/A0123456B dl/Tutorial 1 l/Tutorial 2` replaces one group label while keeping the others.
 * `edit i/A0123456B l/ r/` removes every label and clears the remark.
 
-If a `dl/` label is absent, an `l/` label already exists, or an empty `l/` is combined with another label change, the edit is rejected and the student remains unchanged.
+If a `dl/` label is absent, an `l/` label still exists after removals, or an empty `l/` is combined with another label
+change, the entire edit is rejected. No partial field or label changes are applied.
+
+#### Successful edit
+
+For a student named John Doe with label `Tutorial 1`, running `edit i/A0123456B e/johndoe@example.com` reports:
+
+```text
+Edited student: John Doe; Student ID: A0123456B; Email: johndoe@example.com; Labels: [Tutorial 1]
+```
+
+The feedback lists the updated name, Student ID, email, and labels. It does not include the remark; check the student
+card to see a changed remark. Multiple labels may be displayed in any order.
+
+#### Errors
+
+| Problem | Message |
+|---------|---------|
+| Unknown parameter | `Unknown parameter: x/.` |
+| Text before the first parameter | `Invalid command format!` followed by the edit usage |
+| Repeated single-value parameter, e.g., two `n/` values | `Multiple values specified for the following single-valued field(s): n/` |
+| Missing Student ID | `Missing required parameter: i/.` |
+| Empty Student ID | `Parameter i/ cannot be empty.` |
+| Invalid Student ID, name, email, remark, or label | The corresponding field constraint message under `add`; empty `n/` and `e/` also produce these messages |
+| No field to change, e.g., `edit i/A0123456B` | `At least one field to edit must be provided.` |
+| Empty label removal | `Parameter dl/ cannot be empty.` |
+| Same label repeated under one prefix | `Parameter l/ repeats label "Tutorial 1".` (or `dl/`, using the repeated value's spelling) |
+| Empty `l/` combined with another label change | `An empty l/ cannot be combined with other label changes.` |
+| Student does not exist | `Student with ID A0123456B is not in the records.` |
+| Removing a label the student does not have | `Student A0123456B does not have label "Tutorial 1".` |
+| Adding a label still present after removals | `Student A0123456B already has label "Tutorial 1".` |
+| Student data failed to load at startup | `Student data is unavailable because loading failed. Fix the data file and restart.` |
+| Data storage location cannot be created | `Unable to create data storage location.` |
+| Saving fails | `Unable to save student data.` |
+
+This table lists possible errors, not their checking order. Only the first detected error is reported. When several
+single-value parameters repeat, the message lists their prefixes; their displayed order is not guaranteed.
+As with other commands, use one line and lowercase command words and prefixes. A failed edit preserves the records,
+current view, undo history, and saved file. Changes become visible only after saving succeeds.
 
 ### Finding students by name, student ID, email, remark, or label: `find`
 
@@ -454,9 +498,31 @@ Because `attendance` only reads data, it remains available when student data fai
 
 ### Clearing all entries: `clear`
 
-Clears all student records from TeachAssist.
+Clears all student records from TeachAssist, including their remarks, labels, and attendance. This affects the
+complete stored list, even if `find` currently shows only some students or an attendance view is open.
 
 Format: `clear`
+
+The command takes effect without a confirmation prompt. After saving succeeds, the student list is empty and the
+result is:
+
+```text
+Address book has been cleared!
+```
+
+Running `clear` on an empty list also succeeds with this message. Additional arguments are ignored, so `clear 1`
+also clears **all** students. The current search predicate is retained, although the list is empty.
+
+Run `undo` immediately afterward to restore the cleared records and display all students. This recovery is available
+only while the snapshot remains in the current session's undo history; restarting discards that history.
+
+| Problem | Message |
+|---------|---------|
+| Student data failed to load at startup | `Student data is unavailable because loading failed. Fix the data file and restart.` |
+| Data storage location cannot be created | `Unable to create data storage location.` |
+| Saving fails | `Unable to save student data.` |
+
+A failed clear leaves the records, current view, undo history, and saved file unchanged.
 
 ### Undoing the latest data change: `undo`
 
@@ -474,18 +540,20 @@ Undid last change.
   complete student records, including remarks, labels, and attendance.
 * A successful undo is destructive: it discards the state being reversed. There is no redo command or forward history.
   A later successful data change records the then-current state as a new predecessor.
-* Undo resets the displayed list to all students. It does not restore a previous `find` or `filter` result, window
+* Restoring a snapshot resets the displayed list to all students. It does not restore a previous `find` result, window
   settings, or other GUI state.
 * The restored student data is saved before it replaces the live records. If saving fails, the records, displayed list,
   saved file, and undo history remain unchanged.
 * Undo history is in memory only and is cleared when TeachAssist restarts.
 * Leading and trailing whitespace is ignored. The command word is case-sensitive and it accepts no arguments.
+* If there is nothing to undo, records and the current student filter stay unchanged; an open attendance view closes.
 
 | Situation | Exact message |
 |-----------|---------------|
 | No earlier state is available | `Nothing to undo.` |
 | Additional or parameter-like input, e.g. `undo 1` or `undo n/Samuel` | `Invalid command format!` followed by `Usage: undo` |
 | Incorrect capitalization, e.g. `Undo` | `Unknown command.` |
+| Student data failed to load at startup | `Student data is unavailable because loading failed. Fix the data file and restart.` |
 | Data storage location cannot be created | `Unable to create data storage location.` |
 | Saving the restored state fails | `Unable to save student data.` |
 
@@ -568,8 +636,7 @@ without `attendance` still load; those persons simply start with no attendance r
 
 ## Known issues
 
-1. **When using multiple screens**, if you move the application to a secondary screen, and later switch to using only the primary screen, the GUI will open off-screen. The remedy is to delete the `preferences.json` file created by the application before running the application again.
-2. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
+1. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -588,3 +655,4 @@ Action     | Format, Examples
 **Unmark** | `unmark i/STUDENT_ID d/YYYY-MM-DD l/GROUP`<br> e.g., `unmark i/A0123456B d/2026-10-20 l/Tutorial 1`
 **Undo**   | `undo`
 **Help**   | `help`
+**Exit**   | `exit`

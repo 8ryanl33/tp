@@ -30,7 +30,7 @@ import seedu.address.model.person.Remark;
 import seedu.address.model.person.StudentId;
 
 /**
- * Edits the details of an existing person in the address book.
+ * Edits the details of an existing student in TeachAssist.
  */
 public class EditCommand extends Command {
 
@@ -59,6 +59,9 @@ public class EditCommand extends Command {
     private final EditPersonDescriptor editPersonDescriptor;
 
     /**
+     * Creates a command targeting the student with {@code studentId}.
+     * The descriptor is copied so later changes to it do not affect this command.
+     *
      * @param studentId The Student ID of the student to edit.
      * @param editPersonDescriptor The details to edit.
      */
@@ -70,6 +73,14 @@ public class EditCommand extends Command {
         this.editPersonDescriptor = new EditPersonDescriptor(editPersonDescriptor);
     }
 
+    /**
+     * {@inheritDoc}
+     * Finds the student by ID in the complete address book, applies the requested changes,
+     * and shows all students after a successful edit.
+     *
+     * @throws CommandException if the student is missing, a label change is invalid,
+     *         or the edited student duplicates another student.
+     */
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
@@ -85,6 +96,11 @@ public class EditCommand extends Command {
         return new CommandResult(String.format(MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)));
     }
 
+    /**
+     * Finds the target student in the complete address book, including students hidden by a filter.
+     *
+     * @throws CommandException if no student has the target Student ID.
+     */
     private Person findStudent(Model model) throws CommandException {
         return model.getAddressBook().getPersonList().stream()
                 .filter(person -> person.getStudentId().equals(targetStudentId))
@@ -92,14 +108,19 @@ public class EditCommand extends Command {
                 .orElseThrow(() -> new CommandException(String.format(MESSAGE_STUDENT_NOT_FOUND, targetStudentId)));
     }
 
+    /**
+     * Returns true because editing changes student data.
+     */
     @Override
     public boolean isModifyingData() {
         return true;
     }
 
     /**
-     * Creates and returns a {@code Person} with the details of {@code personToEdit}
-     * edited with {@code editPersonDescriptor}.
+     * Creates a replacement student using the requested fields and retaining all others,
+     * including the Student ID and attendance records.
+     *
+     * @throws CommandException if a requested label change is invalid.
      */
     private static Person createEditedPerson(Person personToEdit, EditPersonDescriptor editPersonDescriptor)
             throws CommandException {
@@ -115,6 +136,12 @@ public class EditCommand extends Command {
                 updatedLabels, updatedRemark, personToEdit.getAttendance());
     }
 
+    /**
+     * Returns the student's labels after clearing them or applying removals before additions.
+     * Label matching ignores case, and the student's existing set is not modified.
+     *
+     * @throws CommandException if a label to remove is absent or a label to add is already present.
+     */
     private static Set<Label> updateLabels(Person person, EditPersonDescriptor descriptor) throws CommandException {
         if (descriptor.isClearingLabels()) {
             return Set.of();
@@ -137,6 +164,9 @@ public class EditCommand extends Command {
         return labels;
     }
 
+    /**
+     * Finds a label with the same name as {@code target}, ignoring case with {@link Locale#ROOT}.
+     */
     private static Optional<Label> findMatchingLabel(Set<Label> labels, Label target) {
         String normalizedTargetName = target.labelName.toLowerCase(Locale.ROOT);
         return labels.stream()
@@ -178,10 +208,15 @@ public class EditCommand extends Command {
         private List<Label> labelsToRemove = new ArrayList<>();
         private boolean isClearingLabels;
 
+        /**
+         * Creates a descriptor with no requested changes.
+         */
         public EditPersonDescriptor() {}
 
         /**
-         * Copy constructor.
+         * Creates an independent copy of the requested changes in {@code toCopy}.
+         *
+         * @param toCopy The descriptor to copy.
          */
         public EditPersonDescriptor(EditPersonDescriptor toCopy) {
             setName(toCopy.name);
@@ -193,57 +228,94 @@ public class EditCommand extends Command {
         }
 
         /**
-         * Returns true if at least one field is edited.
+         * Returns whether any field replacement, label change, or label clear was requested.
          */
         public boolean isAnyFieldEdited() {
             return CollectionUtil.isAnyNonNull(name, email, remark)
                     || !labelsToAdd.isEmpty() || !labelsToRemove.isEmpty() || isClearingLabels;
         }
 
+        /**
+         * Sets the replacement name, or null to leave the student's name unchanged.
+         */
         public void setName(Name name) {
             this.name = name;
         }
 
+        /**
+         * Returns the replacement name, if one was requested.
+         */
         public Optional<Name> getName() {
             return Optional.ofNullable(name);
         }
 
+        /**
+         * Sets the replacement email, or null to leave the student's email unchanged.
+         */
         public void setEmail(Email email) {
             this.email = email;
         }
 
+        /**
+         * Returns the replacement email, if one was requested.
+         */
         public Optional<Email> getEmail() {
             return Optional.ofNullable(email);
         }
 
+        /**
+         * Sets the replacement remark, or null to leave the student's remark unchanged.
+         * An empty {@code Remark} clears the existing remark.
+         */
         public void setRemark(Remark remark) {
             this.remark = remark;
         }
 
+        /**
+         * Returns the replacement remark, if one was requested.
+         */
         public Optional<Remark> getRemark() {
             return Optional.ofNullable(remark);
         }
 
+        /**
+         * Copies the labels to add so later changes to {@code labelsToAdd} do not affect this descriptor.
+         */
         public void setLabelsToAdd(List<Label> labelsToAdd) {
             this.labelsToAdd = new ArrayList<>(requireNonNull(labelsToAdd));
         }
 
+        /**
+         * Returns an unmodifiable copy of the requested label additions.
+         */
         public List<Label> getLabelsToAdd() {
             return List.copyOf(labelsToAdd);
         }
 
+        /**
+         * Copies the labels to remove so later changes to {@code labelsToRemove} do not affect this descriptor.
+         */
         public void setLabelsToRemove(List<Label> labelsToRemove) {
             this.labelsToRemove = new ArrayList<>(requireNonNull(labelsToRemove));
         }
 
+        /**
+         * Returns an unmodifiable copy of the requested label removals.
+         */
         public List<Label> getLabelsToRemove() {
             return List.copyOf(labelsToRemove);
         }
 
+        /**
+         * Sets whether the edit should clear all of the student's labels.
+         */
         public void setClearingLabels(boolean isClearingLabels) {
             this.isClearingLabels = isClearingLabels;
         }
 
+        /**
+         * Returns whether clearing all labels was requested.
+         */
         public boolean isClearingLabels() {
             return isClearingLabels;
         }
