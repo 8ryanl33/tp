@@ -26,6 +26,7 @@ import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.UndoCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.ParserUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -82,6 +83,111 @@ public class LogicManagerTest {
 
         assertEquals(List.of(student), model.getAddressBook().getPersonList());
         assertEquals(List.of(student), storage.readAddressBook().orElseThrow().getPersonList());
+    }
+
+    @Test
+    public void execute_undo_restoresLatestSnapshotSavesAndShowsAllStudents() throws Exception {
+        model.addPerson(ALICE);
+        model.addPerson(BENSON);
+        AddressBook originalAddressBook = new AddressBook(model.getAddressBook());
+        logic.execute("add n/Samuel i/A0123456B e/samuel@example.com");
+        logic.execute("find n/Samuel");
+
+        CommandResult result = logic.execute("undo");
+
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, result.getFeedbackToUser());
+        assertEquals(originalAddressBook, model.getAddressBook());
+        assertEquals(originalAddressBook, storage.readAddressBook().orElseThrow());
+        assertEquals(List.of(ALICE, BENSON), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_undoWithoutHistory_reportsNothingToUndo() throws Exception {
+        model.addPerson(ALICE);
+        storage.saveAddressBook(model.getAddressBook());
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+
+        CommandResult result = logic.execute("undo");
+
+        assertEquals(UndoCommand.MESSAGE_NOTHING_TO_UNDO, result.getFeedbackToUser());
+        assertEquals(List.of(ALICE), model.getAddressBook().getPersonList());
+        assertEquals(List.of(ALICE), model.getFilteredPersonList());
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
+    }
+
+    @Test
+    public void execute_undoSaveFailure_preservesDataFileViewAndHistory() throws Exception {
+        ToggleableJsonAddressBookStorage addressBookStorage =
+                new ToggleableJsonAddressBookStorage(temporaryFolder.resolve("addressBook.json"));
+        storage = new StorageManager(addressBookStorage,
+                new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
+        logic = new LogicManager(model, storage);
+        model.addPerson(ALICE);
+        model.addPerson(BENSON);
+        AddressBook originalAddressBook = new AddressBook(model.getAddressBook());
+        logic.execute("add n/Samuel i/A0123456B e/samuel@example.com");
+        Person addedStudent = model.getAddressBook().getPersonList().getLast();
+        logic.execute("find n/Samuel");
+        String originalFile = Files.readString(storage.getAddressBookFilePath());
+        addressBookStorage.setFailWrites(true);
+
+        assertThrows(CommandException.class, LogicManager.MESSAGE_SAVE_FAILURE, () -> logic.execute("undo"));
+        assertEquals(List.of(ALICE, BENSON, addedStudent), model.getAddressBook().getPersonList());
+        assertEquals(List.of(addedStudent), model.getFilteredPersonList());
+        assertEquals(originalFile, Files.readString(storage.getAddressBookFilePath()));
+
+        addressBookStorage.setFailWrites(false);
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(originalAddressBook, model.getAddressBook());
+    }
+
+    @Test
+    public void execute_consecutiveUndo_discardsEachReversedState() throws Exception {
+        logic.execute("add n/First Student i/A0000001B e/first@example.com");
+        Person firstStudent = model.getAddressBook().getPersonList().getFirst();
+        logic.execute("add n/Second Student i/A0000002B e/second@example.com");
+        Person secondStudent = model.getAddressBook().getPersonList().getLast();
+        logic.execute("add n/Third Student i/A0000003B e/third@example.com");
+
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(firstStudent, secondStudent), model.getAddressBook().getPersonList());
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(firstStudent), model.getAddressBook().getPersonList());
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(), model.getAddressBook().getPersonList());
+        assertEquals(UndoCommand.MESSAGE_NOTHING_TO_UNDO, logic.execute("undo").getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_changeAfterUndo_createsOnlyANewPredecessor() throws Exception {
+        logic.execute("add n/First Student i/A0000001B e/first@example.com");
+        Person firstStudent = model.getAddressBook().getPersonList().getFirst();
+        logic.execute("add n/Second Student i/A0000002B e/second@example.com");
+        Person secondStudent = model.getAddressBook().getPersonList().getLast();
+        logic.execute("add n/Third Student i/A0000003B e/third@example.com");
+
+        logic.execute("undo");
+        logic.execute("add n/Fourth Student i/A0000004B e/fourth@example.com");
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(firstStudent, secondStudent), model.getAddressBook().getPersonList());
+        assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        assertEquals(List.of(firstStudent), model.getAddressBook().getPersonList());
+    }
+
+    @Test
+    public void execute_undoHistoryRetainsOnlyOneHundredPriorStates() throws Exception {
+        int historyLimit = LogicManager.MAX_UNDO_HISTORY_SIZE;
+        int numberOfChanges = historyLimit + 1;
+        for (int changeNumber = 1; changeNumber <= numberOfChanges; changeNumber++) {
+            logic.execute(String.format("add n/Student i/A%07dB e/student%d@example.com",
+                    changeNumber, changeNumber));
+        }
+
+        for (int undoCount = 0; undoCount < historyLimit; undoCount++) {
+            assertEquals(UndoCommand.MESSAGE_SUCCESS, logic.execute("undo").getFeedbackToUser());
+        }
+        assertEquals(1, model.getAddressBook().getPersonList().size());
+        assertEquals(UndoCommand.MESSAGE_NOTHING_TO_UNDO, logic.execute("undo").getFeedbackToUser());
     }
 
     @Test
@@ -656,5 +762,28 @@ public class LogicManagerTest {
                 + EMAIL_DESC_AMY;
         ModelManager expectedModel = new ModelManager(model.getAddressBook(), model.getUserPrefs());
         assertCommandFailure(addCommand, CommandException.class, expectedMessage, expectedModel);
+    }
+
+    /**
+     * A JSON storage implementation whose replacement failures can be enabled after an initial successful save.
+     */
+    private static class ToggleableJsonAddressBookStorage extends JsonAddressBookStorage {
+        private boolean failWrites;
+
+        ToggleableJsonAddressBookStorage(Path filePath) {
+            super(filePath);
+        }
+
+        void setFailWrites(boolean failWrites) {
+            this.failWrites = failWrites;
+        }
+
+        @Override
+        protected void replaceDataFile(Path temporaryFile, Path targetFile) throws IOException {
+            if (failWrites) {
+                throw new IOException("Simulated replacement failure");
+            }
+            super.replaceDataFile(temporaryFile, targetFile);
+        }
     }
 }
