@@ -10,7 +10,9 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
+import java.util.logging.Logger;
 
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
@@ -35,6 +37,7 @@ public class MarkCommand extends Command {
     public static final String MESSAGE_GROUP_NOT_FOUND = "Student %1$s does not have group label \"%2$s\".";
     public static final String MESSAGE_ALREADY_MARKED = "Student %1$s is already marked present for %2$s on %3$s.";
     public static final String MESSAGE_SUCCESS = "Marked student %1$s present for %2$s on %3$s.";
+    private static final Logger logger = LogsCenter.getLogger(MarkCommand.class);
 
     private final StudentId studentId;
     private final LocalDate date;
@@ -70,6 +73,7 @@ public class MarkCommand extends Command {
         Label matchedGroup = findStudentGroup(student);
         AttendanceRecord record = new AttendanceRecord(date, matchedGroup);
         if (student.getAttendance().contains(record)) {
+            logger.warning("Mark rejected: attendance already recorded for student ID " + studentId + ".");
             throw new CommandException(String.format(MESSAGE_ALREADY_MARKED, studentId, matchedGroup.labelName, date));
         }
 
@@ -78,6 +82,7 @@ public class MarkCommand extends Command {
         Person updatedStudent = new Person(student.getName(), student.getStudentId(), student.getEmail(),
                 student.getLabels(), student.getRemark(), updatedAttendance);
         model.setPerson(student, updatedStudent);
+        logger.info("Marked attendance for student ID " + studentId + ".");
         return CommandResult.updatingAttendance(
                 String.format(MESSAGE_SUCCESS, studentId, matchedGroup.labelName, date));
     }
@@ -86,7 +91,10 @@ public class MarkCommand extends Command {
         return model.getAddressBook().getPersonList().stream()
                 .filter(person -> person.getStudentId().equals(studentId))
                 .findFirst()
-                .orElseThrow(() -> new CommandException(String.format(MESSAGE_STUDENT_NOT_FOUND, studentId)));
+                .orElseThrow(() -> {
+                    logger.warning("Mark rejected: student ID " + studentId + " not found.");
+                    return new CommandException(String.format(MESSAGE_STUDENT_NOT_FOUND, studentId));
+                });
     }
 
     private Label findStudentGroup(Person student) throws CommandException {
@@ -94,8 +102,11 @@ public class MarkCommand extends Command {
         return student.getLabels().stream()
                 .filter(label -> label.labelName.toLowerCase(Locale.ROOT).equals(normalizedGroup))
                 .findFirst()
-                .orElseThrow(() -> new CommandException(String.format(MESSAGE_GROUP_NOT_FOUND,
-                        studentId, group.labelName)));
+                .orElseThrow(() -> {
+                    logger.warning("Mark rejected: requested group not assigned to student ID " + studentId + ".");
+                    return new CommandException(String.format(MESSAGE_GROUP_NOT_FOUND,
+                            studentId, group.labelName));
+                });
     }
 
     @Override
