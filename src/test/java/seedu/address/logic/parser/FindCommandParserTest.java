@@ -18,205 +18,115 @@ import seedu.address.model.person.StudentIdContainsKeywordsPredicate;
 
 public class FindCommandParserTest {
     private static final String SEARCH_PARAMETER = "n/, i/, e/, r/, or l/";
-    private static final String MESSAGE_UNKNOWN_PARAMETER = "Unknown parameter: %s.";
-    private static final String MESSAGE_REPEATED_PARAMETER = "Parameter %s must be specified only once.";
-    private static final String MESSAGE_MISSING_PARAMETER = "Missing required parameter: %s.";
-    private static final String MESSAGE_EMPTY_PARAMETER = "Parameter %s cannot be empty.";
-
-    private FindCommandParser parser = new FindCommandParser();
+    private final FindCommandParser parser = new FindCommandParser();
 
     @Test
-    public void parse_emptyArg_throwsParseException() {
-        assertParseFailure(parser, "     ", String.format(MESSAGE_MISSING_PARAMETER, SEARCH_PARAMETER));
-    }
-
-    @Test
-    public void parse_noPrefix_throwsParseException() {
-        assertParseFailure(parser, " Alice Bob", String.format(MESSAGE_MISSING_PARAMETER, SEARCH_PARAMETER));
-    }
-
-    @Test
-    public void parse_wordsBeforeFirstPrefix_throwsParseException() {
-        assertParseFailure(parser, "Alice n/Bob",
-                String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
-    }
-
-    @Test
-    public void parse_wordsBeforeFirstPrefixWithOtherErrors_throwsParseExceptionForWordsBeforeFirstPrefix() {
-        assertParseFailure(parser, "Alice p/123",
-                String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
-        assertParseFailure(parser, "Alice n/Bob n/Carol",
-                String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
-    }
-
-    @Test
-    public void parse_multiplePrefixes_throwsParseException() {
-        assertParseFailure(parser, " n/Alice i/A1234567B",
-                String.format(MESSAGE_REPEATED_PARAMETER, SEARCH_PARAMETER));
-    }
-
-    @Test
-    public void parse_duplicatePrefix_throwsParseException() {
-        assertParseFailure(parser, " n/Alice n/Bob",
-                String.format(MESSAGE_REPEATED_PARAMETER, CliSyntax.PREFIX_NAME));
-    }
-
-    @Test
-    public void parse_emptyPrefixValue_throwsParseException() {
-        assertParseFailure(parser, " n/   ", String.format(MESSAGE_EMPTY_PARAMETER, CliSyntax.PREFIX_NAME));
-    }
-
-    @Test
-    public void parse_unknownPrefix_throwsParseException() {
-        assertParseFailure(parser, " p/123", String.format(MESSAGE_UNKNOWN_PARAMETER, new Prefix("p/")));
-    }
-
-    @Test
-    public void parse_unknownPrefixWithRepeatedPrefix_throwsParseExceptionForUnknownPrefix() {
-        assertParseFailure(parser, " p/123 n/Alice n/Bob",
-                String.format(MESSAGE_UNKNOWN_PARAMETER, new Prefix("p/")));
-    }
-
-    @Test
-    public void parse_validNameArgs_returnsFindCommand() {
-        FindCommand expectedFindCommand =
-                new FindCommand(new NameContainsKeywordsPredicate(List.of("Alice", "Bob")));
-        assertParseSuccess(parser, " n/Alice Bob", expectedFindCommand);
-
-        // multiple whitespaces between keywords
-        assertParseSuccess(parser, " \n n/Alice \n \t Bob  \t", expectedFindCommand);
-    }
-
-    @Test
-    public void parse_validStudentIdArgs_returnsFindCommand() {
-        FindCommand expectedFindCommand =
-                new FindCommand(new StudentIdContainsKeywordsPredicate(List.of("A1234567B")));
-        assertParseSuccess(parser, " i/A1234567B", expectedFindCommand);
-    }
-
-    @Test
-    public void parse_validEmailArgs_returnsFindCommand() {
-        FindCommand expectedFindCommand =
-                new FindCommand(new EmailContainsKeywordsPredicate(List.of("alice@example.com")));
-        assertParseSuccess(parser, " e/alice@example.com", expectedFindCommand);
-    }
-
-
-    @Test
-    public void parse_validLabel_preservesCompleteNameAndWhitespace() {
-        FindCommand expected = new FindCommand(new LabelMatchesPredicate(new Label("Tutorial  1")));
-        assertParseSuccess(parser, "  l/  Tutorial  1   ", expected);
-        assertParseSuccess(parser, "\tl/Tutorial  1\t", expected);
-    }
-
-    @Test
-    public void parse_labelLengthBoundaries_success() {
-        for (String label : List.of("A", "A".repeat(60))) {
-            assertParseSuccess(parser, "l/" + label,
-                    new FindCommand(new LabelMatchesPredicate(new Label(label))));
+    public void parse_missingSearchField_reportsMissingParameter() {
+        // EP: no field, whether input is empty, blank, or unprefixed text.
+        // BVA: zero search fields (one required).
+        for (String input : List.of("", " \t ", "Alice Bob")) {
+            assertParseFailure(parser, input, "Missing required parameter: " + SEARCH_PARAMETER + ".");
         }
     }
 
     @Test
-    public void parse_emptyLabel_reportsEmptyParameter() {
-        assertParseFailure(parser, "l/", "Parameter l/ cannot be empty.");
-        assertParseFailure(parser, "l/   ", "Parameter l/ cannot be empty.");
+    public void parse_eachKeywordField_returnsExpectedPredicate() {
+        // EP: each keyword prefix; whitespace separates keywords and is trimmed.
+        // BVA: one keyword and two keywords; one-character keyword is the minimum nonempty value.
+        for (List<String> keywords : List.of(List.of("A"), List.of("Alice", "Bob"))) {
+            String value = String.join(" \t\n ", keywords);
+            assertParseSuccess(parser, " n/ " + value + " ",
+                    new FindCommand(new NameContainsKeywordsPredicate(keywords)));
+            assertParseSuccess(parser, "i/" + value,
+                    new FindCommand(new StudentIdContainsKeywordsPredicate(keywords)));
+            assertParseSuccess(parser, "e/" + value,
+                    new FindCommand(new EmailContainsKeywordsPredicate(keywords)));
+            assertParseSuccess(parser, "r/" + value,
+                    new FindCommand(new RemarkContainsKeywordsPredicate(keywords)));
+        }
     }
 
     @Test
-    public void parse_repeatedLabel_reportsRepeatedParameter() {
-        assertParseFailure(parser, "l/Tutorial 1 l/Tutorial 2", "Parameter l/ must be specified only once.");
-        assertParseFailure(parser, "l/ l/Tutorial 2", "Parameter l/ must be specified only once.");
+    public void parse_emptyOrRepeatedField_reportsSpecificParameter() {
+        // EP: empty value and repeated same field are rejected for each supported prefix.
+        // BVA: value length zero; two occurrences, immediately above the allowed one.
+        for (String prefix : List.of("n/", "i/", "e/", "r/", "l/")) {
+            for (String blank : List.of("", " \n\t ")) {
+                assertParseFailure(parser, prefix + blank, "Parameter " + prefix + " cannot be empty.");
+            }
+            assertParseFailure(parser, prefix + "One " + prefix + "Two",
+                    "Parameter " + prefix + " must be specified only once.");
+        }
     }
 
     @Test
-    public void parse_labelMixedWithAnotherSearchField_reportsMultipleFields() {
-        for (String other : List.of("n/Alice", "i/A1234567B", "e/alice@example.com", "r/recursion")) {
-            assertParseFailure(parser, "l/Tutorial 1 " + other,
-                    String.format(MESSAGE_REPEATED_PARAMETER, SEARCH_PARAMETER));
-            assertParseFailure(parser, other + " l/Tutorial 1",
-                    String.format(MESSAGE_REPEATED_PARAMETER, SEARCH_PARAMETER));
+    public void parse_multipleDifferentFields_reportsMultipleFields() {
+        // EP: distinct supported search fields cannot be combined, regardless of order.
+        // BVA: two distinct fields, immediately above the allowed one.
+        List<String> prefixes = List.of("n/", "i/", "e/", "r/", "l/");
+        for (int index = 0; index < prefixes.size(); index++) {
+            String first = prefixes.get(index);
+            String second = prefixes.get((index + 1) % prefixes.size());
+            assertParseFailure(parser, first + "One " + second + "Two",
+                    "Parameter " + SEARCH_PARAMETER + " must be specified only once.");
+        }
+    }
+
+    @Test
+    public void parse_structureErrors_respectErrorPrecedence() {
+        // EP: preamble errors precede unknown fields; unknown fields precede repeated fields.
+        String invalidFormat = String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE);
+        for (String input : List.of("extra n/One", "extra x/One", "extra n/One n/Two")) {
+            assertParseFailure(parser, input, invalidFormat);
+        }
+        assertParseFailure(parser, "x/One", "Unknown parameter: x/.");
+        assertParseFailure(parser, "n/One n/Two x/Three", "Unknown parameter: x/.");
+        // EP: prefixes are case-sensitive, including every otherwise supported field.
+        for (String prefix : List.of("N/", "I/", "E/", "R/", "L/")) {
+            assertParseFailure(parser, prefix + "One", "Unknown parameter: " + prefix + ".");
+        }
+        // EP: repeated-field errors precede multiple-field and empty-value errors.
+        assertParseFailure(parser, "l/ l/Two n/One", "Parameter l/ must be specified only once.");
+        assertParseFailure(parser, "n/ l/One", "Parameter " + SEARCH_PARAMETER + " must be specified only once.");
+    }
+
+    @Test
+    public void parse_literalSlashText_isKeywordContent() {
+        // EP: numeric slash text and URLs are values, not unknown alphabetic prefixes.
+        assertParseSuccess(parser, "r/8/10 https://example.com/a/b",
+                new FindCommand(new RemarkContainsKeywordsPredicate(List.of("8/10", "https://example.com/a/b"))));
+    }
+
+    @Test
+    public void parse_validLabel_preservesCompleteNameAndWhitespace() {
+        // EP: label values remain complete names; internal spaces do not split them into keywords.
+        assertParseSuccess(parser, " \tl/ Tutorial  1 \t",
+                new FindCommand(new LabelMatchesPredicate(new Label("Tutorial  1"))));
+        // EP: digit-only labels, combining marks, and the permitted punctuation remain valid label content.
+        for (String label : List.of("1", "e\u0301", "Group_1 (A). O'Neil-2")) {
+            assertParseSuccess(parser, "l/" + label, new FindCommand(new LabelMatchesPredicate(new Label(label))));
+        }
+    }
+
+    @Test
+    public void parse_labelLengthBoundaries_countsUnicodeCodePoints() {
+        // EP: valid labels include ASCII and supplementary Unicode letters.
+        // BVA: 1, 59, 60 code points accepted; 61 rejected. Zero is covered by empty-field tests.
+        for (String letter : List.of("A", "\uD801\uDC00")) {
+            for (int length : List.of(1, 59, 60)) {
+                String label = letter.repeat(length);
+                assertParseSuccess(parser, "l/" + label,
+                        new FindCommand(new LabelMatchesPredicate(new Label(label))));
+            }
+            assertParseFailure(parser, "l/" + letter.repeat(61), Label.MESSAGE_CONSTRAINTS);
         }
     }
 
     @Test
     public void parse_invalidLabel_reportsLabelConstraints() {
-        for (String label : List.of("A".repeat(61), "---", "Tutorial/1", "Tutorial\n1", "Tutorial\t1",
-                "Tutorial\u007f1", "Tutorial!")) {
+        // EP: no letter/digit, disallowed punctuation, slash, and embedded control characters.
+        for (String label : List.of("---", "Tutorial!", "Tutorial/1", "Tutorial\n1", "Tutorial\t1", "A\u007fB")) {
             assertParseFailure(parser, "l/" + label, Label.MESSAGE_CONSTRAINTS);
         }
-    }
-
-    @Test
-    public void parse_labelWithUnsupportedPrefix_reportsUnknownParameter() {
-        assertParseFailure(parser, "L/Tutorial 1", "Unknown parameter: L/.");
-        assertParseFailure(parser, "l/Tutorial 1 p/123", "Unknown parameter: p/.");
-        assertParseFailure(parser, "l/One l/Two p/123", "Unknown parameter: p/.");
-    }
-
-    @Test
-    public void parse_wordsBeforeLabel_reportsInvalidFormatFirst() {
-        assertParseFailure(parser, "extra l/Tutorial 1",
-                String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
-    }
-
-    @Test
-    public void parse_validRemarkArgs_returnsFindCommand() {
-        FindCommand expectedFindCommand =
-                new FindCommand(new RemarkContainsKeywordsPredicate(List.of("recursion")));
-        assertParseSuccess(parser, " r/recursion", expectedFindCommand);
-        assertParseSuccess(parser, "r/recursion", expectedFindCommand);
-    }
-
-    @Test
-    public void parse_multipleRemarkKeywords_returnsFindCommand() {
-        FindCommand expectedFindCommand =
-                new FindCommand(new RemarkContainsKeywordsPredicate(List.of("recursion", "loops")));
-        assertParseSuccess(parser, " r/recursion loops", expectedFindCommand);
-        assertParseSuccess(parser, " \n r/recursion \n \t loops  \t", expectedFindCommand);
-    }
-
-    @Test
-    public void parse_numericSlashInRemarkKeyword_returnsFindCommand() {
-        FindCommand expectedFindCommand =
-                new FindCommand(new RemarkContainsKeywordsPredicate(List.of("8/10")));
-        assertParseSuccess(parser, " r/8/10", expectedFindCommand);
-    }
-
-    @Test
-    public void parse_emptyRemark_throwsParseException() {
-        assertParseFailure(parser, " r/", String.format(MESSAGE_EMPTY_PARAMETER, CliSyntax.PREFIX_REMARK));
-        assertParseFailure(parser, " r/ \n \t ",
-                String.format(MESSAGE_EMPTY_PARAMETER, CliSyntax.PREFIX_REMARK));
-    }
-
-    @Test
-    public void parse_duplicateRemarkPrefix_throwsParseException() {
-        assertParseFailure(parser, " r/recursion r/loops",
-                String.format(MESSAGE_REPEATED_PARAMETER, CliSyntax.PREFIX_REMARK));
-    }
-
-    @Test
-    public void parse_remarkWithOtherSearchPrefix_throwsParseException() {
-        for (String otherParameter : List.of("n/Alice", "i/A1234567B", "e/alice@example.com", "l/Tutorial 1")) {
-            assertParseFailure(parser, " r/recursion " + otherParameter,
-                    String.format(MESSAGE_REPEATED_PARAMETER, SEARCH_PARAMETER));
-            assertParseFailure(parser, " " + otherParameter + " r/recursion",
-                    String.format(MESSAGE_REPEATED_PARAMETER, SEARCH_PARAMETER));
-        }
-    }
-
-    @Test
-    public void parse_wordsBeforeRemarkPrefix_throwsParseException() {
-        assertParseFailure(parser, "Alice r/recursion",
-                String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
-    }
-
-    @Test
-    public void parse_unknownPrefixWithRemark_throwsParseException() {
-        assertParseFailure(parser, " r/recursion p/123",
-                String.format(MESSAGE_UNKNOWN_PARAMETER, new Prefix("p/")));
-        assertParseFailure(parser, " R/recursion",
-                String.format(MESSAGE_UNKNOWN_PARAMETER, new Prefix("R/")));
     }
 }
