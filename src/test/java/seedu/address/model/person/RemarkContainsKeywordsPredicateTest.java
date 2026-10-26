@@ -25,6 +25,7 @@ public class RemarkContainsKeywordsPredicateTest {
 
     @Test
     public void test_remarkContainsKeyword_returnsTrue() {
+        // EP: whole-word/partial matches, case variation, and numeric slash text.
         Person person = new PersonBuilder().withRemark("Needs help with recursion. Quiz: 8/10.").build();
 
         assertTrue(new RemarkContainsKeywordsPredicate(List.of("recursion")).test(person));
@@ -35,6 +36,7 @@ public class RemarkContainsKeywordsPredicateTest {
 
     @Test
     public void test_onlyOneOfMultipleKeywordsMatches_returnsTrue() {
+        // EP: OR matching succeeds regardless of matching keyword position.
         Person person = new PersonBuilder().withRemark("Needs help with recursion").build();
 
         assertTrue(new RemarkContainsKeywordsPredicate(List.of("loops", "recursion")).test(person));
@@ -43,6 +45,7 @@ public class RemarkContainsKeywordsPredicateTest {
 
     @Test
     public void test_noMatchingKeywords_returnsFalse() {
+        // EP: no selected-field match or no supplied keywords.
         Person person = new PersonBuilder().withRemark("Needs help with recursion").build();
 
         assertFalse(new RemarkContainsKeywordsPredicate(List.of("loops", "arrays")).test(person));
@@ -51,6 +54,7 @@ public class RemarkContainsKeywordsPredicateTest {
 
     @Test
     public void test_emptyRemark_returnsFalse() {
+        // EP: an empty stored remark cannot match a nonempty keyword.
         Person person = new PersonBuilder().withRemark("").build();
 
         assertFalse(new RemarkContainsKeywordsPredicate(List.of("recursion", "loops")).test(person));
@@ -58,6 +62,7 @@ public class RemarkContainsKeywordsPredicateTest {
 
     @Test
     public void test_keywordsMatchOtherFieldsOnly_returnsFalse() {
+        // EP: matches in other fields must not affect a remark search.
         Person person = new PersonBuilder().withName("Alice").withStudentId("A1234567B")
                 .withEmail("alice@example.com").withLabels("recursion").withRemark("Needs help with loops").build();
 
