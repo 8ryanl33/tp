@@ -7,6 +7,9 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_REMARK;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_STUDENT_ID;
 
+import java.util.logging.Logger;
+
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -40,6 +43,7 @@ public class AddCommand extends Command {
     public static final String MESSAGE_SUCCESS = "Added student %1$s: %2$s.";
     public static final String MESSAGE_DUPLICATE_PERSON = "Student ID %s already exists.";
     private static final String MESSAGE_REMARK = " Remark: %s";
+    private static final Logger logger = LogsCenter.getLogger(AddCommand.class);
 
     private final Person toAdd;
 
@@ -69,10 +73,12 @@ public class AddCommand extends Command {
         requireNonNull(model);
 
         if (model.hasPerson(toAdd)) {
+            logger.warning("Add rejected: duplicate student ID " + toAdd.getStudentId() + ".");
             throw new CommandException(String.format(MESSAGE_DUPLICATE_PERSON, toAdd.getStudentId()));
         }
 
         model.addPerson(toAdd);
+        logger.info("Added student ID " + toAdd.getStudentId() + ".");
         return new CommandResult(formatSuccess(model.getAddressBook().getPersonList().size()));
     }
 
