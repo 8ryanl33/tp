@@ -129,7 +129,7 @@ public class LogicManager implements Logic {
      */
     private CommandResult executeUndo() throws CommandException {
         if (undoHistory.isEmpty()) {
-            logger.warning("Undo skipped: no history available.");
+            logger.info("Undo skipped: no history available.");
             return new CommandResult(UndoCommand.MESSAGE_NOTHING_TO_UNDO);
         }
 
