@@ -9,7 +9,9 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.logging.Logger;
 
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
@@ -33,6 +35,8 @@ public class UnmarkCommand extends Command {
     public static final String MESSAGE_STUDENT_NOT_FOUND = "Student with ID %s is not in the records.";
     public static final String MESSAGE_NOT_MARKED = "Student %1$s is not marked present for %2$s on %3$s.";
     public static final String MESSAGE_SUCCESS = "Unmarked student %1$s for %2$s on %3$s.";
+
+    private static final Logger logger = LogsCenter.getLogger(UnmarkCommand.class);
 
     private final StudentId studentId;
     private final LocalDate date;
@@ -70,14 +74,20 @@ public class UnmarkCommand extends Command {
         AttendanceRecord matchedRecord = student.getAttendance().stream()
                 .filter(requestedRecord::equals)
                 .findFirst()
-                .orElseThrow(() -> new CommandException(String.format(MESSAGE_NOT_MARKED,
-                        studentId, group.labelName, date)));
+                .orElseThrow(() -> {
+                    logger.warning("Unmark rejected: student ID " + studentId
+                            + " has no attendance record for " + group.labelName + " on " + date + ".");
+                    return new CommandException(String.format(MESSAGE_NOT_MARKED,
+                            studentId, group.labelName, date));
+                });
 
         Set<AttendanceRecord> updatedAttendance = new HashSet<>(student.getAttendance());
         updatedAttendance.remove(matchedRecord);
         Person updatedStudent = new Person(student.getName(), student.getStudentId(), student.getEmail(),
                 student.getLabels(), student.getRemark(), updatedAttendance);
         model.setPerson(student, updatedStudent);
+        logger.info("Unmarked student ID " + studentId + " for "
+                + matchedRecord.getGroup().labelName + " on " + date + ".");
         return CommandResult.updatingAttendance(
                 String.format(MESSAGE_SUCCESS, studentId, matchedRecord.getGroup().labelName, date));
     }
@@ -86,7 +96,10 @@ public class UnmarkCommand extends Command {
         return model.getAddressBook().getPersonList().stream()
                 .filter(person -> person.getStudentId().equals(studentId))
                 .findFirst()
-                .orElseThrow(() -> new CommandException(String.format(MESSAGE_STUDENT_NOT_FOUND, studentId)));
+                .orElseThrow(() -> {
+                    logger.warning("Unmark rejected: student ID " + studentId + " not found.");
+                    return new CommandException(String.format(MESSAGE_STUDENT_NOT_FOUND, studentId));
+                });
     }
 
     @Override
