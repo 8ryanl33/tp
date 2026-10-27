@@ -17,6 +17,9 @@ This project uses Gradle for **build automation and dependency management**. **W
 
 
 The following commands perform common Gradle tasks.
+(Note: use `./gradlew <commands>` on Windows PowerShell, Mac and Linux,
+**and `gradlew <commands>` directly with no `./` prefix on Windows Command Prompt.**
+Examples below use the prefixed format.)
 
 
 * **`clean`**: Deletes the files created during the previous build tasks (e.g. files in the `build` folder).<br>
