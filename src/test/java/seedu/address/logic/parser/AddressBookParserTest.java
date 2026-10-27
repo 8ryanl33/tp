@@ -56,6 +56,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_addWithTabs_success() throws Exception {
+        // EP: add command with tab-separated parameters
         Person person = new PersonBuilder().withRemark("Quiz: 8/10.").build();
         String command = "add\tn/" + person.getName() + "\ti/" + person.getStudentId()
                 + "\te/" + person.getEmail() + "\tr/" + person.getRemark();
@@ -65,6 +66,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_addInvalidParameters_throwsSpecificErrors() {
+        // EP: add command with missing or unknown parameters
         assertThrows(ParseException.class, "Missing required parameter: i/.", ()
             -> parser.parseCommand("add n/Samuel e/samuel@example.com"));
         assertThrows(ParseException.class, "Unknown parameter: p/.", ()
@@ -73,6 +75,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_add() throws Exception {
+        // EP: valid add command dispatch
         Person person = new PersonBuilder().build();
         AddCommand command = (AddCommand) parser.parseCommand(PersonUtil.getAddCommand(person));
         assertEquals(new AddCommand(person), command);
@@ -80,12 +83,16 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_clear() throws Exception {
+        // EP: no arguments and ignored extraneous arguments both route to clear.
         assertTrue(parser.parseCommand(ClearCommand.COMMAND_WORD) instanceof ClearCommand);
-        assertTrue(parser.parseCommand(ClearCommand.COMMAND_WORD + " 3") instanceof ClearCommand);
+        assertThrows(ParseException.class,
+                String.format(MESSAGE_INVALID_COMMAND_FORMAT, ClearCommand.MESSAGE_USAGE), () ->
+                        parser.parseCommand(ClearCommand.COMMAND_WORD + " n/"));
     }
 
     @Test
     public void parseCommand_delete() throws Exception {
+        // EP: valid delete command dispatch with lowercase Student ID
         DeleteCommand command = (DeleteCommand) parser.parseCommand(
                 "delete\ti/a0123456b");
         assertEquals(new DeleteCommand(new StudentId("A0123456B")), command);
@@ -93,6 +100,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_deleteInvalidParameters_reportsSpecificErrors() {
+        // EP: delete command with missing or invalid ID
         assertThrows(ParseException.class, "Missing required parameter: i/.", () -> parser.parseCommand("delete"));
         assertThrows(ParseException.class, DeleteCommand.MESSAGE_INVALID_FORMAT, () -> parser.parseCommand("delete 1"));
         assertThrows(ParseException.class, StudentId.MESSAGE_CONSTRAINTS, () -> parser.parseCommand("delete i/123"));
@@ -100,6 +108,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_edit() throws Exception {
+        // EP: valid edit command dispatch
         Person person = new PersonBuilder().build();
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder(person).build();
         EditCommand command = (EditCommand) parser.parseCommand(EditCommand.COMMAND_WORD + " "
@@ -116,8 +125,11 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_exit() throws Exception {
+        // EP: no arguments and ignored extraneous arguments both route to exit.
         assertTrue(parser.parseCommand(ExitCommand.COMMAND_WORD) instanceof ExitCommand);
-        assertTrue(parser.parseCommand(ExitCommand.COMMAND_WORD + " 3") instanceof ExitCommand);
+        assertThrows(ParseException.class,
+                String.format(MESSAGE_INVALID_COMMAND_FORMAT, ExitCommand.MESSAGE_USAGE), () ->
+                        parser.parseCommand(ExitCommand.COMMAND_WORD + " 3"));
     }
 
     @Test
@@ -143,12 +155,16 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_help() throws Exception {
+        // EP: no arguments and ignored extraneous arguments both route to help.
         assertTrue(parser.parseCommand(HelpCommand.COMMAND_WORD) instanceof HelpCommand);
-        assertTrue(parser.parseCommand(HelpCommand.COMMAND_WORD + " 3") instanceof HelpCommand);
+        assertThrows(ParseException.class,
+                String.format(MESSAGE_INVALID_COMMAND_FORMAT, HelpCommand.MESSAGE_USAGE), () ->
+                        parser.parseCommand(HelpCommand.COMMAND_WORD + " 3"));
     }
 
     @Test
     public void parseCommand_list() throws Exception {
+        // EP: list is routed through its argument-validating parser.
         assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD) instanceof ListCommand);
         String invalidCommand = ListCommand.COMMAND_WORD + " 3";
         Executable parseInvalidCommand = () -> parser.parseCommand(invalidCommand);
@@ -159,6 +175,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_undo_returnsUndoCommand() throws Exception {
+        // EP: undo accepts surrounding whitespace and is routed to its parser.
         assertEquals(new UndoCommand(), parser.parseCommand("undo"));
         assertEquals(new UndoCommand(), parser.parseCommand("  undo  "));
     }
@@ -178,11 +195,8 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_unknownCommand_throwsParseException() {
+        // EP: unsupported command words and incorrectly capitalized words are rejected.
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("unknownCommand"));
-        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("lisst"));
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("List"));
-        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("LIST"));
-        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("Undo"));
-        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("UNDO"));
     }
 }

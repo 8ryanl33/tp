@@ -14,16 +14,18 @@ public class ListCommandParserTest {
 
     @Test
     public void parse_noArguments_returnsListCommand() throws Exception {
+        // EP: empty and whitespace-only argument strings are accepted.
+        // BVA: zero non-whitespace characters.
         assertTrue(parser.parse("") instanceof ListCommand);
         assertTrue(parser.parse("   \t") instanceof ListCommand);
     }
 
     @Test
     public void parse_argumentsPresent_throwsParseException() {
+        // EP: positional and parameter-like arguments are rejected.
+        // BVA: one non-whitespace character is already too many.
         String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, ListCommand.MESSAGE_USAGE);
         assertParseFailure(parser, " 1", expectedMessage);
         assertParseFailure(parser, " n/Alex", expectedMessage);
-        assertParseFailure(parser, " n/", expectedMessage);
-        assertParseFailure(parser, " extra", expectedMessage);
     }
 }

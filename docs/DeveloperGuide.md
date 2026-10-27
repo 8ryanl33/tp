@@ -655,7 +655,7 @@ add n/Betsy Lim i/A0234567C e/betsy@example.com l/Tutorial 2
 #### Help, add, and list
 
 1. Enter `help`. Confirm that the Help window opens, shows the User Guide URL, and that **Copy URL** copies it.
-   Enter `help extra` and confirm that it still opens the Help window.
+   Enter `help extra` and confirm that the invalid command format message and help usage are shown.
 2. Enter the first sample `add` command. Confirm that Alex Tan appears with the supplied ID, email, remark, and
    `Tutorial 1` label. Enter the same command again and confirm that it is rejected as a duplicate Student ID.
 3. Enter the second sample `add` command. Confirm that Betsy Lim appears with the supplied ID, email, and
@@ -737,7 +737,9 @@ add n/Betsy Lim i/A0234567C e/betsy@example.com l/Tutorial 2
 
 **Target user profile**:
 
-TeachAssist is for teaching assistants (TAs) who support a fixed group of undergraduate students through weekly tutorials and consultations throughout a semester. They need to retrieve and update student information quickly while handling teaching, assessment, and follow-up tasks.
+TeachAssist is for teaching assistants (TAs) who support a fixed group of undergraduate students through weekly tutorials and consultations throughout a semester.
+They need to retrieve and update student information quickly while handling teaching, assessment, and follow-up tasks.
+They can type quickly and prefer entering text commands over mouse-driven input.
 
 **Value proposition**: Help teaching assistants organise student information and learning progress so they can remember individual students' needs and provide consistent, targeted support throughout the semester.
 
@@ -1075,7 +1077,6 @@ MSS:
     the JAR, and visible command feedback and list updates within 1 second in at least 19 of 20 measured runs per
     command on the recorded test machine, using a local writable disk. This is a verification target, not a claim
     that benchmarking has passed. See [Performance verification](#performance-verification) for the dataset and procedure.
-3.  A user with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
 
 ### Glossary
 

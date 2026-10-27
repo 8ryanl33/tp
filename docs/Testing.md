@@ -20,7 +20,7 @@ You can run tests in two ways.
   * To run a subset of tests, you can right-click on a test package,
     test class, or a test and choose `Run 'ABC'`
 * **Method 2: Using Gradle**
-  * Open a console and run the command `gradlew clean test` (Mac/Linux: `./gradlew clean test`)
+  * Open a console and run the command `gradlew clean test` in Windows Command Prompt, or `./gradlew clean test` in PowerShell, Mac, or Linux.
 
 <box type="info" seamless>
 
