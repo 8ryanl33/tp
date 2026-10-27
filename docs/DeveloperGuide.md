@@ -655,7 +655,7 @@ add n/Betsy Lim i/A0234567C e/betsy@example.com l/Tutorial 2
 #### Help, add, and list
 
 1. Enter `help`. Confirm that the Help window opens, shows the User Guide URL, and that **Copy URL** copies it.
-   Enter `help extra` and confirm that the invalid command format message and help usage are shown.
+   Enter `help extra` and confirm that it still opens the Help window.
 2. Enter the first sample `add` command. Confirm that Alex Tan appears with the supplied ID, email, remark, and
    `Tutorial 1` label. Enter the same command again and confirm that it is rejected as a duplicate Student ID.
 3. Enter the second sample `add` command. Confirm that Betsy Lim appears with the supplied ID, email, and
