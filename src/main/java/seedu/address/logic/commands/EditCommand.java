@@ -12,7 +12,6 @@ import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -148,29 +147,38 @@ public class EditCommand extends Command {
         }
 
         Set<Label> labels = new HashSet<>(person.getLabels());
-        for (Label labelToRemove : descriptor.getLabelsToRemove()) {
-            Label existingLabel = findMatchingLabel(labels, labelToRemove).orElseThrow(() ->
-                    new CommandException(String.format(MESSAGE_LABEL_NOT_FOUND,
-                            person.getStudentId(), labelToRemove.labelName)));
-            labels.remove(existingLabel);
-        }
-        for (Label labelToAdd : descriptor.getLabelsToAdd()) {
-            if (findMatchingLabel(labels, labelToAdd).isPresent()) {
-                throw new CommandException(String.format(MESSAGE_DUPLICATE_LABEL,
-                        person.getStudentId(), labelToAdd.labelName));
-            }
-            labels.add(labelToAdd);
-        }
+        removeLabels(labels, descriptor.getLabelsToRemove(), person.getStudentId());
+        addLabels(labels, descriptor.getLabelsToAdd(), person.getStudentId());
         return labels;
     }
 
+    private static void removeLabels(Set<Label> labels, List<Label> toRemove, StudentId studentId)
+            throws CommandException {
+        for (Label labelToRemove : toRemove) {
+            Label existingLabel = findMatchingLabel(labels, labelToRemove).orElseThrow(() ->
+                    new CommandException(String.format(MESSAGE_LABEL_NOT_FOUND,
+                            studentId, labelToRemove.labelName)));
+            labels.remove(existingLabel);
+        }
+    }
+
+    private static void addLabels(Set<Label> labels, List<Label> toAdd, StudentId studentId)
+            throws CommandException {
+        for (Label labelToAdd : toAdd) {
+            if (findMatchingLabel(labels, labelToAdd).isPresent()) {
+                throw new CommandException(String.format(MESSAGE_DUPLICATE_LABEL,
+                        studentId, labelToAdd.labelName));
+            }
+            labels.add(labelToAdd);
+        }
+    }
+
     /**
-     * Finds a label with the same name as {@code target}, ignoring case with {@link Locale#ROOT}.
+     * Finds a label with the same name as {@code target}, ignoring case.
      */
     private static Optional<Label> findMatchingLabel(Set<Label> labels, Label target) {
-        String normalizedTargetName = target.labelName.toLowerCase(Locale.ROOT);
         return labels.stream()
-                .filter(label -> label.labelName.toLowerCase(Locale.ROOT).equals(normalizedTargetName))
+                .filter(label -> label.equalsIgnoreCase(target))
                 .findFirst();
     }
 
