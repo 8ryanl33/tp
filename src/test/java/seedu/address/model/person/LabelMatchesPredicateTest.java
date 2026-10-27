@@ -21,6 +21,7 @@ public class LabelMatchesPredicateTest {
 
     @Test
     public void test_completeLabelMatchesIgnoringCase_returnsTrue() {
+        // EP: complete label matches ignoring case, including among multiple labels.
         LabelMatchesPredicate predicate = new LabelMatchesPredicate(new Label("Discrete Math Tutorial"));
         assertTrue(predicate.test(new PersonBuilder().withLabels("Discrete Math Tutorial").build()));
         assertTrue(predicate.test(new PersonBuilder().withLabels("discrete math tutorial").build()));
@@ -29,6 +30,7 @@ public class LabelMatchesPredicateTest {
 
     @Test
     public void test_unicodeLettersWithDifferentRootLowercaseForms_doNotMatch() {
+        // EP: Unicode labels with different root lowercase forms remain distinct.
         LabelMatchesPredicate latinI = new LabelMatchesPredicate(new Label("I"));
         assertFalse(latinI.test(new PersonBuilder().withLabels("ı").build()));
         assertFalse(latinI.test(new PersonBuilder().withLabels("İ").build()));
@@ -40,6 +42,7 @@ public class LabelMatchesPredicateTest {
 
     @Test
     public void test_uppercaseDottedI_matchesItsExpandedRootLowercaseForm() {
+        // EP: Unicode lowercase expansion matches in both directions.
         LabelMatchesPredicate uppercase = new LabelMatchesPredicate(new Label("İ"));
         assertTrue(uppercase.test(new PersonBuilder().withLabels("i\u0307").build()));
         LabelMatchesPredicate lowercase = new LabelMatchesPredicate(new Label("i\u0307"));
@@ -48,6 +51,7 @@ public class LabelMatchesPredicateTest {
 
     @Test
     public void test_defaultLocaleDoesNotChangeLabelMatching() {
+        // EP: default locale must not affect root-locale label comparison.
         Locale originalLocale = Locale.getDefault();
         try {
             for (Locale locale : List.of(Locale.ENGLISH, Locale.forLanguageTag("tr-TR"))) {
@@ -63,6 +67,7 @@ public class LabelMatchesPredicateTest {
 
     @Test
     public void test_labelMustMatchCompletely_returnsFalse() {
+        // EP: partial names, unrelated names, and absent labels do not match.
         LabelMatchesPredicate predicate = new LabelMatchesPredicate(new Label("Tutorial"));
         assertFalse(predicate.test(new PersonBuilder().withLabels("Tutorial 1").build()));
         assertFalse(predicate.test(new PersonBuilder().withLabels("Discrete Math Tutorial").build()));
@@ -72,6 +77,7 @@ public class LabelMatchesPredicateTest {
 
     @Test
     public void test_internalLabelSpacingIsPreserved() {
+        // EP: equal internal spacing matches; different internal spacing does not.
         LabelMatchesPredicate predicate = new LabelMatchesPredicate(new Label("Tutorial  1"));
         assertTrue(predicate.test(new PersonBuilder().withLabels("Tutorial  1").build()));
         assertFalse(predicate.test(new PersonBuilder().withLabels("Tutorial 1").build()));

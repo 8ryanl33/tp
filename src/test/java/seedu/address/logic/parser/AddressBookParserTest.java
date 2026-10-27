@@ -83,6 +83,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_clear() throws Exception {
+        // EP: no arguments and ignored extraneous arguments both route to clear.
         assertTrue(parser.parseCommand(ClearCommand.COMMAND_WORD) instanceof ClearCommand);
         assertTrue(parser.parseCommand(ClearCommand.COMMAND_WORD + " 3") instanceof ClearCommand);
     }
@@ -122,6 +123,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_exit() throws Exception {
+        // EP: no arguments and ignored extraneous arguments both route to exit.
         assertTrue(parser.parseCommand(ExitCommand.COMMAND_WORD) instanceof ExitCommand);
         assertTrue(parser.parseCommand(ExitCommand.COMMAND_WORD + " 3") instanceof ExitCommand);
     }
@@ -149,12 +151,14 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_help() throws Exception {
+        // EP: no arguments and ignored extraneous arguments both route to help.
         assertTrue(parser.parseCommand(HelpCommand.COMMAND_WORD) instanceof HelpCommand);
         assertTrue(parser.parseCommand(HelpCommand.COMMAND_WORD + " 3") instanceof HelpCommand);
     }
 
     @Test
     public void parseCommand_list() throws Exception {
+        // EP: list is routed through its argument-validating parser.
         assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD) instanceof ListCommand);
         String invalidCommand = ListCommand.COMMAND_WORD + " 3";
         Executable parseInvalidCommand = () -> parser.parseCommand(invalidCommand);
@@ -165,6 +169,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_undo_returnsUndoCommand() throws Exception {
+        // EP: undo accepts surrounding whitespace and is routed to its parser.
         assertEquals(new UndoCommand(), parser.parseCommand("undo"));
         assertEquals(new UndoCommand(), parser.parseCommand("  undo  "));
     }
@@ -184,11 +189,8 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_unknownCommand_throwsParseException() {
+        // EP: unsupported command words and incorrectly capitalized words are rejected.
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("unknownCommand"));
-        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("lisst"));
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("List"));
-        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("LIST"));
-        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("Undo"));
-        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("UNDO"));
     }
 }

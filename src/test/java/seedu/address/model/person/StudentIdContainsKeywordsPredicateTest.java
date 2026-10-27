@@ -42,6 +42,7 @@ public class StudentIdContainsKeywordsPredicateTest {
 
     @Test
     public void test_studentIdContainsKeywords_returnsTrue() {
+        // EP: whole-ID matching, one or several keywords, OR matching, and case variation.
         // One keyword
         StudentIdContainsKeywordsPredicate predicate = new StudentIdContainsKeywordsPredicate(List.of("A1234567B"));
         assertTrue(predicate.test(new PersonBuilder().withStudentId("A1234567B").build()));
@@ -61,6 +62,7 @@ public class StudentIdContainsKeywordsPredicateTest {
 
     @Test
     public void test_studentIdDoesNotContainKeywords_returnsFalse() {
+        // EP: no keywords, no selected-field match, and keywords matching other fields only.
         // Zero keywords
         StudentIdContainsKeywordsPredicate predicate = new StudentIdContainsKeywordsPredicate(List.of());
         assertFalse(predicate.test(new PersonBuilder().withStudentId("A1234567B").build()));
