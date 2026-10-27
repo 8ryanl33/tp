@@ -63,8 +63,8 @@ scroll the student list to reach the remaining students.
 * Parameters can be in any order.<br>
   For example, `add e/john@example.com i/A0123456B n/John Doe` is also acceptable.
 
-* Commands that take no parameters, such as `help`, `exit`, and `clear`, reject non-whitespace trailing input.<br>
-  For example, `help 123` reports an invalid command format error.
+* Extraneous parameters for commands that take no parameters, such as `help`, `exit`, and `clear`, are ignored.<br>
+  For example, `help 123` is interpreted as `help`.
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
@@ -76,8 +76,6 @@ Click **Copy URL** to copy this address, then paste it into your browser to open
 
 Format: `help`
 
-The command accepts no arguments. Additional input, such as `help 123`, reports `Invalid command format!` followed by
-the help usage text.
 
 ### Adding a student: `add`
 
@@ -512,9 +510,8 @@ result is:
 Address book has been cleared!
 ```
 
-Running `clear` on an empty list also succeeds with this message. The command accepts no arguments; additional input,
-such as `clear 1`, reports `Invalid command format!` followed by `Usage: clear`. The current search predicate is
-retained, although the list is empty.
+Running `clear` on an empty list also succeeds with this message. Additional arguments are ignored, so `clear 1`
+also clears **all** students. The current search predicate is retained, although the list is empty.
 
 Run `undo` immediately afterward to restore the cleared records and display all students. This recovery is available
 only while the snapshot remains in the current session's undo history; restarting discards that history.
@@ -565,9 +562,6 @@ Undid last change.
 Exits the program.
 
 Format: `exit`
-
-The command accepts no arguments. Additional input, such as `exit extra`, reports `Invalid command format!` followed by
-`Usage: exit`.
 
 ### Loading the data
 
