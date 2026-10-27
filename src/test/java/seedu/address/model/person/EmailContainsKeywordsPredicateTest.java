@@ -40,6 +40,7 @@ public class EmailContainsKeywordsPredicateTest {
 
     @Test
     public void test_emailContainsKeywords_returnsTrue() {
+        // EP: partial-email matches, one or several keywords, OR matching, and case variation.
         // One keyword
         EmailContainsKeywordsPredicate predicate = new EmailContainsKeywordsPredicate(List.of("alice"));
         assertTrue(predicate.test(new PersonBuilder().withEmail("alice@example.com").build()));
@@ -59,6 +60,7 @@ public class EmailContainsKeywordsPredicateTest {
 
     @Test
     public void test_emailDoesNotContainKeywords_returnsFalse() {
+        // EP: no keywords, no selected-field match, and keywords matching other fields only.
         // Zero keywords
         EmailContainsKeywordsPredicate predicate = new EmailContainsKeywordsPredicate(List.of());
         assertFalse(predicate.test(new PersonBuilder().withEmail("alice@example.com").build()));
