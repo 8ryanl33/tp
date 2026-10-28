@@ -113,7 +113,12 @@ public class AttendanceListPanelTest {
                 Region root = new AttendanceListPanel(report).getRoot();
                 Scene scene = new Scene(root, 400, 180);
                 scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
-                for (double[] size : new double[][] {{400, 180}, {800, 400}, {340, 160}, {400, 180}}) {
+                root.applyCss();
+                Region header = (Region) root.lookup(".attendance_header");
+                // Leave less space than the empty-list placeholder's natural height, on every platform.
+                double compactHeight = header.prefHeight(340) + 10;
+                double[][] sizes = {{400, 180}, {800, 400}, {340, 160}, {340, compactHeight}, {400, 180}};
+                for (double[] size : sizes) {
                     root.resize(size[0], size[1]);
                     root.applyCss();
                     for (int pass = 0; pass < 3; pass++) {
@@ -139,7 +144,9 @@ public class AttendanceListPanelTest {
                     assertTrue(totalsBounds.getMaxY() <= listBounds.getMinY(), "Totals must not overlap the list");
                     assertEquals(totals.getText(), ((Text) totals.lookup(".text")).getText());
                     assertTrue(list.getHeight() > 0, "The student list must retain space below the heading");
-                    assertTrue(listBounds.getMaxY() <= size[1] + 1, "The list must fit within the window height");
+                    assertTrue(listBounds.getMaxY() <= size[1] + 1,
+                            "The list must fit within the window height at " + size[0] + " x " + size[1]
+                                    + "; bottom was " + listBounds.getMaxY());
                 }
             }
             return null;

@@ -18,5 +18,6 @@
     <Label fx:id="title" styleClass="cell_big_label" wrapText="true" maxWidth="Infinity" />
     <Label fx:id="totals" styleClass="cell_small_label" />
   </VBox>
-  <ListView fx:id="attendanceListView" VBox.vgrow="ALWAYS" />
+  <!-- Allow the list to fit the space left by the heading, including when its placeholder is shown. -->
+  <ListView fx:id="attendanceListView" minHeight="0" VBox.vgrow="ALWAYS" />
 </VBox>
