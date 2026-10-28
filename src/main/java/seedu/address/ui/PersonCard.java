@@ -1,7 +1,5 @@
 package seedu.address.ui;
 
-import java.util.Comparator;
-
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.layout.FlowPane;
@@ -54,7 +52,7 @@ public class PersonCard extends UiPart<Region> {
         remark.setVisible(!person.getRemark().value.isEmpty());
         remark.setManaged(remark.isVisible());
         person.getLabels().stream()
-                .sorted(Comparator.comparing(label -> label.labelName))
+                .sorted(seedu.address.model.label.Label.DISPLAY_ORDER)
                 .forEach(label -> labels.getChildren().add(new Label(label.labelName)));
         studentIds.getChildren().add(new Label("Student ID: " + person.getStudentId()));
     }
