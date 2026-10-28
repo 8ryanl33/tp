@@ -50,7 +50,7 @@ public class UiManager implements Ui {
 
         } catch (Throwable e) {
             logger.severe(StringUtil.getDetails(e));
-            showFatalErrorDialogAndShutdown("Fatal error during initializing", e);
+            showFatalErrorDialogAndShutdown(primaryStage, "Fatal error during initializing", e);
         }
     }
 
@@ -79,12 +79,13 @@ public class UiManager implements Ui {
     }
 
     /**
-     * Shows an error alert dialog with {@code title} and error message, {@code e},
+     * Shows an error alert dialog on {@code owner} with {@code title} and error message, {@code e},
      * and exits the application after the user has closed the alert dialog.
+     * Takes the owner explicitly because the main window may not exist when startup fails.
      */
-    private void showFatalErrorDialogAndShutdown(String title, Throwable e) {
+    private void showFatalErrorDialogAndShutdown(Stage owner, String title, Throwable e) {
         logger.severe(title + " " + e.getMessage() + StringUtil.getDetails(e));
-        showAlertDialogAndWait(Alert.AlertType.ERROR, title, e.getMessage(), e.toString());
+        showAlertDialogAndWait(owner, Alert.AlertType.ERROR, title, e.getMessage(), e.toString());
         Platform.exit();
         System.exit(1);
     }
