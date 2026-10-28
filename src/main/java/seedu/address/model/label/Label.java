@@ -75,6 +75,28 @@ public class Label {
                 || characterType == Character.ENCLOSING_MARK;
     }
 
+    /**
+     * Returns true if both labels have the same name, ignoring case with {@link Locale#ROOT}.
+     *
+     * @param other The other non-null label to compare against.
+     * @return True if both label names match ignoring case.
+     */
+    public boolean equalsIgnoreCase(Label other) {
+        requireNonNull(other);
+        return equalsIgnoreCase(other.labelName);
+    }
+
+    /**
+     * Returns true if this label's name equals {@code otherName}, ignoring case with {@link Locale#ROOT}.
+     *
+     * @param otherName The other non-null label name to compare against.
+     * @return True if the names match ignoring case.
+     */
+    public boolean equalsIgnoreCase(String otherName) {
+        requireNonNull(otherName);
+        return labelName.toLowerCase(Locale.ROOT).equals(otherName.toLowerCase(Locale.ROOT));
+    }
+
     @Override
     public boolean equals(Object other) {
         if (other == this) {

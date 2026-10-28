@@ -53,7 +53,20 @@ public class PersonCard extends UiPart<Region> {
         remark.setManaged(remark.isVisible());
         person.getLabels().stream()
                 .sorted(seedu.address.model.label.Label.DISPLAY_ORDER)
-                .forEach(label -> labels.getChildren().add(new Label(label.labelName)));
+                .forEach(label -> {
+                    Label groupLabel = new Label(label.labelName) {
+                        @Override
+                        protected double computePrefHeight(double width) {
+                            // FlowPane asks for height without supplying the badge's constrained width.
+                            return super.computePrefHeight(width < 0 ? labels.getWidth() : width);
+                        }
+                    };
+                    groupLabel.setWrapText(true);
+                    groupLabel.setMinWidth(0);
+                    // A single long badge must fit within the row, just like multiple short badges.
+                    groupLabel.maxWidthProperty().bind(labels.widthProperty());
+                    labels.getChildren().add(groupLabel);
+                });
         studentIds.getChildren().add(new Label("Student ID: " + person.getStudentId()));
     }
 }
