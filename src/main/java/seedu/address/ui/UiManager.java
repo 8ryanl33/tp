@@ -65,9 +65,9 @@ public class UiManager implements Ui {
     /**
      * Shows an alert dialog on {@code owner} with the given parameters.
      * This method only returns after the user has closed the alert dialog.
+     * Package-private so tests can observe the dialog without showing it.
      */
-    private static void showAlertDialogAndWait(Stage owner, AlertType type, String title, String headerText,
-                                               String contentText) {
+    void showAlertDialogAndWait(Stage owner, AlertType type, String title, String headerText, String contentText) {
         final Alert alert = new Alert(type);
         alert.getDialogPane().getStylesheets().add("view/DarkTheme.css");
         alert.initOwner(owner);
@@ -86,6 +86,14 @@ public class UiManager implements Ui {
     private void showFatalErrorDialogAndShutdown(Stage owner, String title, Throwable e) {
         logger.severe(title + " " + e.getMessage() + StringUtil.getDetails(e));
         showAlertDialogAndWait(owner, Alert.AlertType.ERROR, title, e.getMessage(), e.toString());
+        exitApplication();
+    }
+
+    /**
+     * Ends the application with a failure status.
+     * Package-private so tests can observe a fatal startup error without ending the test run.
+     */
+    void exitApplication() {
         Platform.exit();
         System.exit(1);
     }
