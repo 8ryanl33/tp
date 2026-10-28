@@ -112,7 +112,7 @@ public class LogicManager implements Logic {
     private CommandResult executeAndSave(Command command) throws CommandException {
         AddressBook previousAddressBook = new AddressBook(model.getAddressBook());
         Model pendingModel = new ModelManager(model.getAddressBook(), model.getUserPrefs());
-        pendingModel.updateFilteredPersonList(model.getFilteredPersonListPredicate()::test);
+        pendingModel.updateFilteredPersonList(model.getFilteredPersonListPredicate());
         CommandResult result = command.execute(pendingModel);
         saveStudentData(pendingModel.getAddressBook());
         if (undoHistory.size() == MAX_UNDO_HISTORY_SIZE) {
@@ -120,7 +120,7 @@ public class LogicManager implements Logic {
         }
         undoHistory.addLast(previousAddressBook);
         model.setAddressBook(pendingModel.getAddressBook());
-        model.updateFilteredPersonList(pendingModel.getFilteredPersonListPredicate()::test);
+        model.updateFilteredPersonList(pendingModel.getFilteredPersonListPredicate());
         return result;
     }
 
