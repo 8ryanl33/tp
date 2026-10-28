@@ -18,11 +18,13 @@ import org.junit.jupiter.api.Test;
 
 import javafx.application.Platform;
 import javafx.geometry.Bounds;
+import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.layout.Region;
 import javafx.scene.text.Text;
 import seedu.address.model.attendance.AttendanceRecord;
@@ -103,6 +105,59 @@ public class AttendanceListPanelTest {
         Label absentStatus = (Label) absentCard.lookup("#status");
         assertEquals("Absent", absentStatus.getText());
         assertTrue(absentStatus.getStyleClass().contains("attendance_absent"));
+    }
+
+    @Test
+    public void attendanceCard_longNames_wrapAndKeepStatusVisibleWhenResized() throws Exception {
+        assumeTrue(isToolkitAvailable);
+        onFxThread(() -> {
+            Person present = new PersonBuilder(ALICE).withName("M".repeat(100)).withLabels("Tutorial 1")
+                    .withAttendance(new AttendanceRecord(DATE, GROUP)).build();
+            Person absent = new PersonBuilder(BENSON).withName("Long ".repeat(19) + "Name")
+                    .withLabels("Tutorial 1").build();
+            AttendanceReport report = AttendanceReport.of(List.of(present, absent), DATE, GROUP);
+            Region root = new AttendanceListPanel(report).getRoot();
+            Scene scene = new Scene(root, 400, 400);
+            scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
+
+            for (double width : new double[] {400, 800, 340, 400}) {
+                root.resize(width, 400);
+                root.applyCss();
+                for (int pass = 0; pass < 3; pass++) {
+                    root.layout();
+                }
+
+                assertEquals(2, root.lookupAll("#cardPane").size());
+                for (Node card : root.lookupAll("#cardPane")) {
+                    Bounds cardBounds = card.localToScene(card.getLayoutBounds());
+                    assertTrue(cardBounds.getMaxX() <= width + 1, "Attendance card exceeds the list width");
+                    Label name = (Label) card.lookup("#name");
+                    if (width <= 400) {
+                        assertTrue(name.getHeight() > 2 * name.getFont().getSize(), "Long name should wrap");
+                    }
+                    Bounds nameBounds = name.localToScene(name.getLayoutBounds());
+                    Label status = (Label) card.lookup("#status");
+                    Bounds statusBounds = status.localToScene(status.getLayoutBounds());
+                    assertTrue(nameBounds.getMaxX() <= statusBounds.getMinX(), "Name overlaps the status");
+
+                    for (Node node : card.lookupAll(".label")) {
+                        Label label = (Label) node;
+                        Bounds bounds = label.localToScene(label.getLayoutBounds());
+                        assertTrue(bounds.getMinX() >= cardBounds.getMinX(), "Label exceeds the card's left edge");
+                        assertTrue(bounds.getMaxX() <= cardBounds.getMaxX() + 1,
+                                "Label exceeds the card's right edge");
+                        assertTrue(bounds.getMaxY() <= cardBounds.getMaxY() + 1,
+                                "Label exceeds the card's bottom edge");
+                        assertEquals(label.getText(), ((Text) label.lookup(".text")).getText(),
+                                "Label text is truncated");
+                    }
+                }
+                root.lookupAll(".scroll-bar").stream().map(ScrollBar.class::cast)
+                        .filter(bar -> bar.getOrientation() == Orientation.HORIZONTAL)
+                        .forEach(bar -> assertFalse(bar.isVisible(), "Attendance list needs horizontal scrolling"));
+            }
+            return null;
+        });
     }
 
     @Test
