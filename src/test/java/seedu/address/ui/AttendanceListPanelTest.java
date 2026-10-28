@@ -17,11 +17,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import javafx.application.Platform;
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.layout.Region;
+import javafx.scene.text.Text;
 import seedu.address.model.attendance.AttendanceRecord;
 import seedu.address.model.attendance.AttendanceReport;
 import seedu.address.model.attendance.AttendanceReport.AttendanceEntry;
@@ -99,6 +102,50 @@ public class AttendanceListPanelTest {
         assertTrue(absentStatus.getStyleClass().contains("attendance_absent"));
     }
 
+    @Test
+    public void constructor_longGroupHeading_remainsReadableInSmallAndResizedWindows() throws Exception {
+        assumeTrue(isToolkitAvailable);
+        onFxThread(() -> {
+            var group = new seedu.address.model.label.Label("W".repeat(60));
+            Person member = new PersonBuilder(ALICE).withLabels(group.labelName).build();
+            for (List<Person> members : List.of(List.of(member), List.<Person>of())) {
+                AttendanceReport report = AttendanceReport.of(members, DATE, group);
+                Region root = new AttendanceListPanel(report).getRoot();
+                Scene scene = new Scene(root, 400, 180);
+                scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
+                for (double[] size : new double[][] {{400, 180}, {800, 400}, {340, 160}, {400, 180}}) {
+                    root.resize(size[0], size[1]);
+                    root.applyCss();
+                    for (int pass = 0; pass < 3; pass++) {
+                        root.layout();
+                    }
+
+                    Label title = (Label) root.lookup("#title");
+                    Label totals = (Label) root.lookup("#totals");
+                    ListView<?> list = (ListView<?>) root.lookup("#attendanceListView");
+                    assertEquals("Attendance: " + group.labelName + " on " + DATE, title.getText());
+                    assertEquals(title.getText(), ((Text) title.lookup(".text")).getText(),
+                            "Heading must display the full group and date without an ellipsis");
+                    assertTrue(title.getHeight() + 1 >= title.prefHeight(title.getWidth()),
+                            "Heading must have enough height for every wrapped line");
+                    if (size[0] <= 400) {
+                        assertTrue(title.getHeight() > 2 * title.getFont().getSize(), "Heading should wrap");
+                    }
+                    Bounds titleBounds = title.localToScene(title.getLayoutBounds());
+                    Bounds totalsBounds = totals.localToScene(totals.getLayoutBounds());
+                    Bounds listBounds = list.localToScene(list.getLayoutBounds());
+                    assertTrue(titleBounds.getMaxX() <= size[0], "Heading must fit within the window width");
+                    assertTrue(titleBounds.getMaxY() <= totalsBounds.getMinY(), "Heading must not overlap totals");
+                    assertTrue(totalsBounds.getMaxY() <= listBounds.getMinY(), "Totals must not overlap the list");
+                    assertEquals(totals.getText(), ((Text) totals.lookup(".text")).getText());
+                    assertTrue(list.getHeight() > 0, "The student list must retain space below the heading");
+                    assertTrue(listBounds.getMaxY() <= size[1] + 1, "The list must fit within the window height");
+                }
+            }
+            return null;
+        });
+    }
+
     /**
      * Places {@code root} in a scene and lays it out, so that its list creates cells for the visible rows.
      */
@@ -114,7 +161,7 @@ public class AttendanceListPanelTest {
         Platform.runLater(() -> {
             try {
                 result.complete(supplier.get());
-            } catch (RuntimeException e) {
+            } catch (RuntimeException | AssertionError e) {
                 result.completeExceptionally(e);
             }
         });
