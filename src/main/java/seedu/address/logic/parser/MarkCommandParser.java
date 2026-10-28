@@ -58,8 +58,7 @@ public class MarkCommandParser implements Parser<MarkCommand> {
             throw new ParseException(MarkCommand.MESSAGE_INVALID_FORMAT);
         }
         rejectRepeatedPrefixes(arguments);
-        requirePresentMandatoryPrefixes(arguments);
-        requireNonEmptyMandatoryValues(arguments);
+        requireMandatoryValues(arguments);
     }
 
     private static void rejectUnknownPrefixes(String args) throws ParseException {
@@ -77,17 +76,13 @@ public class MarkCommandParser implements Parser<MarkCommand> {
         }
     }
 
-    private static void requirePresentMandatoryPrefixes(ArgumentMultimap arguments) throws ParseException {
+    private static void requireMandatoryValues(ArgumentMultimap arguments) throws ParseException {
         for (Prefix prefix : REQUIRED_PREFIXES) {
-            if (arguments.getValue(prefix).isEmpty()) {
+            Optional<String> value = arguments.getValue(prefix);
+            if (value.isEmpty()) {
                 throw new ParseException(String.format(MESSAGE_MISSING_PARAMETER, prefix));
             }
-        }
-    }
-
-    private static void requireNonEmptyMandatoryValues(ArgumentMultimap arguments) throws ParseException {
-        for (Prefix prefix : REQUIRED_PREFIXES) {
-            if (arguments.getValue(prefix).get().isEmpty()) {
+            if (value.get().isEmpty()) {
                 throw new ParseException(String.format(MESSAGE_EMPTY_PARAMETER, prefix));
             }
         }

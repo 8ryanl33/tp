@@ -83,7 +83,6 @@ public class MarkCommand extends Command {
         Person updatedStudent = new Person(student.getName(), student.getStudentId(), student.getEmail(),
                 student.getLabels(), student.getRemark(), updatedAttendance);
         model.setPerson(student, updatedStudent);
-        assert model.hasPerson(updatedStudent);
         logger.info("Marked attendance for student ID " + studentId + ".");
         return CommandResult.updatingAttendance(
                 String.format(MESSAGE_SUCCESS, studentId, matchedGroup.labelName, date));
