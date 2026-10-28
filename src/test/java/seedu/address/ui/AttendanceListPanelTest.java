@@ -53,6 +53,7 @@ public class AttendanceListPanelTest {
 
     @Test
     public void constructor_report_showsTitleTotalsAndMembers() throws Exception {
+        // EP: report with both present and absent members renders title, totals, rows, and both badge styles
         assumeTrue(isToolkitAvailable);
         Person present = new PersonBuilder(ALICE).withLabels("Tutorial 1")
                 .withAttendance(new AttendanceRecord(DATE, GROUP)).build();
@@ -70,6 +71,7 @@ public class AttendanceListPanelTest {
 
     @Test
     public void constructor_emptyReport_showsZeroTotals() throws Exception {
+        // BVA: zero present and zero absent members render zero totals and no status badge
         assumeTrue(isToolkitAvailable);
         AttendanceReport report = AttendanceReport.of(List.of(), DATE, GROUP);
 
@@ -82,6 +84,7 @@ public class AttendanceListPanelTest {
 
     @Test
     public void attendanceCard_entry_showsStudentAndStatusBadge() throws Exception {
+        // EP: present and absent entry cards render their student details and distinct status badges
         assumeTrue(isToolkitAvailable);
         Node presentCard = onFxThread(() -> new AttendanceCard(new AttendanceEntry(ALICE, true), 1).getRoot());
         Node absentCard = onFxThread(() -> new AttendanceCard(new AttendanceEntry(BENSON, false), 2).getRoot());
